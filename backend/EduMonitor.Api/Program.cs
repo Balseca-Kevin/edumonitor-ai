@@ -2,6 +2,7 @@ using EduMonitor.Api.Errores;
 using EduMonitor.Application;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Infrastructure;
+using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Infrastructure.Seguridad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
@@ -65,6 +66,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    await SembradorDatos.InicializarAsync(app.Services);
 }
 
 app.UseCors(PoliticaFrontend);
