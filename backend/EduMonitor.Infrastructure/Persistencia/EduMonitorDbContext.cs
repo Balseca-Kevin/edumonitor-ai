@@ -13,6 +13,7 @@ public class EduMonitorDbContext(DbContextOptions<EduMonitorDbContext> options) 
     public DbSet<Matricula> Matriculas => Set<Matricula>();
     public DbSet<Actividad> Actividades => Set<Actividad>();
     public DbSet<Calificacion> Calificaciones => Set<Calificacion>();
+    public DbSet<Sincronizacion> Sincronizaciones => Set<Sincronizacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

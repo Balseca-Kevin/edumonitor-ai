@@ -25,14 +25,21 @@ public sealed class CursoService(IEduMonitorDbContext db, TimeProvider reloj)
         }
 
         var cursos = await consulta.OrderBy(c => c.NombreCorto).ToListAsync(ct);
-        return cursos.Select(ADto).ToList();
+        var ultimas = await UltimasSincronizacionesAsync(cursos.Select(c => c.Id).ToList(), ct);
+        return cursos.Select(c => ADto(c, ultimas.GetValueOrDefault(c.Id))).ToList();
     }
 
     /// <summary>El curso por id, o null si no existe. La autorización por curso ya la resolvió la política CursoAutorizado.</summary>
     public async Task<CursoDto?> ObtenerAsync(int id, CancellationToken ct = default)
     {
         var curso = await db.Cursos.AsNoTracking().SingleOrDefaultAsync(c => c.Id == id, ct);
-        return curso is null ? null : ADto(curso);
+        if (curso is null)
+        {
+            return null;
+        }
+
+        var ultimas = await UltimasSincronizacionesAsync(new List<int> { curso.Id }, ct);
+        return ADto(curso, ultimas.GetValueOrDefault(curso.Id));
     }
 
     public Task<bool> ExisteAsync(int cursoId, CancellationToken ct = default) =>
@@ -57,7 +64,20 @@ public sealed class CursoService(IEduMonitorDbContext db, TimeProvider reloj)
             ? db.Cursos.AsNoTracking()
             : db.Cursos.AsNoTracking().Where(c => c.Docentes.Any(d => d.UsuarioId == usuario.Id));
 
-    // ultimaSincronizacion queda en null hasta que HU-05 agregue la entidad Sincronizacion.
-    private static CursoDto ADto(Curso curso) =>
-        new(curso.Id, curso.MoodleCursoId, curso.NombreCorto, curso.Nombre, curso.Periodo, null);
+    /// <summary>Última sincronización de cada curso (la de mayor id). Los cursos nunca sincronizados no aparecen.</summary>
+    private async Task<Dictionary<int, ResumenSincronizacion>> UltimasSincronizacionesAsync(List<int> cursoIds, CancellationToken ct)
+    {
+        var idsUltimas = await db.Sincronizaciones
+            .Where(s => cursoIds.Contains(s.CursoId))
+            .GroupBy(s => s.CursoId)
+            .Select(g => g.Max(s => s.Id))
+            .ToListAsync(ct);
+
+        return await db.Sincronizaciones.AsNoTracking()
+            .Where(s => idsUltimas.Contains(s.Id))
+            .ToDictionaryAsync(s => s.CursoId, s => new ResumenSincronizacion(s.Id, s.Inicio, s.Estado.ToString()), ct);
+    }
+
+    private static CursoDto ADto(Curso curso, ResumenSincronizacion? ultima) =>
+        new(curso.Id, curso.MoodleCursoId, curso.NombreCorto, curso.Nombre, curso.Periodo, ultima);
 }

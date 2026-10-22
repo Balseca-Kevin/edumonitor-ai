@@ -13,6 +13,7 @@ public interface IEduMonitorDbContext
     DbSet<Matricula> Matriculas { get; }
     DbSet<Actividad> Actividades { get; }
     DbSet<Calificacion> Calificaciones { get; }
+    DbSet<Domain.Entities.Sincronizacion> Sincronizaciones { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

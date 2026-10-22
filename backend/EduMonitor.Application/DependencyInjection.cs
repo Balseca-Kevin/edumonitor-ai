@@ -14,6 +14,7 @@ public static class DependencyInjection
         services.AddScoped<CursoService>();
         services.AddScoped<ImportadorMatriculados>();
         services.AddScoped<ImportadorCalificaciones>();
+        services.AddScoped<SincronizacionService>();
         return services;
     }
 }
