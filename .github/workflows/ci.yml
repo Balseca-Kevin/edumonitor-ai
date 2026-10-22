@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restaurar
+        if: hashFiles('backend/EduMonitor.sln') != ''
+        run: dotnet restore backend/EduMonitor.sln
+      - name: Compilar
+        if: hashFiles('backend/EduMonitor.sln') != ''
+        run: dotnet build backend/EduMonitor.sln --no-restore -c Release
+      - name: Probar
+        if: hashFiles('backend/EduMonitor.sln') != ''
+        run: dotnet test backend/EduMonitor.sln --no-build -c Release --verbosity normal
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: hashFiles('frontend/package.json') != ''
+        with:
+          node-version: lts/*
+      - name: Instalar
+        if: hashFiles('frontend/package.json') != ''
+        working-directory: frontend
+        run: npm ci || npm install
+      - name: Probar
+        if: hashFiles('frontend/package.json') != ''
+        working-directory: frontend
+        run: npm test --if-present -- --run
+      - name: Compilar
+        if: hashFiles('frontend/package.json') != ''
+        working-directory: frontend
+        run: npm run build --if-present
+
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        if: hashFiles('agent/requirements.txt') != ''
+        with:
+          python-version: "3.11"
+      - name: Instalar
+        if: hashFiles('agent/requirements.txt') != ''
+        run: pip install -r agent/requirements.txt pytest
+      - name: Probar
+        if: hashFiles('agent/requirements.txt') != ''
+        working-directory: agent
+        run: pytest -q

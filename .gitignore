@@ -1,0 +1,44 @@
+# Secretos
+.env
+*.env
+!.env.example
+
+# Personales de IA
+CLAUDE.local.md
+.claude/settings.local.json
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+TestResults/
+appsettings.Development.local.json
+
+# Node / Vite
+node_modules/
+dist/
+coverage/
+*.local
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Datos de contenedores (Moodle, SQL Server)
+moodle-lab/data/
+moodle-lab/moodledata/
+moodle-lab/db/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+CLAUDE.md
