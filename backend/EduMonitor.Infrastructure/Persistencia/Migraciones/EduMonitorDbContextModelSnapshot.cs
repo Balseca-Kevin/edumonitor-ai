@@ -70,6 +70,59 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("DocenteCurso", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Estudiante", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Apellido")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("MoodleUsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MoodleUsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("Estudiante", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Matricula", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.HasIndex("CursoId", "EstudianteId")
+                        .IsUnique();
+
+                    b.ToTable("Matricula", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -129,9 +182,33 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Matricula", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Estudiante", "Estudiante")
+                        .WithMany("Matriculas")
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("Estudiante");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Curso", b =>
                 {
                     b.Navigation("Docentes");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Estudiante", b =>
+                {
+                    b.Navigation("Matriculas");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Usuario", b =>
