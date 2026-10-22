@@ -15,6 +15,7 @@ public static class DependencyInjection
 
         // TA-02.2 (Sebastián) reemplaza este registro por el HttpClient tipado: services.AddHttpClient<IMoodleClient, MoodleClient>(...)
         services.AddScoped<IMoodleClient, MoodleClientPendiente>();
+        services.AddHostedService<RegistroConfiguracionMoodle>();
 
         return services;
     }
