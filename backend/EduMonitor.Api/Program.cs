@@ -1,3 +1,4 @@
+using EduMonitor.Api.Autorizacion;
 using EduMonitor.Api.Errores;
 using EduMonitor.Application;
 using EduMonitor.Application.Configuracion;
@@ -5,6 +6,7 @@ using EduMonitor.Infrastructure;
 using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Infrastructure.Seguridad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
@@ -27,7 +29,11 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
         bearer.MapInboundClaims = false; // conserva sub, name y role tal como se emiten
         bearer.TokenValidationParameters = JwtService.ParametrosValidacion(jwt.Value);
     });
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(opciones => opciones.AddPolicy(
+    CursoAutorizadoRequirement.Politica,
+    politica => politica.RequireRole("DOCENTE", "ADMIN").AddRequirements(new CursoAutorizadoRequirement())));
+builder.Services.AddScoped<IAuthorizationHandler, CursoAutorizadoHandler>();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacionProblemDetails>();
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails(opciones => opciones.CustomizeProblemDetails = TitulosProblemDetails.Aplicar);
