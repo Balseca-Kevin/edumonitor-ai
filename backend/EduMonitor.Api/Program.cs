@@ -1,6 +1,10 @@
 using EduMonitor.Api.Errores;
 using EduMonitor.Application;
+using EduMonitor.Application.Configuracion;
 using EduMonitor.Infrastructure;
+using EduMonitor.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +18,15 @@ if (builder.Environment.IsDevelopment())
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtOptions>>((bearer, jwt) =>
+    {
+        bearer.MapInboundClaims = false; // conserva sub, name y role tal como se emiten
+        bearer.TokenValidationParameters = JwtService.ParametrosValidacion(jwt.Value);
+    });
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 builder.Services.AddProblemDetails(opciones => opciones.CustomizeProblemDetails = TitulosProblemDetails.Aplicar);
@@ -55,6 +68,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors(PoliticaFrontend);
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
