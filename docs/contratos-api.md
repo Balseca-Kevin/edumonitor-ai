@@ -110,9 +110,9 @@ Historial, de la más reciente a la más antigua. Respuesta 200: lista de objeto
 ### GET /api/admin/moodle-config · ADMIN
 
 ```json
-{ "url": "http://localhost:8080", "servicio": "edumonitor_ws", "tokenEnmascarado": "••••••••3f9a", "actualizado": "2026-10-21T22:10:00-05:00" }
+{ "url": "http://localhost:8080", "servicio": "edumonitor_ws", "tokenEnmascarado": "••••3f9a", "actualizado": "2026-10-21T22:10:00-05:00" }
 ```
-El token completo nunca sale del backend ni aparece en registros.
+`tokenEnmascarado` es «••••» más los últimos 4 caracteres del token (vacío si no hay token). El token completo nunca sale del backend ni aparece en registros.
 
 ### PUT /api/admin/moodle-config · ADMIN
 
