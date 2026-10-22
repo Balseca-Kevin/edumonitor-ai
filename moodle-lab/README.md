@@ -2,6 +2,87 @@
 
 Moodle 4.x con datos ficticios que replica el modelo académico de la UTA. Lo levanta `docker-compose.yml` de esta carpeta (TA-01.1, Kevin).
 
+## Qué levanta
+
+| Servicio | Imagen | Puerto en el host | Datos persistentes |
+|---|---|---|---|
+| `sqlserver` | `mcr.microsoft.com/mssql/server:2022-latest` | 1433 | volumen `edumonitor_sqlserver-data` |
+| `moodle-db` | `postgres:16-alpine` | ninguno (solo red interna) | volumen `edumonitor_moodle-db-data` |
+| `moodle` | `erseco/alpine-moodle:v4.5.15` (Moodle 4.5 LTS, PHP 8.3) | `${MOODLE_PORT}` (8080) | volumen `edumonitor_moodledata` |
+
+`sqlserver` es la base de EduMonitor (`EduMonitorDB`), no la de Moodle. Moodle usa su propia PostgreSQL.
+
+Los datos van en volúmenes con nombre de Docker y no en carpetas del repo, porque así se evitan los problemas de permisos de PostgreSQL y SQL Server con el disco de Windows. El prefijo `edumonitor_` sale de `COMPOSE_PROJECT_NAME`. Para verlos: `docker volume ls --filter name=edumonitor_`.
+
+## Requisitos
+
+- Docker Desktop con Docker Compose v2 (`docker compose version`).
+- Un `.env` en la raíz del repo, copiado de `.env.example`, con contraseñas propias. La de SQL Server necesita mayúscula, minúscula, número, símbolo y al menos 8 caracteres.
+
+Todos los comandos se ejecutan **desde la raíz del repositorio**.
+
+## Levantar
+
+```powershell
+docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
+docker compose -f moodle-lab/docker-compose.yml --env-file .env ps
+```
+
+La primera vez Moodle se instala solo y tarda unos minutos. Para seguir el avance:
+
+```powershell
+docker compose -f moodle-lab/docker-compose.yml --env-file .env logs -f moodle
+```
+
+`sqlserver` y `moodle-db` deben aparecer como `healthy` en `ps`.
+
+## Entrar a Moodle
+
+- URL: <http://localhost:8080> (o el `MOODLE_PORT` de tu `.env`).
+- Usuario y contraseña: `MOODLE_ADMIN_USER` y `MOODLE_ADMIN_PASSWORD` del `.env`.
+- Comprobación rápida: `curl.exe -I http://localhost:8080/login/index.php` debe responder `200`.
+
+Las credenciales del administrador solo se aplican en la primera instalación. Si cambias el `.env` después, la contraseña de Moodle no cambia; usa «Borrar todo» o cámbiala dentro de Moodle.
+
+## Conectar SSMS a SQL Server
+
+| Campo | Valor |
+|---|---|
+| Server name | `localhost,1433` |
+| Authentication | SQL Server Authentication |
+| Login | `sa` |
+| Password | `MSSQL_SA_PASSWORD` del `.env` |
+| Encryption | Mandatory, con **Trust server certificate** marcado |
+
+Desde la terminal, con `sqlcmd`: `sqlcmd -S localhost,1433 -U sa -C -Q "SELECT @@VERSION"` (pide la contraseña).
+
+La base `EduMonitorDB` no existe hasta que el backend aplique las migraciones (HU-03).
+
+## Detener
+
+```powershell
+# Detiene y quita los contenedores; los volúmenes con los datos se conservan
+docker compose -f moodle-lab/docker-compose.yml --env-file .env down
+```
+
+Al volver a levantar, Moodle conserva cursos, usuarios y configuración, y SQL Server conserva sus bases.
+
+## Borrar todo para empezar de cero
+
+Esto elimina Moodle (sitio, cursos, archivos) **y** las bases de SQL Server, incluida `EduMonitorDB`.
+
+```powershell
+# -v borra también los tres volúmenes
+docker compose -f moodle-lab/docker-compose.yml --env-file .env down -v
+docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
+```
+
+## Problemas conocidos
+
+- **Puerto ocupado** (`port is already allocated`): cambia `MOODLE_PORT` en `.env`, o detén el SQL Server local de Windows si ocupa el 1433.
+- **`sqlserver` no pasa a `healthy`**: casi siempre la contraseña no cumple la política. Revisa `docker compose -f moodle-lab/docker-compose.yml --env-file .env logs sqlserver`.
+- **Cambié una contraseña en `.env` y ya no conecta**: PostgreSQL y el administrador de Moodle solo toman sus contraseñas en la primera creación del volumen. Usa «Borrar todo» o cambia la contraseña dentro del servicio.
+
 ## Estructura acordada
 
 | Elemento | Valor |
