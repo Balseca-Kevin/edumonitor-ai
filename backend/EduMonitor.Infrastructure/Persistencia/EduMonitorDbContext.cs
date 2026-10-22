@@ -11,6 +11,8 @@ public class EduMonitorDbContext(DbContextOptions<EduMonitorDbContext> options) 
     public DbSet<CursoDocente> CursosDocentes => Set<CursoDocente>();
     public DbSet<Estudiante> Estudiantes => Set<Estudiante>();
     public DbSet<Matricula> Matriculas => Set<Matricula>();
+    public DbSet<Actividad> Actividades => Set<Actividad>();
+    public DbSet<Calificacion> Calificaciones => Set<Calificacion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

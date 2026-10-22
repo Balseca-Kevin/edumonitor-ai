@@ -26,6 +26,8 @@ public sealed record CalificacionesUsuarioMoodle(int UsuarioId, IReadOnlyList<It
 
 /// <summary>
 /// Ítem del libro de calificaciones. <see cref="TipoItem"/> es <c>mod</c>, <c>category</c>, <c>course</c> o <c>manual</c>.
+/// En los ítems <c>category</c>, <see cref="Instancia"/> es el id de la categoría y <see cref="Nombre"/> su nombre
+/// (Exámenes, Tareas, APE); los demás ítems apuntan a ella con <see cref="CategoriaId"/>.
 /// <see cref="Nota"/> es null cuando el estudiante no tiene nota; una nota 0 llega como 0.
 /// </summary>
 public sealed record ItemCalificacionMoodle(

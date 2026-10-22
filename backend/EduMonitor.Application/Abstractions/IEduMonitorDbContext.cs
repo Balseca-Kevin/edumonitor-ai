@@ -11,6 +11,8 @@ public interface IEduMonitorDbContext
     DbSet<CursoDocente> CursosDocentes { get; }
     DbSet<Estudiante> Estudiantes { get; }
     DbSet<Matricula> Matriculas { get; }
+    DbSet<Actividad> Actividades { get; }
+    DbSet<Calificacion> Calificaciones { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<CursoService>();
         services.AddScoped<ImportadorMatriculados>();
+        services.AddScoped<ImportadorCalificaciones>();
         return services;
     }
 }
