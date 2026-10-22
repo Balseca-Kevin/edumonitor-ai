@@ -81,6 +81,7 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 
 - **Puerto ocupado** (`port is already allocated`): cambia `MOODLE_PORT` en `.env`, o detén el SQL Server local de Windows si ocupa el 1433.
 - **`sqlserver` no pasa a `healthy`**: casi siempre la contraseña no cumple la política. Revisa `docker compose -f moodle-lab/docker-compose.yml --env-file .env logs sqlserver`.
+- **La instalación de Moodle falla o el sitio queda con un nombre cortado**: `MOODLE_SITE_NAME` no debe llevar espacios (usa `Moodle-Lab-UTA`), porque el instalador del contenedor no los maneja bien. Después de instalar, el nombre visible se puede cambiar dentro de Moodle.
 - **Cambié una contraseña en `.env` y ya no conecta**: PostgreSQL y el administrador de Moodle solo toman sus contraseñas en la primera creación del volumen. Usa «Borrar todo» o cambia la contraseña dentro del servicio.
 
 ## Estructura acordada

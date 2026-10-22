@@ -59,7 +59,7 @@ services:
       MOODLE_USERNAME: ${MOODLE_ADMIN_USER:?Falta MOODLE_ADMIN_USER en .env}
       MOODLE_PASSWORD: ${MOODLE_ADMIN_PASSWORD:?Falta MOODLE_ADMIN_PASSWORD en .env}
       MOODLE_EMAIL: ${MOODLE_ADMIN_EMAIL:-admin@edumonitor.test}
-      MOODLE_SITENAME: ${MOODLE_SITE_NAME:-Moodle Lab UTA}
+      MOODLE_SITENAME: ${MOODLE_SITE_NAME:-Moodle-Lab-UTA}
     ports:
       - "${MOODLE_PORT:-8080}:8080"
     volumes:
