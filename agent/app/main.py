@@ -1,22 +1,38 @@
+import time
+import logging
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from app.graph import app_graph
+from langchain_core.messages import HumanMessage
+from app.schemas.tools import ChatPeticion, ChatRespuesta
+from app.graph import app_graph, MODEL_NAME
 
+logger = logging.getLogger("agent")
 app = FastAPI(title="EduMonitor AI - Servicio de Agente", version="0.1.0")
 
-class ChatRequest(BaseModel):
-    message: str
-
-class ChatResponse(BaseModel):
-    response: str
-
-@app.post("/chat", response_model=ChatResponse)
-async def chat_endpoint(request: ChatRequest):
+@app.post("/chat", response_model=ChatRespuesta)
+async def chat_endpoint(request: ChatPeticion):
+    inicio = time.time()
     try:
-        inputs = {"messages": [{"role": "user", "content": request.message}], "iterations": 0}
-        result = app_graph.invoke(inputs)
+        inputs = {
+            "messages": [HumanMessage(content=request.mensaje)],
+            "token": request.token,
+            "iterations": 0,
+            "trazas": [],
+            "error": False
+        }
+        
+        result = await app_graph.ainvoke(inputs)
+        duracion_total = int((time.time() - inicio) * 1000)
+        
         last_message = result["messages"][-1]
-        content = last_message.get("content", "") if isinstance(last_message, dict) else last_message.content
-        return ChatResponse(response=content)
+        contenido = last_message.content
+        trazas = result.get("trazas", [])
+        
+        return ChatRespuesta(
+            respuesta=contenido,
+            herramientas=trazas,
+            modelo=MODEL_NAME,
+            duracionMs=duracion_total
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Error procesando solicitud en /chat")
+        raise HTTPException(status_code=500, detail="Error interno del servicio de agente.")
