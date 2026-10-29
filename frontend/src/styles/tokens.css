@@ -1,0 +1,61 @@
+/* Tokens de diseño de EduMonitor AI · «registro académico». Único lugar con colores, fuentes y tiempos. */
+:root {
+  /* Paleta institucional */
+  --azul: #1f3864;
+  --azul-oscuro: #172a4b;
+  --azul-claro: #e6eaf2;
+  --granate: #7a1f2b;
+  --granate-claro: #f4e6e7;
+  --papel: #f6f3ec;
+  --papel-claro: #fbf9f4;
+  --tinta: #1f2933;
+  --tinta-suave: #4a5561;
+  --linea: #d8d2c4;
+  --linea-suave: #e7e2d6;
+  --blanco: #ffffff;
+
+  /* Estados de sincronización (el texto usa la variante oscura para contraste AA) */
+  --estado-completada: #4f7a3a;
+  --estado-completada-texto: #3d602c;
+  --estado-parcial: #b7852b;
+  --estado-parcial-texto: #7d5a14;
+  --estado-fallida: #7a1f2b;
+  --estado-pendiente: #6b7280;
+
+  /* Tipografía */
+  --fuente-titulo: 'Fraunces', 'Source Serif 4', Georgia, serif;
+  --fuente-cuerpo: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --fuente-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+  /* Forma y ritmo */
+  --radio: 4px;
+  --radio-ficha: 6px;
+  --celda: 24px;
+  --foco: 0 0 0 3px var(--papel), 0 0 0 5px var(--azul);
+
+  /* Movimiento */
+  --t-rapido: 150ms;
+  --t-medio: 220ms;
+  --t-lento: 300ms;
+  --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Motivo: cuadrícula del libro de calificaciones */
+  --cuadricula: linear-gradient(var(--linea-suave) 1px, transparent 1px),
+    linear-gradient(90deg, var(--linea-suave) 1px, transparent 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-rapido: 0ms;
+    --t-medio: 0ms;
+    --t-lento: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
