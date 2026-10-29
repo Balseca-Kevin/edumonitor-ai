@@ -118,8 +118,6 @@ export default function Cursos() {
         [
           curso.nombre,
           curso.nombreCorto,
-          curso.descripcion,
-          curso.docente,
         ]
           .filter(Boolean)
           .some((valor) =>
@@ -130,20 +128,8 @@ export default function Cursos() {
         !periodoSeleccionado ||
         curso.periodo === periodoSeleccionado;
 
-      const estado = String(
-        curso.ultimaSincronizacion?.estado ||
-          curso.estadoSincronizacion ||
-          curso.estadoSync ||
-          (curso.sincronizado || curso.sync
-            ? "COMPLETADA"
-            : "PENDIENTE")
-      ).toUpperCase();
-
-      const estaSincronizado = [
-        "COMPLETADA",
-        "PARCIAL",
-        "SINCRONIZADO",
-      ].includes(estado);
+      // Solo COMPLETADA cuenta como sincronizado: PARCIAL tiene datos no disponibles (RNF-03).
+      const estaSincronizado = obtenerEstadoCurso(curso) === "COMPLETADA";
 
       const coincideEstado =
         !estadoSeleccionado ||
@@ -273,14 +259,8 @@ export default function Cursos() {
   }
 
   function obtenerEstadoCurso(curso) {
-    return etiquetaEstado(
-      curso.ultimaSincronizacion?.estado ||
-        curso.estadoSincronizacion ||
-        curso.estadoSync ||
-        (curso.sincronizado || curso.sync
-          ? "COMPLETADA"
-          : "PENDIENTE")
-    );
+    // Contrato GET /api/cursos: ultimaSincronizacion es null si el curso nunca se sincronizó.
+    return etiquetaEstado(curso.ultimaSincronizacion?.estado);
   }
 
   return (
@@ -342,8 +322,8 @@ export default function Cursos() {
           }
         >
           <option value="">Todos los estados</option>
-          <option value="sincronizado">Sincronizados</option>
-          <option value="pendiente">Pendientes</option>
+          <option value="sincronizado">Sincronización completa</option>
+          <option value="pendiente">Incompleta o sin sincronizar</option>
         </select>
 
         <button
@@ -399,11 +379,12 @@ export default function Cursos() {
         <section className="courses-grid">
           {cursosFiltrados.map((curso) => {
             const estado = obtenerEstadoCurso(curso);
-            const estaSincronizado = [
-              "COMPLETADA",
-              "PARCIAL",
-              "SINCRONIZADO",
-            ].includes(estado);
+            const claseEstado =
+              estado === "COMPLETADA"
+                ? "synced"
+                : estado === "PARCIAL"
+                  ? "partial"
+                  : "pending";
 
             const resultado = resultadoPorCurso[curso.id];
             const historial = historialPorCurso[curso.id];
@@ -421,11 +402,7 @@ export default function Cursos() {
                   </h2>
 
                   <span
-                    className={`sync-status ${
-                      estaSincronizado
-                        ? "synced"
-                        : "pending"
-                    }`}
+                    className={`sync-status ${claseEstado}`}
                   >
                     {estado}
                   </span>
@@ -437,23 +414,10 @@ export default function Cursos() {
                   </p>
                 )}
 
-                {curso.descripcion && (
-                  <p className="course-description">
-                    {curso.descripcion}
-                  </p>
-                )}
-
                 {curso.periodo && (
                   <p className="course-period">
                     <strong>Período:</strong>{" "}
                     {curso.periodo}
-                  </p>
-                )}
-
-                {curso.docente && (
-                  <p className="course-teacher">
-                    <strong>Docente:</strong>{" "}
-                    {curso.docente}
                   </p>
                 )}
 
@@ -504,14 +468,6 @@ export default function Cursos() {
     <div
       className="sync-warning"
       role="alert"
-      style={{
-        backgroundColor: "#fff3cd",
-        border: "1px solid #ffecb5",
-        borderRadius: "8px",
-        color: "#664d03",
-        padding: "12px",
-        marginTop: "12px",
-      }}
     >
       <strong>Sincronización incompleta</strong>
 
@@ -603,7 +559,7 @@ export default function Cursos() {
     ) : !historial?.length ? (
       <p>No hay sincronizaciones registradas.</p>
     ) : (
-      <div style={{ overflowX: "auto" }}>
+      <div className="table-scroll">
         <table className="sync-history-table">
           <thead>
             <tr>

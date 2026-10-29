@@ -317,4 +317,27 @@ it('deshabilita el botón mientras se sincroniza un curso', async () => {
     ).toBeEnabled()
   })
 })
+
+  it('una sincronización PARCIAL no cuenta como completa', async () => {
+    obtenerCursos.mockResolvedValue([
+      cursoPrueba,
+      {
+        ...cursoPrueba,
+        id: 2,
+        nombreCorto: 'BDD-4B',
+        nombre: 'Bases de Datos (lab)',
+        ultimaSincronizacion: { id: 9, fecha: '2026-10-22T10:00:00-05:00', estado: 'PARCIAL' },
+      },
+    ])
+
+    renderCursos()
+    await screen.findByText('Bases de Datos (lab)')
+    fireEvent.change(screen.getByLabelText(/filtrar por sincronización/i), { target: { value: 'sincronizado' } })
+
+    expect(screen.queryByText('Bases de Datos (lab)')).not.toBeInTheDocument()
+    expect(screen.getByText(cursoPrueba.nombre)).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText(/filtrar por sincronización/i), { target: { value: 'pendiente' } })
+    expect(screen.getByText('Bases de Datos (lab)')).toBeInTheDocument()
+  })
 })
