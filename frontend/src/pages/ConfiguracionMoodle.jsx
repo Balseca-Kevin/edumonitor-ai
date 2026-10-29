@@ -99,6 +99,7 @@ export default function ConfiguracionMoodle() {
     <main className="config-page">
       <header className="courses-header">
         <div>
+          <p className="courses-eyebrow">Administración · Aula virtual</p>
           <h1>Configuración de la conexión con Moodle</h1>
           <p>Última actualización: {formatearFecha(configuracion?.actualizado)}</p>
         </div>
@@ -137,6 +138,9 @@ export default function ConfiguracionMoodle() {
               onChange={(event) => setToken(event.target.value)}
               placeholder={configuracion?.tokenEnmascarado || 'Sin token configurado'}
             />
+            <p className="config-clave">
+              Clave actual: <span className="mono">{configuracion?.tokenEnmascarado || 'Sin token configurado'}</span>
+            </p>
             <p className="config-hint">
               El token se guarda solo en el servidor y nunca se muestra completo. Déjalo vacío para conservar el actual.
             </p>
@@ -150,7 +154,8 @@ export default function ConfiguracionMoodle() {
             />
 
             <div className="config-actions">
-              <button type="button" onClick={manejarProbar} disabled={probando}>
+              <button type="button" className="boton-primario" onClick={manejarProbar} disabled={probando} aria-busy={probando}>
+                {probando && <span className="boton-indicador" aria-hidden="true" />}
                 {probando ? 'Probando...' : 'Probar conexión'}
               </button>
               <button type="submit" className="secondary-button" disabled={guardando}>
@@ -183,28 +188,27 @@ export default function ConfiguracionMoodle() {
                 Conexión correcta · {prueba.sitio} · Moodle {prueba.version} · Usuario técnico: {prueba.usuarioTecnico}
               </p>
 
-              <table className="config-table">
-                <thead>
-                  <tr>
-                    <th>Función del servicio web</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {prueba.funciones.map((funcion) => (
-                    <tr key={funcion.nombre}>
-                      <td>
-                        <code>{funcion.nombre}</code>
-                      </td>
-                      <td>
-                        <span className={funcion.disponible ? 'estado-disponible' : 'estado-no-disponible'}>
-                          {funcion.disponible ? 'Disponible' : 'No disponible'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <h3 className="checklist-titulo">
+                Funciones del servicio web{' '}
+                <span className="mono">
+                  {prueba.funciones.filter((f) => f.disponible).length}/{prueba.funciones.length}
+                </span>
+              </h3>
+              <ul className="checklist">
+                {prueba.funciones.map((funcion, indice) => (
+                  <li
+                    key={funcion.nombre}
+                    className={funcion.disponible ? 'disponible' : 'no-disponible'}
+                    style={{ '--i': indice }}
+                  >
+                    <span className="checklist-marca" aria-hidden="true" />
+                    <code>{funcion.nombre}</code>
+                    <span className={funcion.disponible ? 'estado-disponible' : 'estado-no-disponible'}>
+                      {funcion.disponible ? 'Disponible' : 'No disponible'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
 
               {noDisponibles.length > 0 && (
                 <p className="sync-warning">

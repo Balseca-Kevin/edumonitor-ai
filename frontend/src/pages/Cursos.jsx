@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -27,6 +26,90 @@ function etiquetaEstado(estado) {
   if (!estado) return "PENDIENTE";
 
   return String(estado).toUpperCase();
+}
+
+function claseDeEstado(estado) {
+  if (estado === "COMPLETADA") return "synced";
+  if (estado === "PARCIAL") return "partial";
+  if (estado === "FALLIDA") return "failed";
+  return "pending";
+}
+
+function leerDocente() {
+  try {
+    return JSON.parse(sessionStorage.getItem("edumonitor_usuario") || "null")?.nombre || "";
+  } catch {
+    return "";
+  }
+}
+
+function prefiereMovimiento() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+// Solo visual: cuenta desde 0 hasta el valor que devolvió la API, en unos 800 ms.
+function Contador({ valor }) {
+  const numero = Number(valor);
+  const animar = Number.isFinite(numero) && numero > 0 && prefiereMovimiento();
+  const [mostrado, setMostrado] = useState(animar ? 0 : valor);
+
+  useEffect(() => {
+    if (!animar) return undefined;
+
+    let cuadro;
+    const inicio = performance.now();
+
+    function paso(ahora) {
+      const avance = Math.min((ahora - inicio) / 800, 1);
+      const suavizado = 1 - Math.pow(1 - avance, 3);
+      setMostrado(Math.round(numero * suavizado));
+      if (avance < 1) cuadro = requestAnimationFrame(paso);
+    }
+
+    cuadro = requestAnimationFrame(paso);
+    return () => cancelAnimationFrame(cuadro);
+  }, [animar, numero, valor]);
+
+  return (
+    <span className="registros-valor mono" aria-label={String(valor)}>
+      {animar ? mostrado : valor}
+    </span>
+  );
+}
+
+// Indicador visual mientras la API sincroniza; recorre las etapas en el orden en que el backend importa.
+const ETAPAS = ["Unidades", "Actividades", "Estudiantes", "Calificaciones"];
+
+function EtapasSincronizacion() {
+  const [actual, setActual] = useState(0);
+
+  useEffect(() => {
+    if (!prefiereMovimiento()) return undefined;
+    const intervalo = setInterval(
+      () => setActual((etapa) => Math.min(etapa + 1, ETAPAS.length - 1)),
+      900
+    );
+    return () => clearInterval(intervalo);
+  }, []);
+
+  return (
+    <span className="etapas" aria-hidden="true">
+      {ETAPAS.map((etapa, indice) => (
+        <span
+          key={etapa}
+          className={
+            indice < actual ? "etapa hecha" : indice === actual ? "etapa actual" : "etapa"
+          }
+        >
+          {etapa}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function obtenerMensajeError(error) {
@@ -263,13 +346,29 @@ export default function Cursos() {
     return etiquetaEstado(curso.ultimaSincronizacion?.estado);
   }
 
+  const docente = leerDocente();
+
   return (
     <main className="courses-page">
       <header className="courses-header">
         <div>
+          <p className="courses-eyebrow">
+            {docente ? `Hola, ${docente}` : "Bienvenido"}
+            {periodos.length > 0 && (
+              <>
+                {" · Período "}
+                <span className="mono">{periodos.join(", ")}</span>
+              </>
+            )}
+          </p>
           <h1>Mis cursos</h1>
-          <p>
-            Consulta y administra tus cursos académicos.
+          <p className="courses-count">
+            <span className="courses-count-valor">
+              {cursosFiltrados.length === 1
+                ? "1 curso"
+                : `${cursosFiltrados.length} cursos`}
+            </span>
+            {" "}en el registro
           </p>
         </div>
 
@@ -284,7 +383,7 @@ export default function Cursos() {
         </div>
       </header>
 
-      <section className="course-filters">
+      <section className="course-filters" aria-label="Búsqueda y filtros">
         <input
           aria-label="Buscar cursos"
           className="course-search"
@@ -335,14 +434,6 @@ export default function Cursos() {
         </button>
       </section>
 
-      <section className="courses-summary">
-        <p>
-          {cursosFiltrados.length === 1
-            ? "1 curso"
-            : `${cursosFiltrados.length} cursos`}
-        </p>
-      </section>
-
       {error && (
         <section className="courses-error" role="alert">
           <p>{error}</p>
@@ -369,7 +460,7 @@ export default function Cursos() {
       )}
 
       {cargando ? (
-        <p role="status">Cargando cursos...</p>
+        <p className="courses-loading" role="status">Cargando cursos...</p>
       ) : cursosFiltrados.length === 0 ? (
         <div className="empty-courses">
           <h2>No hay cursos disponibles</h2>
@@ -379,15 +470,11 @@ export default function Cursos() {
         <section className="courses-grid">
           {cursosFiltrados.map((curso) => {
             const estado = obtenerEstadoCurso(curso);
-            const claseEstado =
-              estado === "COMPLETADA"
-                ? "synced"
-                : estado === "PARCIAL"
-                  ? "partial"
-                  : "pending";
+            const claseEstado = claseDeEstado(estado);
 
             const resultado = resultadoPorCurso[curso.id];
             const historial = historialPorCurso[curso.id];
+            const sincronizando = sincronizandoId === curso.id;
 
             return (
               <article
@@ -395,64 +482,76 @@ export default function Cursos() {
                 key={curso.id}
               >
                 <div className="course-card-header">
-                  <h2>
-                    {curso.nombre ||
-                      curso.nombreCorto ||
-                      "Curso sin nombre"}
-                  </h2>
+                  <div>
+                    {curso.nombreCorto && (
+                      <p className="course-short-name mono">
+                        {curso.nombreCorto}
+                      </p>
+                    )}
+                    <h2>
+                      {curso.nombre ||
+                        curso.nombreCorto ||
+                        "Curso sin nombre"}
+                    </h2>
+                  </div>
 
-                  <span
-                    className={`sync-status ${claseEstado}`}
-                  >
-                    {estado}
-                  </span>
+                  <div className={`sello ${claseEstado}`}>
+                    <span className="sync-status">{estado}</span>
+                    <span className="sello-fecha mono">
+                      {curso.ultimaSincronizacion
+                        ? formatearFecha(curso.ultimaSincronizacion.fecha)
+                        : "Sin registro"}
+                    </span>
+                  </div>
                 </div>
 
-                {curso.nombreCorto && (
-                  <p className="course-short-name">
-                    {curso.nombreCorto}
-                  </p>
-                )}
-
-                {curso.periodo && (
-                  <p className="course-period">
-                    <strong>Período:</strong>{" "}
-                    {curso.periodo}
-                  </p>
-                )}
-
-                {curso.ultimaSincronizacion && (
-                  <div className="course-sync-details">
-                    <p>
-                      <strong>
-                        Última sincronización:
-                      </strong>{" "}
-                      {formatearFecha(
-                        curso.ultimaSincronizacion.fecha
-                      )}
-                    </p>
-                  </div>
-                )}
+                <dl className="course-meta">
+                  {docente && (
+                    <div>
+                      <dt>Docente</dt>
+                      <dd>{docente}</dd>
+                    </div>
+                  )}
+                  {curso.periodo && (
+                    <div>
+                      <dt>Período</dt>
+                      <dd className="mono">{curso.periodo}</dd>
+                    </div>
+                  )}
+                  {curso.ultimaSincronizacion && (
+                    <div>
+                      <dt>Última sincronización</dt>
+                      <dd className="mono">
+                        {formatearFecha(curso.ultimaSincronizacion.fecha)}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
 
                 <div className="course-actions">
                   <button
                     type="button"
+                    className={`boton-primario ${sincronizando ? "en-curso" : ""}`}
                     onClick={() =>
                       manejarSincronizacion(curso)
                     }
-                    disabled={sincronizandoId === curso.id}
+                    disabled={sincronizando}
+                    aria-busy={sincronizando}
                   >
-                    {sincronizandoId === curso.id
+                    {sincronizando
                       ? "Sincronizando..."
                       : "Sincronizar curso"}
+                    {sincronizando && <EtapasSincronizacion />}
                   </button>
 
                   <button
                     type="button"
+                    className="boton-secundario"
                     onClick={() => manejarHistorial(curso)}
                     disabled={
                       cargandoHistorialId === curso.id
                     }
+                    aria-expanded={historialAbiertoId === curso.id}
                   >
                     {cargandoHistorialId === curso.id
                       ? "Cargando historial..."
@@ -461,83 +560,84 @@ export default function Cursos() {
                         : "Ver historial"}
                   </button>
                 </div>
-{resultado &&
-  ["PARCIAL", "FALLIDA"].includes(
-    String(resultado.estado).toUpperCase()
-  ) && (
-    <div
-      className="sync-warning"
-      role="alert"
-    >
-      <strong>Sincronización incompleta</strong>
 
-      <p>
-        La sincronización no se completó correctamente.
-        Revisa los errores reportados.
-      </p>
+                {resultado &&
+                  ["PARCIAL", "FALLIDA"].includes(
+                    String(resultado.estado).toUpperCase()
+                  ) && (
+                    <div
+                      className={`sync-warning ${claseDeEstado(etiquetaEstado(resultado.estado))}`}
+                      role="alert"
+                    >
+                      <strong>Sincronización incompleta</strong>
 
-      {resultado.errores?.length > 0 && (
-        <ul>
-          {resultado.errores.map((error, indice) => (
-            <li key={indice}>
-              <strong>{error.funcion || "Sistema"}:</strong>{" "}
-              {error.mensaje || "Error sin descripción"}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )}
+                      <p>
+                        La sincronización no se completó correctamente.
+                        Revisa los errores reportados.
+                      </p>
+
+                      {resultado.errores?.length > 0 && (
+                        <ul>
+                          {resultado.errores.map((error, indice) => (
+                            <li key={indice}>
+                              <code>{error.funcion || "Sistema"}</code>{" "}
+                              {error.mensaje || "Error sin descripción"}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
                 {resultado && (
                   <section className="sync-result">
-                    <h3>Resultado de sincronización</h3>
-
-                    <p>
-                      <strong>Estado:</strong>{" "}
-                      {etiquetaEstado(resultado.estado)}
-                    </p>
-
-                    {resultado.inicio && (
-                      <p>
-                        <strong>Inicio:</strong>{" "}
-                        {formatearFecha(resultado.inicio)}
-                      </p>
-                    )}
-
-                    {resultado.fin && (
-                      <p>
-                        <strong>Fin:</strong>{" "}
-                        {formatearFecha(resultado.fin)}
-                      </p>
-                    )}
+                    <div className="sync-result-header">
+                      <h3>Resultado de sincronización</h3>
+                      <span className={`sello sello-compacto ${claseDeEstado(etiquetaEstado(resultado.estado))}`}>
+                        {etiquetaEstado(resultado.estado)}
+                      </span>
+                    </div>
 
                     {resultado.registros && (
                       <div>
-                        <h4>Registros procesados</h4>
-                        <ul>
+                        <h4 className="sr-only">Registros procesados</h4>
+                        <ul className="registros">
                           {Object.entries(
                             resultado.registros
                           ).map(([nombre, cantidad]) => (
                             <li key={nombre}>
-                              <strong>{nombre}:</strong>{" "}
-                              {cantidad}
+                              <Contador valor={cantidad} />
+                              <span className="registros-nombre">{nombre}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
                     )}
 
+                    <p className="sync-result-tiempos mono">
+                      {resultado.inicio && (
+                        <span>
+                          Inicio: {formatearFecha(resultado.inicio)}
+                        </span>
+                      )}
+                      {resultado.fin && (
+                        <span>
+                          Fin: {formatearFecha(resultado.fin)}
+                        </span>
+                      )}
+                    </p>
+
                     {resultado.errores?.length > 0 && (
-                      <div>
+                      <div className="sync-result-errores">
                         <h4>Errores reportados</h4>
                         <ul>
                           {resultado.errores.map(
                             (item, indice) => (
                               <li key={indice}>
                                 {item.funcion && (
-                                  <strong>
+                                  <code>
                                     {item.funcion}:{" "}
-                                  </strong>
+                                  </code>
                                 )}
                                 {item.mensaje ||
                                   "Error sin descripción"}
@@ -550,89 +650,92 @@ export default function Cursos() {
                   </section>
                 )}
 
-{historialAbiertoId === curso.id && (
-  <section className="sync-history">
-    <h3>Historial de sincronizaciones</h3>
+                {historialAbiertoId === curso.id && (
+                  <section className="sync-history">
+                    <h3>Historial de sincronizaciones</h3>
 
-    {cargandoHistorialId === curso.id ? (
-      <p role="status">Cargando historial...</p>
-    ) : !historial?.length ? (
-      <p>No hay sincronizaciones registradas.</p>
-    ) : (
-      <div className="table-scroll">
-        <table className="sync-history-table">
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th>Registros</th>
-              <th>Errores</th>
-            </tr>
-          </thead>
+                    {cargandoHistorialId === curso.id ? (
+                      <p role="status">Cargando historial...</p>
+                    ) : !historial?.length ? (
+                      <p>No hay sincronizaciones registradas.</p>
+                    ) : (
+                      <div className="table-scroll">
+                        <table className="sync-history-table">
+                          <thead>
+                            <tr>
+                              <th>Fecha</th>
+                              <th>Estado</th>
+                              <th>Registros</th>
+                              <th>Errores</th>
+                            </tr>
+                          </thead>
 
-          <tbody>
-            {[...historial]
-              .sort(
-                (a, b) =>
-                  new Date(b.fin || b.inicio || b.fecha || 0) -
-                  new Date(a.fin || a.inicio || a.fecha || 0)
-              )
-              .map((item, indice) => {
-                const totalRegistros = Object.values(
-                  item.registros || {}
-                ).reduce(
-                  (total, cantidad) =>
-                    total + (Number(cantidad) || 0),
-                  0
-                );
+                          <tbody>
+                            {[...historial]
+                              .sort(
+                                (a, b) =>
+                                  new Date(b.fin || b.inicio || b.fecha || 0) -
+                                  new Date(a.fin || a.inicio || a.fecha || 0)
+                              )
+                              .map((item, indice) => {
+                                const totalRegistros = Object.values(
+                                  item.registros || {}
+                                ).reduce(
+                                  (total, cantidad) =>
+                                    total + (Number(cantidad) || 0),
+                                  0
+                                );
 
-                return (
-                  <tr
-                    key={
-                      item.id ??
-                      `${curso.id}-${indice}`
-                    }
-                  >
-                    <td>
-                      {formatearFecha(
-                        item.fin || item.inicio || item.fecha
-                      )}
-                    </td>
+                                return (
+                                  <tr
+                                    key={
+                                      item.id ??
+                                      `${curso.id}-${indice}`
+                                    }
+                                    className={claseDeEstado(etiquetaEstado(item.estado))}
+                                  >
+                                    <td className="mono">
+                                      {formatearFecha(
+                                        item.fin || item.inicio || item.fecha
+                                      )}
+                                    </td>
 
-                    <td>
-                      {etiquetaEstado(item.estado)}
-                    </td>
+                                    <td>
+                                      <span className="historial-estado">
+                                        {etiquetaEstado(item.estado)}
+                                      </span>
+                                    </td>
 
-                    <td>{totalRegistros}</td>
+                                    <td className="mono">{totalRegistros}</td>
 
-                    <td>
-                      {item.errores?.length > 0 ? (
-                        <ul>
-                          {item.errores.map(
-                            (error, errorIndice) => (
-                              <li key={errorIndice}>
-                                <strong>
-                                  {error.funcion || "Sistema"}:
-                                </strong>{" "}
-                                {error.mensaje ||
-                                  "Error sin descripción"}
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      ) : (
-                        "Sin errores"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </section>
-)}
+                                    <td>
+                                      {item.errores?.length > 0 ? (
+                                        <ul>
+                                          {item.errores.map(
+                                            (error, errorIndice) => (
+                                              <li key={errorIndice}>
+                                                <code>
+                                                  {error.funcion || "Sistema"}:
+                                                </code>{" "}
+                                                {error.mensaje ||
+                                                  "Error sin descripción"}
+                                              </li>
+                                            )
+                                          )}
+                                        </ul>
+                                      ) : (
+                                        "Sin errores"
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </section>
+                )}
               </article>
             );
           })}
