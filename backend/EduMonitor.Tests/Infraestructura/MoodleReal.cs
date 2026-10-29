@@ -19,7 +19,7 @@ public static class MoodleReal
     public static MoodleOptions Configuracion => Opciones.Value ?? throw new InvalidOperationException("No hay .env con Moodle__Token.");
 
     internal static MoodleClient Cliente() =>
-        new(new HttpClient { Timeout = TimeSpan.FromSeconds(30) }, Options.Create(Configuracion), NullLogger<MoodleClient>.Instance);
+        new(new HttpClient { Timeout = TimeSpan.FromSeconds(30) }, new ConfiguracionMoodleEnMemoria(Options.Create(Configuracion), TimeProvider.System), NullLogger<MoodleClient>.Instance);
 
     private static MoodleOptions? Leer()
     {

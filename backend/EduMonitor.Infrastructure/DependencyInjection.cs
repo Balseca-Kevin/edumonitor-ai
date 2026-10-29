@@ -29,6 +29,7 @@ public static class DependencyInjection
             opciones.UseSqlServer(configuration.GetConnectionString("EduMonitorDB")));
         services.AddScoped<IEduMonitorDbContext>(sp => sp.GetRequiredService<EduMonitorDbContext>());
 
+        services.AddSingleton<IConfiguracionMoodle, ConfiguracionMoodleEnMemoria>();
         services.AddHttpClient<IMoodleClient, MoodleClient>((sp, http) =>
             http.Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<MoodleOptions>>().Value.TiempoEsperaSegundos));
         services.AddHostedService<RegistroConfiguracionMoodle>();

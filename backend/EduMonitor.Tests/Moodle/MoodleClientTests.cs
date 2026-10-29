@@ -36,7 +36,7 @@ public class MoodleClientTests
     private static (MoodleClient Cliente, MoodleFalso Moodle) Crear(string token = TokenPrueba)
     {
         var moodle = new MoodleFalso();
-        var opciones = Options.Create(new MoodleOptions { Url = "http://moodle.test/", Token = token });
+        var opciones = new ConfiguracionMoodleEnMemoria(Options.Create(new MoodleOptions { Url = "http://moodle.test/", Token = token }), TimeProvider.System);
         var cliente = new MoodleClient(new HttpClient(moodle), opciones, NullLogger<MoodleClient>.Instance)
         {
             EsperaEntreReintentos = TimeSpan.Zero,
