@@ -97,12 +97,67 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 | Estudiantes | est01 a est32, `estNN@edumonitor.test`, rol student en ambos cursos |
 | Docentes | doc01 solo en AGIL-4B, doc02 solo en BDD-4B, rol editingteacher |
 
+## Completar los cursos con el libro y los datos ficticios
+
+Después de restaurar los cursos base (ver «Restaurar desde cero») y configurar los servicios web (TA-02.1), desde la raíz del repo:
+
+```powershell
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
+docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+```
+
+Tarda alrededor de un minuto y medio. Sobre los cursos base agrega el libro 40/30/30, las 16 tareas por curso, doc01, doc02, est01 a est32 y las notas (TA-01.3 a TA-01.5). Un curso que ya tiene tareas no se vuelve a cargar, y las categorías y los usuarios se reutilizan si ya existen. Si los cursos base no están, el script los crea con la misma estructura: AGIL-4B con id 2 y BDD-4B con id 3, que son los ids que esperan las semillas del backend.
+
+El nombre de cada categoría del libro (Exámenes, Tareas, APE) queda también en el `idnumber` de su ítem, porque `gradereport_user_get_grade_items` devuelve `itemname: null` en las categorías y EduMonitor necesita ese nombre. Las unidades 1 a 3 tienen la fecha límite vencida y la unidad 4 vence en noviembre de 2026.
+
+Casos de prueba en AGIL-4B (uno por regla de alerta):
+
+| Estudiante | Caso |
+|---|---|
+| est03 | Descenso: alto en las unidades 1 y 2, bajo en la 3 |
+| est05 | Nota 0 calificada en Tarea 3 (distinta de sin entrega) |
+| est07 | Atrasos: Tarea 5, Tarea 6 y APE 3 vencidas sin entrega |
+| est09 | Entregó Tarea 6 y Taller 2; pendientes de calificar |
+| est11 | Promedio bajo (menor a 7,0) |
+| est13 | Alejado del grupo |
+| est15 | Baja finalización: casi nada entregado en las unidades 2 y 3 |
+| est17 | Temática crítica: bajo en toda la unidad 3 |
+
+Los demás estudiantes tienen notas entre 6 y 10 con alguna entrega faltante. Los datos se generan con una semilla fija, así que cada carga produce lo mismo.
+
 ## Respaldos (carpeta `backups/`)
 
-1. `cursos_base.mbz`: categorías y cursos vacíos (Sebastián).
-2. `cursos_estructura.mbz`: libro, actividades y usuarios (Santiago).
-3. `curso_final.mbz`: con calificaciones y casos de prueba (Jeremy).
+| Archivo | Contenido | Autor |
+|---|---|---|
+| `cursos_base_AGIL-4B.mbz`, `cursos_base_BDD-4B.mbz` | Cursos vacíos con 4 unidades y finalización activada, sin usuarios (TA-01.2) | Sebastián |
 
-## Restaurar desde cero
+El libro, las actividades, los usuarios y las notas no van en un respaldo: los genera `scripts/cargar_datos_laboratorio.php` con una semilla fija, así que siempre salen iguales y no hace falta versionar un `.mbz` con datos de usuarios.
 
-Pendiente (TA-01.6).
+## Restaurar desde cero (TA-01.6)
+
+Con el Moodle recién instalado («Levantar» o «Borrar todo»), desde la raíz del repo:
+
+```powershell
+# 1. Servicios web, usuario técnico y token (TA-02.1). Copia el TOKEN_NUEVO a Moodle__Token en .env
+docker exec edumonitor-moodle-1 php admin/cli/cfg.php --name=enablewebservices --set=1
+docker exec edumonitor-moodle-1 php admin/cli/cfg.php --name=webserviceprotocols --set=rest
+docker cp moodle-lab/scripts/configurar_servicios_web.php edumonitor-moodle-1:/tmp/
+docker exec edumonitor-moodle-1 php /tmp/configurar_servicios_web.php
+
+# 2. Categorías UTA › FISEI › Software; imprime «Software=<id>»
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
+docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php --categorias
+
+# 3. Cursos base de Sebastián en Software. Primero AGIL-4B y después BDD-4B, para que queden con los ids 2 y 3.
+docker cp moodle-lab/backups/cursos_base_AGIL-4B.mbz edumonitor-moodle-1:/tmp/
+docker cp moodle-lab/backups/cursos_base_BDD-4B.mbz edumonitor-moodle-1:/tmp/
+docker exec edumonitor-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_AGIL-4B.mbz --categoryid=<id de Software>
+docker exec edumonitor-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_BDD-4B.mbz --categoryid=<id de Software>
+
+# 4. Libro, actividades, usuarios y notas
+docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+```
+
+Atajo: si se omiten los pasos 2 y 3, el paso 4 crea las categorías y los dos cursos con la misma estructura y los mismos ids.
+
+Comprobación: `dotnet test backend/EduMonitor.sln --filter "FullyQualifiedName~MoodleClientIntegracion"` lee 4 unidades, 16 tareas, 32 estudiantes y el libro 40/30/30 de AGIL-4B.
