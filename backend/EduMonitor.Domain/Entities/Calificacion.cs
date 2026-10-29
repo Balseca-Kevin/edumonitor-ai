@@ -21,4 +21,10 @@ public class Calificacion
     /// con los estados de entrega; null se muestra como dato no disponible, nunca como 0.
     /// </summary>
     public EstadoCalificacion? Estado { get; set; }
+
+    /// <summary>
+    /// Estado de finalización de la actividad en Moodle (core_completion_get_activities_completion_status).
+    /// Null si la actividad no tiene seguimiento o si Moodle no concedió el dato: se muestra como no disponible.
+    /// </summary>
+    public bool? Finalizada { get; set; }
 }

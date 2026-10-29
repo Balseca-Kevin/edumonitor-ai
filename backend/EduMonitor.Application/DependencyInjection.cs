@@ -12,8 +12,10 @@ public static class DependencyInjection
     {
         services.AddScoped<AuthService>();
         services.AddScoped<CursoService>();
+        services.AddScoped<ImportadorUnidades>();
         services.AddScoped<ImportadorMatriculados>();
         services.AddScoped<ImportadorCalificaciones>();
+        services.AddScoped<ImportadorEntregas>();
         services.AddScoped<SincronizacionService>();
         return services;
     }

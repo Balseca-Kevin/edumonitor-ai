@@ -11,10 +11,17 @@ public sealed class MoodleClientFalso : IMoodleClient
 {
     public List<MatriculadoMoodle> Matriculados { get; } = new();
     public List<CalificacionesUsuarioMoodle> Calificaciones { get; } = new();
+    public List<SeccionMoodle> Secciones { get; } = new();
+    public List<TareaMoodle> Tareas { get; } = new();
+    public List<EntregaMoodle> Entregas { get; } = new();
+    public Dictionary<int, List<FinalizacionActividadMoodle>> Finalizacion { get; } = new();
     public HashSet<string> Fallar { get; } = new();
     public List<string> Llamadas { get; } = new();
 
-    /// <summary>Curso de ejemplo: 2 estudiantes y 1 docente; categorías Exámenes y Tareas; est02 sin nota en la tarea.</summary>
+    /// <summary>
+    /// Curso de ejemplo: 4 unidades (Tarea 1 en la unidad 1, Examen P1 en la unidad 2), 2 estudiantes y 1 docente;
+    /// categorías Exámenes y Tareas; est02 sin nota en la tarea y sin entregarla. Tarea 1 tiene finalización; el examen, no.
+    /// </summary>
     public static MoodleClientFalso ConCursoDeEjemplo()
     {
         var falso = new MoodleClientFalso();
@@ -36,6 +43,19 @@ public sealed class MoodleClientFalso : IMoodleClient
 
         falso.Calificaciones.Add(new CalificacionesUsuarioMoodle(101, Items(8.5m, 0m)));
         falso.Calificaciones.Add(new CalificacionesUsuarioMoodle(102, Items(null, 7m)));
+
+        falso.Secciones.AddRange(new[]
+        {
+            new SeccionMoodle(1, 0, "General", Array.Empty<ModuloMoodle>()),
+            new SeccionMoodle(11, 1, "Unidad 1", new[] { new ModuloMoodle(70, 7, "Tarea 1", "assign") }),
+            new SeccionMoodle(12, 2, "Unidad 2", new[] { new ModuloMoodle(71, 3, "Examen P1", "quiz") }),
+            new SeccionMoodle(13, 3, "Unidad 3", Array.Empty<ModuloMoodle>()),
+            new SeccionMoodle(14, 4, "Unidad 4", Array.Empty<ModuloMoodle>()),
+        });
+        falso.Tareas.Add(new TareaMoodle(7, 70, "Tarea 1", new DateTimeOffset(2026, 9, 8, 23, 59, 0, TimeSpan.FromHours(-5))));
+        falso.Entregas.Add(new EntregaMoodle(7, 101, "submitted", "graded"));
+        falso.Finalizacion[101] = new() { new FinalizacionActividadMoodle(70, 1) };
+        falso.Finalizacion[102] = new() { new FinalizacionActividadMoodle(70, 0) };
         return falso;
     }
 
@@ -54,7 +74,7 @@ public sealed class MoodleClientFalso : IMoodleClient
         Responder<IReadOnlyList<CursoMoodle>>("core_enrol_get_users_courses", Array.Empty<CursoMoodle>());
 
     public Task<IReadOnlyList<SeccionMoodle>> ObtenerContenidoCursoAsync(int moodleCursoId, CancellationToken ct = default) =>
-        Responder<IReadOnlyList<SeccionMoodle>>("core_course_get_contents", Array.Empty<SeccionMoodle>());
+        Responder<IReadOnlyList<SeccionMoodle>>("core_course_get_contents", Secciones.ToList());
 
     public Task<IReadOnlyList<MatriculadoMoodle>> ObtenerMatriculadosAsync(int moodleCursoId, CancellationToken ct = default) =>
         Responder<IReadOnlyList<MatriculadoMoodle>>("core_enrol_get_enrolled_users", Matriculados.ToList());
@@ -63,11 +83,12 @@ public sealed class MoodleClientFalso : IMoodleClient
         Responder<IReadOnlyList<CalificacionesUsuarioMoodle>>("gradereport_user_get_grade_items", Calificaciones.ToList());
 
     public Task<IReadOnlyList<TareaMoodle>> ObtenerTareasAsync(int moodleCursoId, CancellationToken ct = default) =>
-        Responder<IReadOnlyList<TareaMoodle>>("mod_assign_get_assignments", Array.Empty<TareaMoodle>());
+        Responder<IReadOnlyList<TareaMoodle>>("mod_assign_get_assignments", Tareas.ToList());
 
     public Task<IReadOnlyList<EntregaMoodle>> ObtenerEntregasAsync(IReadOnlyCollection<int> moodleTareaIds, CancellationToken ct = default) =>
-        Responder<IReadOnlyList<EntregaMoodle>>("mod_assign_get_submissions", Array.Empty<EntregaMoodle>());
+        Responder<IReadOnlyList<EntregaMoodle>>("mod_assign_get_submissions", Entregas.Where(e => moodleTareaIds.Contains(e.TareaId)).ToList());
 
     public Task<IReadOnlyList<FinalizacionActividadMoodle>> ObtenerFinalizacionAsync(int moodleCursoId, int moodleUsuarioId, CancellationToken ct = default) =>
-        Responder<IReadOnlyList<FinalizacionActividadMoodle>>("core_completion_get_activities_completion_status", Array.Empty<FinalizacionActividadMoodle>());
+        Responder<IReadOnlyList<FinalizacionActividadMoodle>>("core_completion_get_activities_completion_status",
+            Finalizacion.TryGetValue(moodleUsuarioId, out var estados) ? estados.ToList() : new List<FinalizacionActividadMoodle>());
 }

@@ -8,6 +8,7 @@ public class EduMonitorDbContext(DbContextOptions<EduMonitorDbContext> options) 
 {
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Curso> Cursos => Set<Curso>();
+    public DbSet<Unidad> Unidades => Set<Unidad>();
     public DbSet<CursoDocente> CursosDocentes => Set<CursoDocente>();
     public DbSet<Estudiante> Estudiantes => Set<Estudiante>();
     public DbSet<Matricula> Matriculas => Set<Matricula>();

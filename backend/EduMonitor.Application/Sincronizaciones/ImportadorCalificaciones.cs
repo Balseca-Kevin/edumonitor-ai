@@ -17,8 +17,13 @@ public sealed class ImportadorCalificaciones(IMoodleClient moodle, IEduMonitorDb
 
     public sealed record Resultado(int Actividades, int Calificaciones);
 
-    /// <summary>Lanza <see cref="MoodleNoDisponibleException"/> si Moodle falla; en ese caso no toca la base.</summary>
-    public async Task<Resultado> ImportarAsync(Curso curso, CancellationToken ct = default)
+    public Task<Resultado> ImportarAsync(Curso curso, CancellationToken ct = default) => ImportarAsync(curso, null, ct);
+
+    /// <summary>
+    /// Lanza <see cref="MoodleNoDisponibleException"/> si Moodle falla; en ese caso no toca la base.
+    /// Con <paramref name="estructura"/> (TA-05.1) asigna la unidad de cada actividad; sin ella conserva la que ya tenía.
+    /// </summary>
+    public async Task<Resultado> ImportarAsync(Curso curso, EstructuraCurso? estructura, CancellationToken ct = default)
     {
         var reportes = await moodle.ObtenerItemsCalificacionAsync(curso.MoodleCursoId, ct);
 
@@ -33,7 +38,7 @@ public sealed class ImportadorCalificaciones(IMoodleClient moodle, IEduMonitorDb
             .Select(g => g.First())
             .ToList();
 
-        var actividades = await ActualizarActividadesAsync(curso, itemsActividad, categorias, ct);
+        var actividades = await ActualizarActividadesAsync(curso, itemsActividad, categorias, estructura, ct);
         var calificaciones = await ActualizarCalificacionesAsync(curso, reportes, actividades, ct);
 
         await db.SaveChangesAsync(ct);
@@ -41,7 +46,7 @@ public sealed class ImportadorCalificaciones(IMoodleClient moodle, IEduMonitorDb
     }
 
     private async Task<Dictionary<int, Actividad>> ActualizarActividadesAsync(
-        Curso curso, List<ItemCalificacionMoodle> items, Dictionary<int, string> categorias, CancellationToken ct)
+        Curso curso, List<ItemCalificacionMoodle> items, Dictionary<int, string> categorias, EstructuraCurso? estructura, CancellationToken ct)
     {
         var ids = items.Select(i => i.Id).ToList();
         var actividades = await db.Actividades.Where(a => ids.Contains(a.MoodleItemId)).ToDictionaryAsync(a => a.MoodleItemId, ct);
@@ -61,7 +66,10 @@ public sealed class ImportadorCalificaciones(IMoodleClient moodle, IEduMonitorDb
             actividad.NotaMaxima = item.NotaMaxima;
             actividad.Modulo = item.Modulo;
             actividad.Instancia = item.Instancia;
-            // TA-05.1 (Sebastián): asignar actividad.UnidadId a partir de las secciones de core_course_get_contents.
+            if (estructura is not null)
+            {
+                actividad.Unidad = estructura.UnidadDe(item.Modulo, item.Instancia);
+            }
         }
 
         return actividades;

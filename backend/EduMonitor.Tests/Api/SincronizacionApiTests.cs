@@ -78,8 +78,13 @@ public class SincronizacionApiTests
     public async Task Si_Moodle_no_responde_en_ninguna_funcion_responde_502_y_queda_registrada_FALLIDA()
     {
         await using var factory = new ApiConMoodleFalso();
-        factory.Moodle.Fallar.Add("core_enrol_get_enrolled_users");
-        factory.Moodle.Fallar.Add("gradereport_user_get_grade_items");
+        factory.Moodle.Fallar.UnionWith(new[]
+        {
+            "core_course_get_contents",
+            "core_enrol_get_enrolled_users",
+            "gradereport_user_get_grade_items",
+            "mod_assign_get_assignments",
+        });
         var doc01 = await factory.ClienteConSesionAsync("doc01");
         var curso = factory.IdCurso("AGIL-4B");
 

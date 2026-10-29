@@ -15,8 +15,10 @@ namespace EduMonitor.Application.Sincronizaciones;
 /// </summary>
 public sealed class SincronizacionService(
     IEduMonitorDbContext db,
+    ImportadorUnidades unidades,
     ImportadorMatriculados matriculados,
     ImportadorCalificaciones calificaciones,
+    ImportadorEntregas entregas,
     IOptions<MoodleOptions> moodle,
     TimeProvider reloj)
 {
@@ -38,7 +40,16 @@ public sealed class SincronizacionService(
         };
         var pasosCorrectos = 0;
 
-        // TA-05.1 (Sebastián): importar secciones como unidades con core_course_get_contents y llenar registro.RegistrosUnidades.
+        // Unidades va primero: su estructura asigna la unidad a cada actividad y traduce la finalización.
+        EstructuraCurso? estructura = null;
+        if (await IntentarAsync(registro, async () =>
+            {
+                estructura = await unidades.ImportarAsync(curso, ct);
+                registro.RegistrosUnidades = estructura.Unidades;
+            }))
+        {
+            pasosCorrectos++;
+        }
 
         // Matriculados va antes que notas: las notas solo se guardan para estudiantes matriculados.
         if (await IntentarAsync(registro, async () => registro.RegistrosEstudiantes = await matriculados.ImportarAsync(curso, ct)))
@@ -48,7 +59,7 @@ public sealed class SincronizacionService(
 
         if (await IntentarAsync(registro, async () =>
             {
-                var resultado = await calificaciones.ImportarAsync(curso, ct);
+                var resultado = await calificaciones.ImportarAsync(curso, estructura, ct);
                 registro.RegistrosActividades = resultado.Actividades;
                 registro.RegistrosCalificaciones = resultado.Calificaciones;
             }))
@@ -56,8 +67,17 @@ public sealed class SincronizacionService(
             pasosCorrectos++;
         }
 
-        // TA-05.4 (Sebastián): importar tareas, fechas, entregas y finalización (mod_assign_get_assignments,
-        // mod_assign_get_submissions, core_completion_get_activities_completion_status) y derivar SIN_ENTREGA y PENDIENTE.
+        // Entregas va después de las notas: deriva SIN_ENTREGA y PENDIENTE sobre las calificaciones sin nota.
+        if (await IntentarAsync(registro, () => entregas.ImportarEntregasAsync(curso, ct)))
+        {
+            pasosCorrectos++;
+        }
+
+        // Sin la estructura de unidades no se puede relacionar la finalización con las actividades: queda como estaba.
+        if (estructura is not null && await IntentarAsync(registro, () => entregas.ImportarFinalizacionAsync(curso, estructura, ct)))
+        {
+            pasosCorrectos++;
+        }
 
         registro.Estado = registro.Errores.Count == 0 ? EstadoSincronizacion.COMPLETADA
             : pasosCorrectos > 0 ? EstadoSincronizacion.PARCIAL

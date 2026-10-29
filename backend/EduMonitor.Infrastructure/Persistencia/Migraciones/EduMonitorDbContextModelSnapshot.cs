@@ -63,12 +63,17 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .HasPrecision(9, 5)
                         .HasColumnType("decimal(9,5)");
 
+                    b.Property<int?>("UnidadId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CursoId");
 
                     b.HasIndex("MoodleItemId")
                         .IsUnique();
+
+                    b.HasIndex("UnidadId");
 
                     b.ToTable("Actividad", (string)null);
                 });
@@ -90,6 +95,9 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     b.Property<int>("EstudianteId")
                         .HasColumnType("int");
+
+                    b.Property<bool?>("Finalizada")
+                        .HasColumnType("bit");
 
                     b.Property<decimal?>("Nota")
                         .HasPrecision(9, 5)
@@ -262,6 +270,41 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("Sincronizacion", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Unidad", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MoodleSeccionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("Numero")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Parcial")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("MoodleSeccionId")
+                        .IsUnique();
+
+                    b.ToTable("Unidad", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -310,7 +353,14 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("EduMonitor.Domain.Entities.Unidad", "Unidad")
+                        .WithMany()
+                        .HasForeignKey("UnidadId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.Navigation("Curso");
+
+                    b.Navigation("Unidad");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Calificacion", b =>
@@ -382,6 +432,17 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Unidad", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Curso");
