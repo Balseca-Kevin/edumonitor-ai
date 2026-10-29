@@ -97,6 +97,32 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 | Estudiantes | est01 a est32, `estNN@edumonitor.test`, rol student en ambos cursos |
 | Docentes | doc01 solo en AGIL-4B, doc02 solo en BDD-4B, rol editingteacher |
 
+## Cargar los cursos y los datos ficticios
+
+Después de configurar los servicios web (TA-02.1), desde la raíz del repo:
+
+```powershell
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
+docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+```
+
+Tarda alrededor de un minuto y medio. Si los cursos ya existen, no hace nada. Crea la estructura de la tabla anterior con AGIL-4B como id 2 y BDD-4B como id 3, que son los ids que esperan las semillas del backend. Las unidades 1 a 3 tienen la fecha límite vencida y la unidad 4 vence en noviembre de 2026.
+
+Casos de prueba en AGIL-4B (uno por regla de alerta):
+
+| Estudiante | Caso |
+|---|---|
+| est03 | Descenso: alto en las unidades 1 y 2, bajo en la 3 |
+| est05 | Nota 0 calificada en Tarea 3 (distinta de sin entrega) |
+| est07 | Atrasos: Tarea 5, Tarea 6 y APE 3 vencidas sin entrega |
+| est09 | Entregó Tarea 6 y Taller 2; pendientes de calificar |
+| est11 | Promedio bajo (menor a 7,0) |
+| est13 | Alejado del grupo |
+| est15 | Baja finalización: casi nada entregado en las unidades 2 y 3 |
+| est17 | Temática crítica: bajo en toda la unidad 3 |
+
+Los demás estudiantes tienen notas entre 6 y 10 con alguna entrega faltante. Los datos se generan con una semilla fija, así que cada carga produce lo mismo.
+
 ## Respaldos (carpeta `backups/`)
 
 1. `cursos_base.mbz`: categorías y cursos vacíos (Sebastián).
