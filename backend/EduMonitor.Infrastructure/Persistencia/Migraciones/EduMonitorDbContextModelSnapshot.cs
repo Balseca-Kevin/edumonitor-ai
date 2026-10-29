@@ -78,6 +78,90 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("Actividad", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ActividadTema", b =>
+                {
+                    b.Property<int>("ActividadId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TemaId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PesoRelativo")
+                        .HasPrecision(9, 5)
+                        .HasColumnType("decimal(9,5)");
+
+                    b.HasKey("ActividadId", "TemaId");
+
+                    b.HasIndex("TemaId");
+
+                    b.ToTable("ActividadTema", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Alerta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Evidencia")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ReglaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.HasIndex("ReglaId");
+
+                    b.ToTable("Alerta", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Auditoria", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Entidad")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Fecha");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("Auditoria", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Calificacion", b =>
                 {
                     b.Property<int>("Id")
@@ -111,6 +195,55 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .IsUnique();
 
                     b.ToTable("Calificacion", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ContenidoMinimo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("TemaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TemaId");
+
+                    b.ToTable("ContenidoMinimo", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Conversacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("Conversacion", (string)null);
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Curso", b =>
@@ -215,6 +348,37 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("Matricula", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ReglaAlerta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Umbral")
+                        .HasPrecision(9, 5)
+                        .HasColumnType("decimal(9,5)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId", "Codigo")
+                        .IsUnique();
+
+                    b.ToTable("ReglaAlerta", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Sincronizacion", b =>
                 {
                     b.Property<int>("Id")
@@ -268,6 +432,92 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("Sincronizacion", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.TareaRefuerzo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Contenido")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TemaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.HasIndex("TemaId");
+
+                    b.ToTable("TareaRefuerzo", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Tema", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<int>("UnidadId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UnidadId");
+
+                    b.ToTable("Tema", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.TrazaHerramienta", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ConversacionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Herramienta")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Parametros")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversacionId");
+
+                    b.ToTable("TrazaHerramienta", (string)null);
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Unidad", b =>
@@ -363,6 +613,55 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Unidad");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ActividadTema", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Actividad", "Actividad")
+                        .WithMany()
+                        .HasForeignKey("ActividadId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Tema", "Tema")
+                        .WithMany()
+                        .HasForeignKey("TemaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Actividad");
+
+                    b.Navigation("Tema");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Alerta", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.ReglaAlerta", "Regla")
+                        .WithMany()
+                        .HasForeignKey("ReglaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Estudiante");
+
+                    b.Navigation("Regla");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Auditoria", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Calificacion", b =>
                 {
                     b.HasOne("EduMonitor.Domain.Entities.Actividad", "Actividad")
@@ -380,6 +679,36 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Actividad");
 
                     b.Navigation("Estudiante");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ContenidoMinimo", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Tema", "Tema")
+                        .WithMany("ContenidosMinimos")
+                        .HasForeignKey("TemaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tema");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Conversacion", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.CursoDocente", b =>
@@ -420,6 +749,17 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Estudiante");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ReglaAlerta", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Sincronizacion", b =>
                 {
                     b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
@@ -437,6 +777,46 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Curso");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.TareaRefuerzo", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("EduMonitor.Domain.Entities.Tema", "Tema")
+                        .WithMany()
+                        .HasForeignKey("TemaId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Estudiante");
+
+                    b.Navigation("Tema");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Tema", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Unidad", "Unidad")
+                        .WithMany()
+                        .HasForeignKey("UnidadId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Unidad");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.TrazaHerramienta", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Conversacion", "Conversacion")
+                        .WithMany("Trazas")
+                        .HasForeignKey("ConversacionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversacion");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Unidad", b =>
                 {
                     b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
@@ -448,6 +828,11 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Curso");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Conversacion", b =>
+                {
+                    b.Navigation("Trazas");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Curso", b =>
                 {
                     b.Navigation("Docentes");
@@ -456,6 +841,11 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
             modelBuilder.Entity("EduMonitor.Domain.Entities.Estudiante", b =>
                 {
                     b.Navigation("Matriculas");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.Tema", b =>
+                {
+                    b.Navigation("ContenidosMinimos");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Usuario", b =>
