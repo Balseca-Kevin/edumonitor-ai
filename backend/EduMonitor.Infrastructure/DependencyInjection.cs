@@ -7,6 +7,7 @@ using EduMonitor.Infrastructure.Seguridad;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace EduMonitor.Infrastructure;
 
@@ -28,8 +29,8 @@ public static class DependencyInjection
             opciones.UseSqlServer(configuration.GetConnectionString("EduMonitorDB")));
         services.AddScoped<IEduMonitorDbContext>(sp => sp.GetRequiredService<EduMonitorDbContext>());
 
-        // TA-02.2 (Sebastián) reemplaza este registro por el HttpClient tipado: services.AddHttpClient<IMoodleClient, MoodleClient>(...)
-        services.AddScoped<IMoodleClient, MoodleClientPendiente>();
+        services.AddHttpClient<IMoodleClient, MoodleClient>((sp, http) =>
+            http.Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<MoodleOptions>>().Value.TiempoEsperaSegundos));
         services.AddHostedService<RegistroConfiguracionMoodle>();
 
         return services;
