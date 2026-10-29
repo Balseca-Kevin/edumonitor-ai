@@ -20,7 +20,8 @@ export default function Login() {
       const sesion = await login(usuario.trim(), contrasena)
 
       guardarSesion(sesion)
-      navigate('/cursos')
+      // El administrador entra a la configuración de Moodle; el docente, a sus cursos.
+      navigate(sesion.usuario?.rol === 'ADMIN' ? '/admin/moodle' : '/cursos')
     } catch (err) {
       setError(
         err.response?.data?.title ||
