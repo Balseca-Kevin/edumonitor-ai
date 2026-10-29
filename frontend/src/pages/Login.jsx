@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login, guardarSesion } from '../services/auth'
@@ -8,23 +7,26 @@ export default function Login() {
   const [contrasena, setContrasena] = useState('')
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
+
   const navigate = useNavigate()
 
   async function handleSubmit(event) {
     event.preventDefault()
+
     setError('')
     setCargando(true)
 
     try {
       const sesion = await login(usuario.trim(), contrasena)
+
       guardarSesion(sesion)
       navigate('/cursos')
     } catch (err) {
       setError(
-        err.response?.data?.mensaje ||
-        err.response?.data?.message ||
-        err.message ||
-        'No se pudo iniciar sesión.',
+        err.response?.data?.title ||
+          (err.response
+            ? 'No se pudo iniciar sesión.'
+            : 'No se pudo conectar con el servidor. Intenta de nuevo.'),
       )
     } finally {
       setCargando(false)
@@ -37,13 +39,16 @@ export default function Login() {
         <div className="brand-mark">E</div>
 
         <p className="eyebrow">PLATAFORMA ACADÉMICA</p>
+
         <h1>EduMonitor AI</h1>
+
         <p className="login-description">
           Inicia sesión para consultar tus cursos y su información.
         </p>
 
         <form onSubmit={handleSubmit}>
           <label htmlFor="usuario">Usuario</label>
+
           <input
             id="usuario"
             name="usuario"
@@ -56,6 +61,7 @@ export default function Login() {
           />
 
           <label htmlFor="contrasena">Contraseña</label>
+
           <input
             id="contrasena"
             name="contrasena"

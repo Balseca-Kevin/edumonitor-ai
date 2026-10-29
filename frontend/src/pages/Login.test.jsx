@@ -1,6 +1,19 @@
+import {
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
+
 import { MemoryRouter } from 'react-router-dom'
 import Login from './Login'
 
@@ -9,7 +22,10 @@ vi.mock('../services/auth', () => ({
   guardarSesion: vi.fn(),
 }))
 
-import { login, guardarSesion } from '../services/auth'
+import {
+  login,
+  guardarSesion,
+} from '../services/auth'
 
 afterEach(() => {
   cleanup()
@@ -24,14 +40,38 @@ function renderLogin() {
   )
 }
 
+function completarFormulario(usuario, contrasena) {
+  fireEvent.change(screen.getByLabelText(/usuario/i), {
+    target: { value: usuario },
+  })
+
+  fireEvent.change(screen.getByLabelText(/contraseña/i), {
+    target: { value: contrasena },
+  })
+
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: /iniciar sesión/i,
+    }),
+  )
+}
+
 describe('Login', () => {
   it('muestra los campos de usuario y contraseña', () => {
     renderLogin()
 
-    expect(screen.getByLabelText(/usuario/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: /iniciar sesión/i }),
+      screen.getByLabelText(/usuario/i),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByLabelText(/contraseña/i),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByRole('button', {
+        name: /iniciar sesión/i,
+      }),
     ).toBeInTheDocument()
   })
 
@@ -50,35 +90,77 @@ describe('Login', () => {
 
     renderLogin()
 
-    fireEvent.change(screen.getByLabelText(/usuario/i), {
-      target: { value: 'doc01' },
-    })
-    fireEvent.change(screen.getByLabelText(/contraseña/i), {
-      target: { value: 'valor-de-prueba' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    completarFormulario('doc01', 'valor-de-prueba')
 
     await waitFor(() => {
-      expect(login).toHaveBeenCalledWith('doc01', 'valor-de-prueba')
+      expect(login).toHaveBeenCalledWith(
+        'doc01',
+        'valor-de-prueba',
+      )
+
       expect(guardarSesion).toHaveBeenCalledWith(sesion)
     })
   })
 
-  it('muestra un mensaje si el inicio de sesión falla', async () => {
-    login.mockRejectedValue(new Error('Credenciales incorrectas'))
+  it('muestra el título de ProblemDetails cuando las credenciales son incorrectas', async () => {
+    login.mockRejectedValue(
+      Object.assign(
+        new Error('Request failed with status code 401'),
+        {
+          response: {
+            status: 401,
+            data: {
+              title: 'Credenciales incorrectas',
+            },
+          },
+        },
+      ),
+    )
 
     renderLogin()
 
-    fireEvent.change(screen.getByLabelText(/usuario/i), {
-      target: { value: 'doc01' },
-    })
-    fireEvent.change(screen.getByLabelText(/contraseña/i), {
-      target: { value: 'incorrecta' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    completarFormulario('doc01', 'incorrecta')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Credenciales incorrectas',
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent('Credenciales incorrectas')
+  })
+
+  it('muestra un mensaje útil cuando el servidor no responde', async () => {
+    login.mockRejectedValue(
+      new Error('Network Error'),
     )
+
+    renderLogin()
+
+    completarFormulario('doc01', 'valor-de-prueba')
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(
+      'No se pudo conectar con el servidor. Intenta de nuevo.',
+    )
+  })
+
+  it('muestra un mensaje genérico ante errores HTTP sin título', async () => {
+    login.mockRejectedValue(
+      Object.assign(
+        new Error('Request failed with status code 500'),
+        {
+          response: {
+            status: 500,
+            data: {},
+          },
+        },
+      ),
+    )
+
+    renderLogin()
+
+    completarFormulario('doc01', 'valor-de-prueba')
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent('No se pudo iniciar sesión.')
   })
 })

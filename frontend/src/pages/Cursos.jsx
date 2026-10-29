@@ -1,298 +1,687 @@
 
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { obtenerCursos } from '../services/cursos'
-import { cerrarSesion } from '../services/auth'
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  obtenerCursos,
+  sincronizarCurso,
+  obtenerHistorialSincronizaciones,
+} from "../services/cursos";
+import { cerrarSesion } from "../services/auth";
 
-export default function Cursos() {
-  const [cursos, setCursos] = useState([])
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState('')
-  const [busqueda, setBusqueda] = useState('')
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState('todos')
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState('todos')
+function formatearFecha(fecha) {
+  if (!fecha) return "No disponible";
 
-  const navigate = useNavigate()
+  const fechaValida = new Date(fecha);
 
-  useEffect(() => {
-    let activo = true
-
-    async function cargarCursos() {
-      try {
-        const datos = await obtenerCursos()
-
-        if (activo) {
-          setCursos(Array.isArray(datos) ? datos : [])
-        }
-      } catch (err) {
-        if (activo) {
-          setError(
-            err.response?.status === 401
-              ? 'Tu sesión ha expirado. Inicia sesión nuevamente.'
-              : 'No fue posible cargar los cursos. Comprueba la conexión con el servidor.',
-          )
-        }
-      } finally {
-        if (activo) setCargando(false)
-      }
-    }
-
-    cargarCursos()
-
-    return () => {
-      activo = false
-    }
-  }, [])
-
-  function handleLogout() {
-    cerrarSesion()
-    navigate('/login', { replace: true })
+  if (Number.isNaN(fechaValida.getTime())) {
+    return fecha;
   }
 
-  const nombreUsuario = (() => {
-    try {
-      const usuario = JSON.parse(
-        sessionStorage.getItem('edumonitor_usuario') || 'null',
-      )
-      return usuario?.nombre || 'Docente'
-    } catch {
-      return 'Docente'
-    }
-  })()
+  return fechaValida.toLocaleString("es-EC", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
 
-  const periodos = useMemo(
-    () => [...new Set(cursos.map((curso) => curso.periodo).filter(Boolean))],
-    [cursos],
-  )
+function etiquetaEstado(estado) {
+  if (!estado) return "PENDIENTE";
 
-  const cursosFiltrados = useMemo(() => {
-    const termino = busqueda.trim().toLocaleLowerCase('es')
+  return String(estado).toUpperCase();
+}
 
-    return cursos.filter((curso) => {
-      const coincideBusqueda = [
-        curso.nombre,
-        curso.nombreCorto,
-      ].some((valor) =>
-        String(valor || '').toLocaleLowerCase('es').includes(termino),
-      )
+function obtenerMensajeError(error) {
+  const estadoHTTP = error?.response?.status;
 
-      const coincidePeriodo =
-        periodoSeleccionado === 'todos' ||
-        curso.periodo === periodoSeleccionado
+  if (estadoHTTP === 403) {
+    return "Este curso no está asignado a tu cuenta";
+  }
 
-      const estado = curso.ultimaSincronizacion?.estado
-      const coincideEstado =
-        estadoSeleccionado === 'todos' ||
-        (estadoSeleccionado === 'completada' && estado === 'COMPLETADA') ||
-        (estadoSeleccionado === 'pendiente' && estado !== 'COMPLETADA')
-
-      return coincideBusqueda && coincidePeriodo && coincideEstado
-    })
-  }, [cursos, busqueda, periodoSeleccionado, estadoSeleccionado])
-
-  function limpiarFiltros() {
-    setBusqueda('')
-    setPeriodoSeleccionado('todos')
-    setEstadoSeleccionado('todos')
+  if (estadoHTTP === 502) {
+    return "Moodle no responde; intenta más tarde";
   }
 
   return (
-    <div className="dashboard">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <span className="brand-mark">E</span>
-          <span>EduMonitor AI</span>
+    error?.response?.data?.detail ||
+    error?.response?.data?.title ||
+    (error?.response
+      ? "No se pudo completar la operación."
+      : "No se pudo conectar con el servidor. Intenta de nuevo.")
+  );
+}
+
+export default function Cursos() {
+  const navigate = useNavigate();
+
+  const [cursos, setCursos] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+  const [busqueda, setBusqueda] = useState("");
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState("");
+
+  const [sincronizandoId, setSincronizandoId] = useState(null);
+  const [historialAbiertoId, setHistorialAbiertoId] = useState(null);
+  const [historialPorCurso, setHistorialPorCurso] = useState({});
+  const [cargandoHistorialId, setCargandoHistorialId] = useState(null);
+  const [errorOperacion, setErrorOperacion] = useState("");
+  const [resultadoPorCurso, setResultadoPorCurso] = useState({});
+
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarCursos() {
+      setCargando(true);
+      setError("");
+
+      try {
+        const datos = await obtenerCursos();
+
+        if (activo) {
+          setCursos(Array.isArray(datos) ? datos : []);
+        }
+      } catch {
+        if (activo) {
+          setError(
+            "No fue posible cargar los cursos"
+          );
+        }
+      } finally {
+        if (activo) {
+          setCargando(false);
+        }
+      }
+    }
+
+    cargarCursos();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  const periodos = useMemo(() => {
+    return [
+      ...new Set(
+        cursos
+          .map((curso) => curso.periodo)
+          .filter(Boolean)
+      ),
+    ];
+  }, [cursos]);
+
+  const cursosFiltrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase();
+
+    return cursos.filter((curso) => {
+      const coincideBusqueda =
+        !texto ||
+        [
+          curso.nombre,
+          curso.nombreCorto,
+          curso.descripcion,
+          curso.docente,
+        ]
+          .filter(Boolean)
+          .some((valor) =>
+            String(valor).toLowerCase().includes(texto)
+          );
+
+      const coincidePeriodo =
+        !periodoSeleccionado ||
+        curso.periodo === periodoSeleccionado;
+
+      const estado = String(
+        curso.ultimaSincronizacion?.estado ||
+          curso.estadoSincronizacion ||
+          curso.estadoSync ||
+          (curso.sincronizado || curso.sync
+            ? "COMPLETADA"
+            : "PENDIENTE")
+      ).toUpperCase();
+
+      const estaSincronizado = [
+        "COMPLETADA",
+        "PARCIAL",
+        "SINCRONIZADO",
+      ].includes(estado);
+
+      const coincideEstado =
+        !estadoSeleccionado ||
+        (estadoSeleccionado === "sincronizado" &&
+          estaSincronizado) ||
+        (estadoSeleccionado === "pendiente" &&
+          !estaSincronizado);
+
+      return (
+        coincideBusqueda &&
+        coincidePeriodo &&
+        coincideEstado
+      );
+    });
+  }, [
+    cursos,
+    busqueda,
+    periodoSeleccionado,
+    estadoSeleccionado,
+  ]);
+
+  function limpiarFiltros() {
+    setBusqueda("");
+    setPeriodoSeleccionado("");
+    setEstadoSeleccionado("");
+  }
+
+  async function manejarSincronizacion(curso) {
+    setSincronizandoId(curso.id);
+    setErrorOperacion("");
+
+    try {
+      const resultado = await sincronizarCurso(curso.id);
+
+      setResultadoPorCurso((anterior) => ({
+        ...anterior,
+        [curso.id]: resultado,
+      }));
+
+      setCursos((anteriores) =>
+        anteriores.map((item) =>
+          item.id === curso.id
+            ? {
+                ...item,
+                ultimaSincronizacion: {
+                  id: resultado?.id,
+                  fecha:
+                    resultado?.fin ||
+                    resultado?.fecha ||
+                    new Date().toISOString(),
+                  estado:
+                    resultado?.estado || "COMPLETADA",
+                },
+              }
+            : item
+        )
+      );
+
+      try {
+        const historial =
+          await obtenerHistorialSincronizaciones(curso.id);
+
+        setHistorialPorCurso((anterior) => ({
+          ...anterior,
+          [curso.id]: Array.isArray(historial)
+            ? historial
+            : [],
+        }));
+      } catch {
+        // El resultado de la sincronización sigue disponible
+        // aunque no se pueda actualizar el historial.
+      }
+    } catch (err) {
+      setErrorOperacion(
+        `No se pudo sincronizar "${curso.nombre || curso.nombreCorto || "el curso"}": ${obtenerMensajeError(err)}`
+      );
+    } finally {
+      setSincronizandoId(null);
+    }
+  }
+
+  async function manejarHistorial(curso) {
+    if (historialAbiertoId === curso.id) {
+      setHistorialAbiertoId(null);
+      return;
+    }
+
+    setHistorialAbiertoId(curso.id);
+    setErrorOperacion("");
+
+    if (historialPorCurso[curso.id]) {
+      return;
+    }
+
+    setCargandoHistorialId(curso.id);
+
+    try {
+      const historial =
+        await obtenerHistorialSincronizaciones(curso.id);
+
+      setHistorialPorCurso((anterior) => ({
+        ...anterior,
+        [curso.id]: Array.isArray(historial)
+          ? historial
+          : [],
+      }));
+    } catch (err) {
+      setErrorOperacion(
+        `No se pudo cargar el historial: ${obtenerMensajeError(err)}`
+      );
+
+      setHistorialPorCurso((anterior) => ({
+        ...anterior,
+        [curso.id]: [],
+      }));
+    } finally {
+      setCargandoHistorialId(null);
+    }
+  }
+
+  async function manejarCierreSesion() {
+    try {
+      await cerrarSesion();
+    } finally {
+      navigate("/login");
+    }
+  }
+
+  function obtenerEstadoCurso(curso) {
+    return etiquetaEstado(
+      curso.ultimaSincronizacion?.estado ||
+        curso.estadoSincronizacion ||
+        curso.estadoSync ||
+        (curso.sincronizado || curso.sync
+          ? "COMPLETADA"
+          : "PENDIENTE")
+    );
+  }
+
+  return (
+    <main className="courses-page">
+      <header className="courses-header">
+        <div>
+          <h1>Mis cursos</h1>
+          <p>
+            Consulta y administra tus cursos académicos.
+          </p>
         </div>
 
-        <nav aria-label="Navegación principal">
-          <a className="nav-link active" href="/cursos" aria-current="page">
-            <span aria-hidden="true">▦</span>
-            Mis cursos
-          </a>
-        </nav>
-
-        <div className="sidebar-bottom">
-          <span className="avatar">
-            {nombreUsuario.charAt(0).toUpperCase()}
-          </span>
-          <div className="user-info">
-            <strong>{nombreUsuario}</strong>
-            <span>Docente</span>
-          </div>
+        <div className="courses-user">
           <button
             className="logout-button"
             type="button"
-            onClick={handleLogout}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
+            onClick={manejarCierreSesion}
           >
-            ↪
+            Cerrar sesión
           </button>
         </div>
-      </aside>
+      </header>
 
-      <main className="dashboard-main">
-        <header className="page-header">
-          <div>
-            <p className="eyebrow">ESPACIO ACADÉMICO</p>
-            <h1>Mis cursos</h1>
-            <p>Consulta tus cursos y el estado de sincronización.</p>
-          </div>
-          <span className="user-badge">{nombreUsuario}</span>
-        </header>
+      <section className="course-filters">
+        <input
+          aria-label="Buscar cursos"
+          className="course-search"
+          placeholder="Buscar por nombre del curso..."
+          type="search"
+          value={busqueda}
+          onChange={(event) =>
+            setBusqueda(event.target.value)
+          }
+        />
 
-        <section className="courses-section">
-          <div className="section-heading">
-            <div>
-              <h2>Listado de cursos</h2>
-              <p>Busca y filtra los cursos disponibles para tu cuenta.</p>
-            </div>
+        <select
+          aria-label="Filtrar por período"
+          className="course-filter"
+          value={periodoSeleccionado}
+          onChange={(event) =>
+            setPeriodoSeleccionado(event.target.value)
+          }
+        >
+          <option value="">Todos los períodos</option>
 
-            {!cargando && !error && (
-              <span className="course-count" aria-live="polite">
-                {cursosFiltrados.length}{' '}
-                {cursosFiltrados.length === 1 ? 'curso' : 'cursos'}
-              </span>
-            )}
-          </div>
+          {periodos.map((periodo) => (
+            <option key={periodo} value={periodo}>
+              {periodo}
+            </option>
+          ))}
+        </select>
 
-          {!cargando && !error && cursos.length > 0 && (
-            <div className="course-filters">
-              <div className="course-search">
-                <label htmlFor="buscar-curso">Buscar curso</label>
-                <input
-                  id="buscar-curso"
-                  type="search"
-                  placeholder="Nombre o código del curso..."
-                  value={busqueda}
-                  onChange={(event) => setBusqueda(event.target.value)}
-                />
-              </div>
+        <select
+          aria-label="Filtrar por sincronización"
+          className="course-filter"
+          value={estadoSeleccionado}
+          onChange={(event) =>
+            setEstadoSeleccionado(event.target.value)
+          }
+        >
+          <option value="">Todos los estados</option>
+          <option value="sincronizado">Sincronizados</option>
+          <option value="pendiente">Pendientes</option>
+        </select>
 
-              <div className="course-filter">
-                <label htmlFor="filtrar-periodo">Período académico</label>
-                <select
-                  id="filtrar-periodo"
-                  value={periodoSeleccionado}
-                  onChange={(event) => setPeriodoSeleccionado(event.target.value)}
-                >
-                  <option value="todos">Todos los períodos</option>
-                  {periodos.map((periodo) => (
-                    <option key={periodo} value={periodo}>
-                      {periodo}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <button
+          className="clear-filters-button"
+          type="button"
+          onClick={limpiarFiltros}
+        >
+          Limpiar filtros
+        </button>
+      </section>
 
-              <div className="course-filter">
-                <label htmlFor="filtrar-estado">Sincronización</label>
-                <select
-                  id="filtrar-estado"
-                  value={estadoSeleccionado}
-                  onChange={(event) => setEstadoSeleccionado(event.target.value)}
-                >
-                  <option value="todos">Todos los estados</option>
-                  <option value="completada">Completada</option>
-                  <option value="pendiente">Pendiente o sin registro</option>
-                </select>
-              </div>
+      <section className="courses-summary">
+        <p>
+          {cursosFiltrados.length === 1
+            ? "1 curso"
+            : `${cursosFiltrados.length} cursos`}
+        </p>
+      </section>
 
-              <button
-                className="clear-filters-button"
-                type="button"
-                onClick={limpiarFiltros}
-              >
-                Limpiar filtros
-              </button>
-            </div>
-          )}
+      {error && (
+        <section className="courses-error" role="alert">
+          <p>{error}</p>
 
-          {cargando && (
-            <p className="status-message" role="status">
-              Cargando cursos...
-            </p>
-          )}
-
-          {error && (
-            <div className="error-panel" role="alert">
-              <p>{error}</p>
-              {error.startsWith('Tu sesión') && (
-                <button type="button" onClick={handleLogout}>
-                  Volver al inicio de sesión
-                </button>
-              )}
-            </div>
-          )}
-
-          {!cargando && !error && cursos.length === 0 && (
-            <div className="empty-panel">
-              <span aria-hidden="true">◇</span>
-              <h3>Aún no tienes cursos</h3>
-              <p>Cuando haya cursos disponibles, aparecerán en esta sección.</p>
-            </div>
-          )}
-
-          {!cargando && !error && cursos.length > 0 && cursosFiltrados.length === 0 && (
-            <div className="empty-panel" role="status">
-              <span aria-hidden="true">⌕</span>
-              <h3>No se encontraron cursos</h3>
-              <p>Prueba con otro nombre, código o filtro.</p>
-              <button
-                className="clear-filters-button"
-                type="button"
-                onClick={limpiarFiltros}
-              >
-                Limpiar búsqueda y filtros
-              </button>
-            </div>
-          )}
-
-          {!cargando && !error && cursosFiltrados.length > 0 && (
-            <div className="courses-grid">
-              {cursosFiltrados.map((curso) => (
-                <article className="course-card" key={curso.id}>
-                  <div className="course-card-top">
-                    <span className="course-icon" aria-hidden="true">▦</span>
-                    <span className="course-period">
-                      {curso.periodo || 'Período no especificado'}
-                    </span>
-                  </div>
-
-                  <p className="course-short-name">{curso.nombreCorto}</p>
-                  <h3>{curso.nombre}</h3>
-
-                  <div className="sync-info">
-                    <span className="sync-label">Última sincronización</span>
-                    {curso.ultimaSincronizacion ? (
-                      <>
-                        <strong>
-                          {new Date(
-                            curso.ultimaSincronizacion.fecha,
-                          ).toLocaleString('es-EC')}
-                        </strong>
-                        <span
-                          className={`sync-status ${
-                            curso.ultimaSincronizacion.estado === 'COMPLETADA'
-                              ? 'sync-success'
-                              : 'sync-pending'
-                          }`}
-                        >
-                          {curso.ultimaSincronizacion.estado}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="sync-pending">
-                        Sin sincronizaciones registradas
-                      </span>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            Reintentar
+          </button>
         </section>
-      </main>
+      )}
+
+      {errorOperacion && (
+        <section className="courses-error" role="alert">
+          <p>{errorOperacion}</p>
+          <button
+            type="button"
+            onClick={() => setErrorOperacion("")}
+          >
+            Cerrar
+          </button>
+        </section>
+      )}
+
+      {cargando ? (
+        <p role="status">Cargando cursos...</p>
+      ) : cursosFiltrados.length === 0 ? (
+        <div className="empty-courses">
+          <h2>No hay cursos disponibles</h2>
+          <p>Aún no tienes cursos</p>
+        </div>
+      ) : (
+        <section className="courses-grid">
+          {cursosFiltrados.map((curso) => {
+            const estado = obtenerEstadoCurso(curso);
+            const estaSincronizado = [
+              "COMPLETADA",
+              "PARCIAL",
+              "SINCRONIZADO",
+            ].includes(estado);
+
+            const resultado = resultadoPorCurso[curso.id];
+            const historial = historialPorCurso[curso.id];
+
+            return (
+              <article
+                className="course-card"
+                key={curso.id}
+              >
+                <div className="course-card-header">
+                  <h2>
+                    {curso.nombre ||
+                      curso.nombreCorto ||
+                      "Curso sin nombre"}
+                  </h2>
+
+                  <span
+                    className={`sync-status ${
+                      estaSincronizado
+                        ? "synced"
+                        : "pending"
+                    }`}
+                  >
+                    {estado}
+                  </span>
+                </div>
+
+                {curso.nombreCorto && (
+                  <p className="course-short-name">
+                    {curso.nombreCorto}
+                  </p>
+                )}
+
+                {curso.descripcion && (
+                  <p className="course-description">
+                    {curso.descripcion}
+                  </p>
+                )}
+
+                {curso.periodo && (
+                  <p className="course-period">
+                    <strong>Período:</strong>{" "}
+                    {curso.periodo}
+                  </p>
+                )}
+
+                {curso.docente && (
+                  <p className="course-teacher">
+                    <strong>Docente:</strong>{" "}
+                    {curso.docente}
+                  </p>
+                )}
+
+                {curso.ultimaSincronizacion && (
+                  <div className="course-sync-details">
+                    <p>
+                      <strong>
+                        Última sincronización:
+                      </strong>{" "}
+                      {formatearFecha(
+                        curso.ultimaSincronizacion.fecha
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                <div className="course-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      manejarSincronizacion(curso)
+                    }
+                    disabled={sincronizandoId === curso.id}
+                  >
+                    {sincronizandoId === curso.id
+                      ? "Sincronizando..."
+                      : "Sincronizar curso"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => manejarHistorial(curso)}
+                    disabled={
+                      cargandoHistorialId === curso.id
+                    }
+                  >
+                    {cargandoHistorialId === curso.id
+                      ? "Cargando historial..."
+                      : historialAbiertoId === curso.id
+                        ? "Ocultar historial"
+                        : "Ver historial"}
+                  </button>
+                </div>
+{resultado &&
+  ["PARCIAL", "FALLIDA"].includes(
+    String(resultado.estado).toUpperCase()
+  ) && (
+    <div
+      className="sync-warning"
+      role="alert"
+      style={{
+        backgroundColor: "#fff3cd",
+        border: "1px solid #ffecb5",
+        borderRadius: "8px",
+        color: "#664d03",
+        padding: "12px",
+        marginTop: "12px",
+      }}
+    >
+      <strong>Sincronización incompleta</strong>
+
+      <p>
+        La sincronización no se completó correctamente.
+        Revisa los errores reportados.
+      </p>
+
+      {resultado.errores?.length > 0 && (
+        <ul>
+          {resultado.errores.map((error, indice) => (
+            <li key={indice}>
+              <strong>{error.funcion || "Sistema"}:</strong>{" "}
+              {error.mensaje || "Error sin descripción"}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
-  )
+  )}
+                {resultado && (
+                  <section className="sync-result">
+                    <h3>Resultado de sincronización</h3>
+
+                    <p>
+                      <strong>Estado:</strong>{" "}
+                      {etiquetaEstado(resultado.estado)}
+                    </p>
+
+                    {resultado.inicio && (
+                      <p>
+                        <strong>Inicio:</strong>{" "}
+                        {formatearFecha(resultado.inicio)}
+                      </p>
+                    )}
+
+                    {resultado.fin && (
+                      <p>
+                        <strong>Fin:</strong>{" "}
+                        {formatearFecha(resultado.fin)}
+                      </p>
+                    )}
+
+                    {resultado.registros && (
+                      <div>
+                        <h4>Registros procesados</h4>
+                        <ul>
+                          {Object.entries(
+                            resultado.registros
+                          ).map(([nombre, cantidad]) => (
+                            <li key={nombre}>
+                              <strong>{nombre}:</strong>{" "}
+                              {cantidad}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {resultado.errores?.length > 0 && (
+                      <div>
+                        <h4>Errores reportados</h4>
+                        <ul>
+                          {resultado.errores.map(
+                            (item, indice) => (
+                              <li key={indice}>
+                                {item.funcion && (
+                                  <strong>
+                                    {item.funcion}:{" "}
+                                  </strong>
+                                )}
+                                {item.mensaje ||
+                                  "Error sin descripción"}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+{historialAbiertoId === curso.id && (
+  <section className="sync-history">
+    <h3>Historial de sincronizaciones</h3>
+
+    {cargandoHistorialId === curso.id ? (
+      <p role="status">Cargando historial...</p>
+    ) : !historial?.length ? (
+      <p>No hay sincronizaciones registradas.</p>
+    ) : (
+      <div style={{ overflowX: "auto" }}>
+        <table className="sync-history-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Registros</th>
+              <th>Errores</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {[...historial]
+              .sort(
+                (a, b) =>
+                  new Date(b.fin || b.inicio || b.fecha || 0) -
+                  new Date(a.fin || a.inicio || a.fecha || 0)
+              )
+              .map((item, indice) => {
+                const totalRegistros = Object.values(
+                  item.registros || {}
+                ).reduce(
+                  (total, cantidad) =>
+                    total + (Number(cantidad) || 0),
+                  0
+                );
+
+                return (
+                  <tr
+                    key={
+                      item.id ??
+                      `${curso.id}-${indice}`
+                    }
+                  >
+                    <td>
+                      {formatearFecha(
+                        item.fin || item.inicio || item.fecha
+                      )}
+                    </td>
+
+                    <td>
+                      {etiquetaEstado(item.estado)}
+                    </td>
+
+                    <td>{totalRegistros}</td>
+
+                    <td>
+                      {item.errores?.length > 0 ? (
+                        <ul>
+                          {item.errores.map(
+                            (error, errorIndice) => (
+                              <li key={errorIndice}>
+                                <strong>
+                                  {error.funcion || "Sistema"}:
+                                </strong>{" "}
+                                {error.mensaje ||
+                                  "Error sin descripción"}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      ) : (
+                        "Sin errores"
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+)}
+              </article>
+            );
+          })}
+        </section>
+      )}
+    </main>
+  );
 }

@@ -1,17 +1,26 @@
-
 import api from './api'
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 /**
  * Inicia sesión utilizando el contrato de EduMonitor AI.
- * En modo simulado, permite desarrollar sin el backend.
+ * En modo simulado permite desarrollar sin el backend.
  */
 export async function login(usuario, contrasena) {
   if (USE_MOCK) {
     // Credenciales ficticias únicamente para desarrollo local.
     if (usuario !== 'doc01' || contrasena !== 'valor-de-prueba') {
-      throw new Error('Credenciales incorrectas')
+      throw Object.assign(
+        new Error('Credenciales incorrectas'),
+        {
+          response: {
+            status: 401,
+            data: {
+              title: 'Credenciales incorrectas',
+            },
+          },
+        },
+      )
     }
 
     return {
@@ -36,6 +45,7 @@ export async function login(usuario, contrasena) {
 
 export function guardarSesion(sesion) {
   sessionStorage.setItem('edumonitor_token', sesion.token)
+
   sessionStorage.setItem(
     'edumonitor_usuario',
     JSON.stringify(sesion.usuario),
