@@ -12,6 +12,8 @@ internal sealed class ActividadConfiguracion : IEntityTypeConfiguration<Activida
         builder.HasKey(a => a.Id);
         builder.HasIndex(a => a.MoodleItemId).IsUnique();
         builder.HasOne(a => a.Curso).WithMany().HasForeignKey(a => a.CursoId);
+        // Sin cascada: Curso ya borra en cascada sus actividades y SQL Server no admite dos caminos de cascada.
+        builder.HasOne(a => a.Unidad).WithMany().HasForeignKey(a => a.UnidadId).OnDelete(DeleteBehavior.NoAction);
         builder.Property(a => a.Nombre).HasMaxLength(250).IsRequired();
         builder.Property(a => a.Categoria).HasMaxLength(100);
         builder.Property(a => a.Peso).HasPrecision(9, 5);

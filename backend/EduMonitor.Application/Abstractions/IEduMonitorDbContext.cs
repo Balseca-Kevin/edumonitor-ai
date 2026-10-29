@@ -8,6 +8,7 @@ public interface IEduMonitorDbContext
 {
     DbSet<Usuario> Usuarios { get; }
     DbSet<Curso> Cursos { get; }
+    DbSet<Unidad> Unidades { get; }
     DbSet<CursoDocente> CursosDocentes { get; }
     DbSet<Estudiante> Estudiantes { get; }
     DbSet<Matricula> Matriculas { get; }

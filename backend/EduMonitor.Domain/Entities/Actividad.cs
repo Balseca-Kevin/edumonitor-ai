@@ -11,6 +11,10 @@ public class Actividad
     public int CursoId { get; set; }
     public Curso Curso { get; set; } = null!;
 
+    /// <summary>Unidad (sección de Moodle) donde está la actividad. Null si la actividad no está en una sección, o si la sincronización no pudo leer las secciones.</summary>
+    public int? UnidadId { get; set; }
+    public Unidad? Unidad { get; set; }
+
     /// <summary>Id del ítem de calificación en Moodle. Único: la sincronización hace upsert por este valor.</summary>
     public int MoodleItemId { get; set; }
 
