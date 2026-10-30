@@ -3,7 +3,7 @@ import time
 from typing import TypedDict, Annotated, Sequence, List
 import operator
 
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage
+from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, ToolMessage, SystemMessage
 from langchain_core.tools import tool
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
@@ -14,6 +14,18 @@ from app.tools.backend_tools import consultar_cursos_backend
 MAX_ITERACIONES = 3
 MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+# Sin este mensaje el modelo no sabe que el docente ya inició sesión y pide credenciales
+# en lugar de llamar a la herramienta.
+PROMPT_SISTEMA = (
+    "Eres el asistente de EduMonitor AI para docentes de la UTA. "
+    "El docente ya inició sesión y el sistema envía su autorización automáticamente: "
+    "nunca le pidas usuario, contraseña ni credenciales. "
+    "Para cualquier pregunta sobre sus cursos, llama a la herramienta listar_cursos_autorizados "
+    "antes de responder. "
+    "Responde en español, de forma breve, usando solo los datos que devuelve la herramienta; "
+    "no inventes cursos ni fechas. Si la herramienta no devuelve cursos, dilo así."
+)
 
 class AgentState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
@@ -41,7 +53,7 @@ async def model_node(state: AgentState):
             "iterations": iterations
         }
     
-    response = await llm.ainvoke(state["messages"])
+    response = await llm.ainvoke([SystemMessage(content=PROMPT_SISTEMA), *state["messages"]])
     return {"messages": [response], "iterations": iterations}
 
 async def tool_node(state: AgentState):
