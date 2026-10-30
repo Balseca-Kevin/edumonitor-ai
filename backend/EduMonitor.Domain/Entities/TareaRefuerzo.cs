@@ -1,6 +1,6 @@
 namespace EduMonitor.Domain.Entities;
 
-/// <summary>Tarea de refuerzo propuesta por el agente para un tema (TAREA_REFUERZO en el Diagrama 5). El docente la aprueba (HU-15).</summary>
+/// <summary>Tarea de refuerzo para un tema (TAREA_REFUERZO en el Diagrama 5). El docente la aprueba (HU-15).</summary>
 public class TareaRefuerzo
 {
     public int Id { get; set; }

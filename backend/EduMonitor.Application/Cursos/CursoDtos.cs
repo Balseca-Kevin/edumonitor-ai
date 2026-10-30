@@ -19,8 +19,3 @@ public sealed record CursoDto(
 
 /// <summary>Última sincronización del curso; null si nunca se sincronizó.</summary>
 public sealed record ResumenSincronizacion(int Id, DateTimeOffset Fecha, string Estado);
-
-/// <summary>Respuesta de <c>GET /api/tools/cursos-autorizados</c> (herramienta <c>listar_cursos_autorizados</c> del agente).</summary>
-public sealed record RespuestaCursosAutorizados(string Herramienta, DateTimeOffset Generado, IReadOnlyList<CursoAutorizadoHerramienta> Cursos);
-
-public sealed record CursoAutorizadoHerramienta(int Id, string NombreCorto, string Nombre, DateTimeOffset? UltimaSincronizacion);

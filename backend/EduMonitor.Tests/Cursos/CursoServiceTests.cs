@@ -25,7 +25,7 @@ public class CursoServiceTests : IDisposable
         _bdd = db.Cursos.Single(c => c.NombreCorto == "BDD-4B").Id;
     }
 
-    private CursoService Servicio(EduMonitorDbContext db) => new(db, TimeProvider.System);
+    private CursoService Servicio(EduMonitorDbContext db) => new(db);
 
     [Fact]
     public async Task Un_docente_solo_lista_sus_cursos_y_un_admin_lista_todos()
@@ -62,19 +62,6 @@ public class CursoServiceTests : IDisposable
         Assert.True(await Servicio(db).TieneAccesoAsync(docente, _agil));
         Assert.False(await Servicio(db).TieneAccesoAsync(docente, _bdd));
         Assert.True(await Servicio(db).TieneAccesoAsync(new UsuarioActual(_admin, RolSistema.ADMIN), _bdd));
-    }
-
-    [Fact]
-    public async Task CursosAutorizados_devuelve_el_formato_de_la_herramienta()
-    {
-        await using var db = _bd.CrearContexto();
-
-        var respuesta = await Servicio(db).CursosAutorizadosAsync(new UsuarioActual(_doc01, RolSistema.DOCENTE));
-
-        Assert.Equal("listar_cursos_autorizados", respuesta.Herramienta);
-        var curso = Assert.Single(respuesta.Cursos);
-        Assert.Equal("AGIL-4B", curso.NombreCorto);
-        Assert.Null(curso.UltimaSincronizacion);
     }
 
     public void Dispose() => _bd.Dispose();

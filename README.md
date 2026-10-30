@@ -1,8 +1,8 @@
-# EduMonitor AI
+# EduMonitor
 
 [![CI](https://github.com/Balseca-Kevin/edumonitor-ai/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Balseca-Kevin/edumonitor-ai/actions/workflows/ci.yml)
 
-Aplicación web separada de Moodle que lee cursos, matriculados y calificaciones de un Moodle de laboratorio, calcula indicadores en el backend y ofrece al docente un agente de IA que consulta esos datos. Proyecto final de Metodologías Ágiles · UTA · FISEI · Software 4to «B» · julio–diciembre 2026.
+Aplicación web separada de Moodle que lee cursos, matriculados y calificaciones de un Moodle de laboratorio y calcula indicadores en el backend. Proyecto final de Metodologías Ágiles · UTA · FISEI · Software 4to «B» · julio–diciembre 2026.
 
 ## Equipo
 
@@ -15,22 +15,20 @@ El proyecto se desarrolla con **Scrum**: 3 sprints de 2 semanas, Product Backlog
 | Kevin David Balseca Tumbaco | [Balseca-Kevin](https://github.com/Balseca-Kevin) | Scrum Master y Developer | Backend y Moodle |
 | Sebastián Alexander Freire Ortega | [sebastianftr](https://github.com/sebastianftr) | Developer | Datos y analítica |
 | Santiago David Escobar Chico | [kaijin7](https://github.com/kaijin7) | Developer | Interfaz |
-| Jeremy Alexander Guamán Tuquerres | [levi06516-ui](https://github.com/levi06516-ui) | Developer | Agente de IA |
+| Jeremy Alexander Guamán Tuquerres | [levi06516-ui](https://github.com/levi06516-ui) | Developer | Interfaz |
 
 ## Arquitectura
 
-Monolito modular con un servicio de agente aparte (detalle en [docs/CONTEXTO_IA.md](docs/CONTEXTO_IA.md)):
+Monolito modular:
 
 ```
 React (SPA) ──HTTPS + JWT──► ASP.NET Core API ──► SQL Server (EduMonitorDB)
                                    │
                                    ├──REST token solo lectura──► Moodle de laboratorio
-                                   ▲
-Agente FastAPI + LangGraph ──/api/tools/*──┘      Agente ──► Ollama (modelo local)
 ```
 
-- El frontend y el agente solo hablan con el backend; solo el backend habla con Moodle y con SQL Server.
-- Moodle es de solo lectura. Los cálculos se hacen en el backend con código probado; el modelo de lenguaje solo explica y recomienda.
+- El frontend solo habla con el backend; solo el backend habla con Moodle y con SQL Server.
+- Moodle es de solo lectura. Los cálculos se hacen en el backend con código probado.
 
 | Servicio | Puerto local | Carpeta |
 |---|---|---|
@@ -39,8 +37,6 @@ Agente FastAPI + LangGraph ──/api/tools/*──┘      Agente ──► Oll
 | SQL Server 2022 (`EduMonitorDB`) | 1433 | `moodle-lab/` (contenedor), `backend/` (migraciones) |
 | Backend ASP.NET Core .NET 8 (Swagger en `/swagger`) | 5000 | `backend/` |
 | Frontend React 18 + Vite | 5173 | `frontend/` |
-| Agente FastAPI + LangGraph | 8000 | `agent/` |
-| Ollama | 11434 | instalación local |
 
 ## Sprints
 
@@ -49,12 +45,12 @@ Datos de la planificación (sección 5.6). Duración total: 19 oct – 27 nov 20
 | Sprint | Período | Objetivo | SP | Estado |
 |---|---|---|---|---|
 | 1 | 19 oct – 30 oct 2026 | Requisitos, prototipos, modelo de datos, contratos de API, Moodle de laboratorio, autenticación, cursos y sincronización inicial | 39 | En curso |
-| 2 | 2 nov – 13 nov 2026 | Mapeo temático, panel, ficha individual, indicadores, análisis por tema, reglas de alerta y herramientas del agente | 42 | Por iniciar |
-| 3 | 16 nov – 27 nov 2026 | Agente completo, recomendaciones y tareas de refuerzo, informe, auditoría, pruebas, documentación y sustentación | 29 | Por iniciar |
+| 2 | 2 nov – 13 nov 2026 | Mapeo temático, panel, ficha individual, indicadores, análisis por tema y reglas de alerta | 42 | Por iniciar |
+| 3 | 16 nov – 27 nov 2026 | Recomendaciones, tareas de refuerzo, informe, auditoría, pruebas, documentación y sustentación | 29 | Por iniciar |
 
 ### Sprint 1
 
-> **Sprint Goal:** Tener el Moodle de laboratorio configurado y conectado por servicios web, el modelo de datos creado, la autenticación con autorización por curso, la pantalla de cursos y la primera sincronización verificable; además, validar el agente local con un spike técnico.
+> **Sprint Goal:** Tener el Moodle de laboratorio configurado y conectado por servicios web, el modelo de datos creado, la autenticación con autorización por curso, la pantalla de cursos y la primera sincronización verificable.
 
 7 HU · 35 TA · 39 SP. Estado según los PR de GitHub al 22 oct 2026: «Finalizada» si todos sus PR están fusionados en `develop`, «En revisión» si hay un PR abierto, «Parcial» si hay TA hechas y otras no, «Pendiente» si no hay nada.
 
@@ -66,7 +62,6 @@ Datos de la planificación (sección 5.6). Duración total: 19 oct – 27 nov 20
 | HU-04 | Autenticación JWT y autorización por rol y por curso | Kevin Balseca | 5 | Finalizada | [#3](https://github.com/Balseca-Kevin/edumonitor-ai/pull/3) | [HU-04](docs/evidencias/sprint-1/HU-04/) |
 | HU-05 | Sincronización manual de un curso | Kevin Balseca | 8 | Parcial: TA-05.2, TA-05.3 y TA-05.5 hechas; faltan TA-05.1, TA-05.4 y TA-05.6 | [#4](https://github.com/Balseca-Kevin/edumonitor-ai/pull/4) | [HU-05](docs/evidencias/sprint-1/HU-05/) |
 | HU-06 | Pantallas de inicio de sesión y Mis cursos | Santiago Escobar | 5 | Pendiente | — | [HU-06](docs/evidencias/sprint-1/HU-06/) |
-| HU-07 | Spike del agente con FastAPI, LangGraph y Ollama | Jeremy Guamán | 3 | Pendiente | — | [HU-07](docs/evidencias/sprint-1/HU-07/) |
 
 Índice completo de evidencias: [docs/evidencias/sprint-1/](docs/evidencias/sprint-1/README.md).
 
@@ -76,14 +71,14 @@ Commits sin merges en `develop` (`git shortlog -sn --no-merges origin/develop`, 
 
 | Integrante | Commits en `develop` | TA cerradas (PR) |
 |---|---|---|
-| Kevin Balseca | 17 | TA-01.1 (#1) · TA-02.1, TA-02.4 y base de la API (#2) · TA-04.1, TA-04.2, TA-04.3, TA-04.4 y `GET /api/tools/cursos-autorizados` (#3) · TA-05.2, TA-05.3, TA-05.5 (#4) |
+| Kevin Balseca | 17 | TA-01.1 (#1) · TA-02.1, TA-02.4 y base de la API (#2) · TA-04.1, TA-04.2, TA-04.3, TA-04.4 (#3) · TA-05.2, TA-05.3, TA-05.5 (#4) |
 | Sebastián Freire | 0 | Ninguna en `develop` todavía · aprobó la revisión de #1 a #4 |
 | Santiago Escobar | 0 | Ninguna en `develop` todavía |
 | Jeremy Guamán | 0 | Ninguna en `develop` todavía |
 
 ## Puesta en marcha local
 
-Requisitos: Git, Docker Desktop, .NET 8 SDK y, para las siguientes historias, Node.js LTS, Python 3.11 y Ollama. Todos los comandos se ejecutan desde la raíz del repositorio.
+Requisitos: Git, Docker Desktop, .NET 8 SDK y Node.js LTS. Todos los comandos se ejecutan desde la raíz del repositorio.
 
 1. **Variables de entorno.** Copia `.env.example` a `.env` y cambia las contraseñas. `.env` nunca se sube.
    ```powershell
@@ -107,12 +102,11 @@ Requisitos: Git, Docker Desktop, .NET 8 SDK y, para las siguientes historias, No
    Swagger: <http://localhost:5000/swagger>. Para aplicar las migraciones sin arrancar la API: `dotnet ef database update --project backend/EduMonitor.Infrastructure --startup-project backend/EduMonitor.Api`.
 5. **Pruebas:** `dotnet test backend/EduMonitor.sln`.
 
-El cliente real de Moodle (TA-02.2) aún no está; mientras tanto la sincronización responde 502 y queda registrada como `FALLIDA`. Los pasos del frontend y del agente se agregan con HU-06 y HU-07.
+El cliente real de Moodle (TA-02.2) aún no está; mientras tanto la sincronización responde 502 y queda registrada como `FALLIDA`.
 
 ## Documentación
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): Git Flow, commits, revisiones y Definition of Done.
-- [docs/CONTEXTO_IA.md](docs/CONTEXTO_IA.md): contexto del proyecto, stack, reglas del dominio y funciones de Moodle permitidas.
 - [docs/contratos-api.md](docs/contratos-api.md): rutas, JSON y códigos de respuesta del backend.
 - [docs/planificacion/](docs/planificacion/): planificación Scrum del Sprint 1 y especificación del docente.
 - [docs/evidencias/sprint-1/](docs/evidencias/sprint-1/README.md): evidencias para la Sprint Review.

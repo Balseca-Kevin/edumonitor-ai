@@ -44,19 +44,3 @@ jobs:
         if: hashFiles('frontend/package.json') != ''
         working-directory: frontend
         run: npm run build --if-present
-
-  agent:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        if: hashFiles('agent/requirements.txt') != ''
-        with:
-          python-version: "3.11"
-      - name: Instalar
-        if: hashFiles('agent/requirements.txt') != ''
-        run: pip install -r agent/requirements.txt pytest
-      - name: Probar
-        if: hashFiles('agent/requirements.txt') != ''
-        working-directory: agent
-        run: pytest -q

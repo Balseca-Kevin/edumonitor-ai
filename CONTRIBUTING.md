@@ -1,4 +1,4 @@
-# Cómo contribuir a EduMonitor AI
+# Cómo contribuir a EduMonitor
 
 Trabajamos con Scrum: cada cambio sale de una historia de usuario (HU) y una tarea técnica (TA) del tablero de Jira, y entra a `develop` por Pull Request revisado.
 
@@ -12,7 +12,7 @@ Trabajamos con Scrum: cada cambio sale de una historia de usuario (HU) y una tar
 | `release/sprint-n` | Preparación de la entrega del sprint n; se fusiona en `main` y `develop`. |
 | `hotfix/descripcion` | Corrección urgente sobre `main`. |
 
-El ruleset `proteger-main-develop` exige en `main` y `develop`: Pull Request con **1 aprobación**, CI en verde (`backend`, `frontend` y `agent`), **sin force push** y sin borrar la rama. Nadie sube directo a `main` ni a `develop`.
+El ruleset `proteger-main-develop` exige en `main` y `develop`: Pull Request con **1 aprobación**, CI en verde (`backend` y `frontend`), **sin force push** y sin borrar la rama. Nadie sube directo a `main` ni a `develop`.
 
 ## Commits
 
@@ -25,14 +25,14 @@ Refs: SCRUM-n
 ```
 
 - **Tipos:** `feat`, `fix`, `test`, `docs`, `refactor`, `chore`, `ci`, `build`.
-- **Ámbitos:** `moodle`, `db`, `backend`, `auth`, `sync`, `frontend`, `agent`, `docs`, `ci`.
+- **Ámbitos:** `moodle`, `db`, `backend`, `auth`, `sync`, `frontend`, `docs`, `ci`.
 
 ## Pull Requests y revisión
 
 - Usa la plantilla `.github/pull_request_template.md` completa: qué hace, cómo probarlo, evidencia y Definition of Done.
-- Pares de revisión: **Kevin ↔ Sebastián** (backend, Moodle y datos) y **Santiago ↔ Jeremy** (interfaz y agente).
+- Pares de revisión: **Kevin ↔ Sebastián** (backend, Moodle y datos) y **Santiago ↔ Jeremy** (interfaz).
 - Un cambio en `docs/contratos-api.md` va en un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
-- Cada cambio trae pruebas: xUnit en backend, Vitest en frontend y pytest en agente.
+- Cada cambio trae pruebas: xUnit en backend y Vitest en frontend.
 
 ## Definition of Done (planificación, sección 5.4)
 
@@ -49,9 +49,3 @@ Una historia de usuario está terminada cuando:
 ## Secretos
 
 Solo en `.env` (nunca versionado). `.env.example` lista las variables con valores de prueba. Ni tokens ni contraseñas en código, pruebas, logs, capturas o evidencias: se tapan como `••••` más los últimos 4 caracteres.
-
-## Asistentes de IA
-
-- `CLAUDE.md` (Claude Code), `AGENTS.md` y `backend/AGENTS.md` (Codex y otros agentes) y `.github/copilot-instructions.md` (Copilot) cargan el contexto del repo.
-- Para una IA sin acceso al repo, pega [docs/CONTEXTO_IA.md](docs/CONTEXTO_IA.md) al inicio de la conversación.
-- Lo que genere una IA se revisa igual que cualquier código: pruebas en verde, revisión del par y nada de secretos. Las notas personales van en `CLAUDE.local.md`, que está en `.gitignore`.

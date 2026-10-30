@@ -69,7 +69,7 @@ export default function Login() {
     <main className="login-page">
       <section className="login-panel">
         <p className="login-panel-sello">UTA · FISEI · Software</p>
-        <p className="login-panel-marca">EduMonitor AI</p>
+        <p className="login-panel-marca">EduMonitor</p>
         <p className="login-panel-valor">
           Seguimiento académico con datos reales de tu aula virtual
         </p>
@@ -124,7 +124,7 @@ export default function Login() {
           </form>
 
           <p className="login-footer">
-            EduMonitor AI · Monitoreo académico · Metodologías Ágiles 2026
+            EduMonitor · Monitoreo académico · Metodologías Ágiles 2026
           </p>
         </div>
       </section>

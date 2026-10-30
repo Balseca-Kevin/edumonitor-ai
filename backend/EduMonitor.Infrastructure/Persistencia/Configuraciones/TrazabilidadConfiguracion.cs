@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace EduMonitor.Infrastructure.Persistencia.Configuraciones;
 
-// Conversaciones con el agente, trazas de herramientas y auditoría (Sprints 2 y 3).
+// Conversaciones, trazas de procesos y auditoría (Sprints 2 y 3).
 
 internal sealed class ConversacionConfiguracion : IEntityTypeConfiguration<Conversacion>
 {

@@ -12,6 +12,5 @@ Reglas: tokens y contraseñas tapados (`••••` más los últimos 4 caract
 | [HU-04](HU-04/) | Kevin Balseca | Capturas con las respuestas 200, 403 y 401 | [README.md](HU-04/README.md) | Parcial: faltan las capturas de Postman |
 | [HU-05](HU-05/) | Kevin Balseca | Tabla con 10 notas comparadas con Moodle | [pruebas.md](HU-05/pruebas.md), [TA-05.6_comparacion_notas.md](HU-05/TA-05.6_comparacion_notas.md) | Completa: 10 de 10 notas coinciden; falta solo la captura de Postman |
 | [HU-06](HU-06/) | Santiago Escobar | Pantallas funcionando con búsqueda, filtros y estado de sincronización | Captura en la descripción del PR #6 (modo simulado) | Parcial: falta la captura con datos del Moodle de laboratorio |
-| [HU-07](HU-07/) | Jeremy Guamán | Modelo local respondiendo con una herramienta conectada | `agent/docs/spike.md`; pruebas reales en el PR #16 | Parcial: faltan las capturas de `ollama list` y de `POST /chat` con el backend arriba y detenido (Jeremy) |
 
 Cada carpeta tiene un `README.md` con los archivos que faltan, quién los sube y con qué nombre.

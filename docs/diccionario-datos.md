@@ -130,7 +130,7 @@ Se muestra como «Requiere atención», nunca como «reprobará» ni «en riesgo
 | Id | int | No | PK |
 | TemaId | int | No | FK → Tema |
 | EstudianteId | int | Sí | FK → Estudiante. Null en una tarea grupal |
-| Contenido | nvarchar(max) | No | Texto de la tarea propuesta por el agente |
+| Contenido | nvarchar(max) | No | Texto de la tarea de refuerzo |
 | Estado | nvarchar(20) | No | `BORRADOR`, `APROBADA` o `DESCARTADA` |
 
 ## Trazabilidad y auditoría

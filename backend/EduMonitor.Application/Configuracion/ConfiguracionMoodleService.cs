@@ -9,7 +9,7 @@ namespace EduMonitor.Application.Configuracion;
 /// </summary>
 public sealed class ConfiguracionMoodleService(IConfiguracionMoodle configuracion, IMoodleClient moodle, ILogger<ConfiguracionMoodleService> logger)
 {
-    /// <summary>Las únicas funciones de Moodle que EduMonitor puede llamar (docs/CONTEXTO_IA.md).</summary>
+    /// <summary>Las únicas funciones de Moodle que EduMonitor puede llamar.</summary>
     public static readonly IReadOnlyList<string> FuncionesPermitidas = new[]
     {
         "core_webservice_get_site_info",

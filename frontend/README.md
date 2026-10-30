@@ -1,9 +1,9 @@
-# EduMonitor AI — Frontend
+# EduMonitor — Frontend
 
-Interfaz web de EduMonitor AI desarrollada con React 18 y Vite.
+Interfaz web de EduMonitor desarrollada con React 18 y Vite.
 
 Permite a los usuarios autenticarse, consultar sus cursos y ejecutar
-sincronizaciones con Moodle a través del backend de EduMonitor AI.
+sincronizaciones con Moodle a través del backend de EduMonitor.
 
 ## Tecnologías
 
@@ -18,7 +18,7 @@ sincronizaciones con Moodle a través del backend de EduMonitor AI.
 
 - Node.js compatible con Vite 6
 - npm
-- Backend de EduMonitor AI para las pruebas de integración
+- Backend de EduMonitor para las pruebas de integración
 
 ## Instalación
 

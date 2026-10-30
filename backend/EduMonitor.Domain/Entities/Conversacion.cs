@@ -1,6 +1,6 @@
 namespace EduMonitor.Domain.Entities;
 
-/// <summary>Conversación de un docente con el agente sobre un curso (CONVERSACION en el Diagrama 5).</summary>
+/// <summary>Conversación de un docente sobre un curso (CONVERSACION en el Diagrama 5).</summary>
 public class Conversacion
 {
     public int Id { get; set; }

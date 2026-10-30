@@ -4,10 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EduMonitor.Application.Cursos;
 
-public sealed class CursoService(IEduMonitorDbContext db, TimeProvider reloj)
+public sealed class CursoService(IEduMonitorDbContext db)
 {
-    public const string HerramientaCursosAutorizados = "listar_cursos_autorizados";
-
     /// <summary>Cursos asignados al docente; un ADMIN recibe todos. Filtros opcionales por texto y periodo.</summary>
     public async Task<IReadOnlyList<CursoDto>> ListarAsync(UsuarioActual usuario, string? busqueda, string? periodo, CancellationToken ct = default)
     {
@@ -48,16 +46,6 @@ public sealed class CursoService(IEduMonitorDbContext db, TimeProvider reloj)
     /// <summary>True si el usuario puede ver el curso: es ADMIN o el curso está asignado a ese docente.</summary>
     public async Task<bool> TieneAccesoAsync(UsuarioActual usuario, int cursoId, CancellationToken ct = default) =>
         usuario.EsAdmin || await db.CursosDocentes.AnyAsync(cd => cd.UsuarioId == usuario.Id && cd.CursoId == cursoId, ct);
-
-    /// <summary>Datos de la herramienta <c>listar_cursos_autorizados</c> del agente.</summary>
-    public async Task<RespuestaCursosAutorizados> CursosAutorizadosAsync(UsuarioActual usuario, CancellationToken ct = default)
-    {
-        var cursos = await ListarAsync(usuario, null, null, ct);
-        return new RespuestaCursosAutorizados(
-            HerramientaCursosAutorizados,
-            reloj.GetLocalNow(),
-            cursos.Select(c => new CursoAutorizadoHerramienta(c.Id, c.NombreCorto, c.Nombre, c.UltimaSincronizacion?.Fecha)).ToList());
-    }
 
     private IQueryable<Curso> CursosVisibles(UsuarioActual usuario) =>
         usuario.EsAdmin

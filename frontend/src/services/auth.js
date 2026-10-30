@@ -3,7 +3,7 @@ import api from './api'
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 
 /**
- * Inicia sesión utilizando el contrato de EduMonitor AI.
+ * Inicia sesión utilizando el contrato de EduMonitor.
  * En modo simulado permite desarrollar sin el backend.
  */
 export async function login(usuario, contrasena) {

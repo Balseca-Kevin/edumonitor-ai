@@ -66,7 +66,6 @@ public class PermisosTests(ApiConDatosFactory factory) : IClassFixture<ApiConDat
     [Theory]
     [InlineData("/api/cursos")]
     [InlineData("/api/cursos/1")]
-    [InlineData("/api/tools/cursos-autorizados")]
     public async Task Sin_token_responde_401_con_ProblemDetails(string ruta)
     {
         var cliente = factory.CreateClient();
@@ -151,22 +150,4 @@ public class PermisosTests(ApiConDatosFactory factory) : IClassFixture<ApiConDat
         Assert.Equal("BDD-4B", curso.GetProperty("nombreCorto").GetString());
     }
 
-    // --- Herramienta del agente ---
-
-    [Fact]
-    public async Task Tools_cursos_autorizados_responde_200_y_registra_la_llamada_sin_el_token()
-    {
-        var doc01 = await factory.ClienteConSesionAsync("doc01");
-        var token = doc01.DefaultRequestHeaders.Authorization!.Parameter!;
-
-        var respuesta = await doc01.GetAsync("/api/tools/cursos-autorizados");
-
-        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
-        var cuerpo = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("listar_cursos_autorizados", cuerpo.GetProperty("herramienta").GetString());
-        Assert.Equal("AGIL-4B", Assert.Single(cuerpo.GetProperty("cursos").EnumerateArray()).GetProperty("nombreCorto").GetString());
-
-        Assert.Contains(factory.Logs.Mensajes, m => m.Contains("Herramienta listar_cursos_autorizados") && m.Contains("resultado OK"));
-        Assert.DoesNotContain(factory.Logs.Mensajes, m => m.Contains(token));
-    }
 }

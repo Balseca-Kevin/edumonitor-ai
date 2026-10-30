@@ -1,6 +1,6 @@
 namespace EduMonitor.Domain.Entities;
 
-/// <summary>Llamada del agente a una herramienta del backend (TRAZA_HERRAMIENTA en el Diagrama 5). Nunca guarda tokens.</summary>
+/// <summary>Registro de una herramienta del backend (TRAZA_HERRAMIENTA en el Diagrama 5). Nunca guarda tokens.</summary>
 public class TrazaHerramienta
 {
     public int Id { get; set; }

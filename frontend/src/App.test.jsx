@@ -55,7 +55,7 @@ afterEach(() => {
   window.history.pushState({}, '', '/')
 })
 
-describe('TA-06.5 - Navegación de EduMonitor AI', () => {
+describe('TA-06.5 - Navegación de EduMonitor', () => {
   it('redirige al login cuando no existe una sesión', async () => {
     window.history.pushState({}, '', '/cursos')
 

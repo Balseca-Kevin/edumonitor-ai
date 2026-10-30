@@ -1,6 +1,6 @@
 # Contratos de API · Sprint 1 (versión 1.0, 21 oct 2026)
 
-Este archivo define lo que el frontend y el agente pueden pedir al backend en el Sprint 1. Santiago y Jeremy trabajan contra estos JSON con datos simulados mientras el backend se termina. Un cambio aquí se hace con un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
+Este archivo define lo que el frontend puede pedir al backend en el Sprint 1. Un cambio aquí se hace con un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
 
 ## Reglas generales
 
@@ -139,45 +139,3 @@ Respuesta 200:
 }
 ```
 Si Moodle no responde: 200 con `"conectado": false` y `"error": "texto útil"`. Una función no disponible no bloquea a las demás.
-
-## Herramientas para el agente (HU-07)
-
-En el Sprint 1 el agente reenvía el JWT del docente que hace la pregunta. En el Sprint 2 se cambia por el proxy `POST /api/agente/chat` y un token de servicio, como dice la planificación.
-
-### GET /api/tools/cursos-autorizados · DOCENTE
-
-Respuesta 200:
-```json
-{
-  "herramienta": "listar_cursos_autorizados",
-  "generado": "2026-10-22T09:30:00-05:00",
-  "cursos": [
-    { "id": 1, "nombreCorto": "AGIL-4B", "nombre": "Metodologías Ágiles (lab)", "ultimaSincronizacion": "2026-10-22T09:15:00-05:00" }
-  ]
-}
-```
-401 sin token. El backend registra cada llamada (herramienta, usuario, fecha, resultado) sin guardar el token.
-
-## Servicio de agente (HU-07)
-
-Base local: `http://localhost:8000`.
-
-### POST /chat
-
-Petición:
-```json
-{ "mensaje": "¿Qué cursos tengo asignados?", "token": "<jwt del docente>" }
-```
-
-Respuesta 200:
-```json
-{
-  "respuesta": "Tienes 1 curso asignado: Metodologías Ágiles (lab), sincronizado el 22/10/2026 a las 09:15.",
-  "herramientas": [
-    { "nombre": "listar_cursos_autorizados", "parametros": {}, "estado": "OK", "duracionMs": 84 }
-  ],
-  "modelo": "qwen2.5:7b",
-  "duracionMs": 6120
-}
-```
-Si la herramienta falla, `estado` es `"ERROR"`, la respuesta dice que no pudo consultar los cursos y no lista cursos inventados.

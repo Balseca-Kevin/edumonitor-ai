@@ -2,10 +2,7 @@
 .env
 *.env
 !.env.example
-
-# Personales de IA
-CLAUDE.local.md
-.claude/settings.local.json
+*.local.md
 
 # .NET
 bin/

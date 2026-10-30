@@ -24,7 +24,7 @@ const ROL = 'edumonitor_lectura';
 const USUARIO = 'edumonitor_ws_user';
 const SERVICIO = 'edumonitor_ws';
 
-// Las únicas funciones que EduMonitor puede llamar (docs/CONTEXTO_IA.md).
+// Las únicas funciones que EduMonitor puede llamar.
 const FUNCIONES = [
     'core_webservice_get_site_info',
     'core_enrol_get_users_courses',

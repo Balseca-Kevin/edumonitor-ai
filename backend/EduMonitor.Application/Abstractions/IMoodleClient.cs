@@ -4,7 +4,7 @@ namespace EduMonitor.Application.Abstractions;
 
 /// <summary>
 /// Lectura del Moodle de laboratorio por servicios web REST. Un método por cada función permitida
-/// (ver docs/CONTEXTO_IA.md); ninguna otra función de Moodle se usa. Solo lectura.
+/// (ver la documentación del proyecto); ninguna otra función de Moodle se usa. Solo lectura.
 /// Los métodos lanzan <see cref="MoodleNoDisponibleException"/> si Moodle no responde o devuelve un error.
 /// </summary>
 public interface IMoodleClient
