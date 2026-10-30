@@ -16,6 +16,7 @@ public sealed class MoodleClientFalso : IMoodleClient
     public List<EntregaMoodle> Entregas { get; } = new();
     public Dictionary<int, List<FinalizacionActividadMoodle>> Finalizacion { get; } = new();
     public HashSet<string> Fallar { get; } = new();
+    public List<string> FuncionesSitio { get; } = new();
     public List<string> Llamadas { get; } = new();
 
     /// <summary>
@@ -68,7 +69,7 @@ public sealed class MoodleClientFalso : IMoodleClient
     }
 
     public Task<InfoSitioMoodle> ObtenerInfoSitioAsync(CancellationToken ct = default) =>
-        Responder("core_webservice_get_site_info", new InfoSitioMoodle("Moodle-Lab-UTA", "4.5", "edumonitor_ws_user", Array.Empty<string>()));
+        Responder("core_webservice_get_site_info", new InfoSitioMoodle("Moodle-Lab-UTA", "4.5", "edumonitor_ws_user", FuncionesSitio.ToList()));
 
     public Task<IReadOnlyList<CursoMoodle>> ObtenerCursosDeUsuarioAsync(int moodleUsuarioId, CancellationToken ct = default) =>
         Responder<IReadOnlyList<CursoMoodle>>("core_enrol_get_users_courses", Array.Empty<CursoMoodle>());

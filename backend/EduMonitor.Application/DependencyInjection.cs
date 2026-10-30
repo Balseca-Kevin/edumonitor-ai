@@ -1,4 +1,5 @@
 using EduMonitor.Application.Auth;
+using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Sincronizaciones;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<ImportadorCalificaciones>();
         services.AddScoped<ImportadorEntregas>();
         services.AddScoped<SincronizacionService>();
+        services.AddScoped<ConfiguracionMoodleService>();
         return services;
     }
 }

@@ -3,6 +3,7 @@ using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Sincronizaciones;
 using EduMonitor.Domain.Enums;
+using EduMonitor.Infrastructure.Moodle;
 using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Infrastructure.Seguridad;
 using EduMonitor.Tests.Infraestructura;
@@ -36,7 +37,7 @@ public class SincronizacionServiceTests : IDisposable
             new ImportadorMatriculados(_moodle, db),
             new ImportadorCalificaciones(_moodle, db),
             new ImportadorEntregas(_moodle, db),
-            Options.Create(new MoodleOptions { Url = "http://localhost:8080" }),
+            new ConfiguracionMoodleEnMemoria(Options.Create(new MoodleOptions { Url = "http://localhost:8080" }), TimeProvider.System),
             TimeProvider.System);
         return await servicio.SincronizarAsync(cursoId ?? _cursoId, _doc01);
     }

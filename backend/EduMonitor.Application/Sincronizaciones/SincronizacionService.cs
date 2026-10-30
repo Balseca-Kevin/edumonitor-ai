@@ -4,7 +4,6 @@ using EduMonitor.Application.Cursos;
 using EduMonitor.Domain.Entities;
 using EduMonitor.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace EduMonitor.Application.Sincronizaciones;
 
@@ -19,7 +18,7 @@ public sealed class SincronizacionService(
     ImportadorMatriculados matriculados,
     ImportadorCalificaciones calificaciones,
     ImportadorEntregas entregas,
-    IOptions<MoodleOptions> moodle,
+    IConfiguracionMoodle moodle,
     TimeProvider reloj)
 {
     /// <summary>Sincroniza el curso y devuelve el registro. Null si el curso no existe.</summary>
@@ -36,7 +35,7 @@ public sealed class SincronizacionService(
             CursoId = curso.Id,
             UsuarioId = usuario.Id,
             Inicio = reloj.GetLocalNow(),
-            Origen = moodle.Value.Url,
+            Origen = moodle.Actual.Url,
         };
         var pasosCorrectos = 0;
 

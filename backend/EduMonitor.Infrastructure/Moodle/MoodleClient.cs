@@ -6,7 +6,6 @@ using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Abstractions.Moodle;
 using EduMonitor.Application.Configuracion;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace EduMonitor.Infrastructure.Moodle;
 
@@ -15,7 +14,7 @@ namespace EduMonitor.Infrastructure.Moodle;
 /// El token va en el cuerpo del POST, nunca en la URL ni en los registros. Si Moodle no responde o devuelve un error,
 /// lanza <see cref="MoodleNoDisponibleException"/>; los fallos de red se reintentan antes de rendirse.
 /// </summary>
-internal sealed partial class MoodleClient(HttpClient http, IOptions<MoodleOptions> opciones, ILogger<MoodleClient> logger) : IMoodleClient
+internal sealed partial class MoodleClient(HttpClient http, IConfiguracionMoodle configuracion, ILogger<MoodleClient> logger) : IMoodleClient
 {
     /// <summary>Reintentos ante fallos de red, tiempo de espera o 5xx. Un error de Moodle (token, permisos) no se reintenta.</summary>
     internal const int Reintentos = 2;
@@ -165,7 +164,7 @@ internal sealed partial class MoodleClient(HttpClient http, IOptions<MoodleOptio
     /// </summary>
     private async Task<JsonDocument> LlamarAsync(string funcion, Dictionary<string, string> parametros, CancellationToken ct)
     {
-        var moodle = opciones.Value;
+        var moodle = configuracion.Actual;
         if (!moodle.TokenConfigurado || string.IsNullOrWhiteSpace(moodle.Url))
         {
             throw new MoodleNoDisponibleException(funcion, "La conexión con Moodle no está configurada (Moodle__Url y Moodle__Token).");
