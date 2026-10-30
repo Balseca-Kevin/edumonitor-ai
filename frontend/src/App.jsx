@@ -2,6 +2,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Login from './pages/Login'
 import Cursos from './pages/Cursos'
+import ConfiguracionMoodle from './pages/ConfiguracionMoodle'
 import Layout from './components/Layout'
 import './App.css'
 
@@ -13,6 +14,7 @@ export default function App() {
 
         <Route element={<Layout />}>
           <Route path="/cursos" element={<Cursos />} />
+          <Route path="/admin/moodle" element={<ConfiguracionMoodle />} />
         </Route>
 
         <Route
