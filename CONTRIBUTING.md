@@ -58,6 +58,6 @@ Solo en `.env` (nunca versionado). `.env.example` lista las variables con valore
 
 ## Asistentes de IA
 
-- `CLAUDE.md` (Claude Code), `AGENTS.md` y `backend/AGENTS.md` (Codex y otros agentes) y `.github/copilot-instructions.md` (Copilot) cargan el contexto del repo.
+- `CLAUDE.md` (Claude Code), `AGENTS.md`, `backend/AGENTS.md`, `frontend/AGENTS.md` y `agent/AGENTS.md` (Codex y otros agentes) y `.github/copilot-instructions.md` (Copilot) cargan el contexto del repo.
 - Para una IA sin acceso al repo, pega [docs/CONTEXTO_IA.md](docs/CONTEXTO_IA.md) al inicio de la conversación.
 - Lo que genere una IA se revisa igual que cualquier código: pruebas en verde, aprobación de Kevin y nada de secretos. Las notas personales van en `CLAUDE.local.md`, que está en `.gitignore`.

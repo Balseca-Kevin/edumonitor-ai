@@ -52,7 +52,7 @@ Mientras una dependencia no esté, se trabaja contra el contrato con datos simul
 
 | TA | Tarea | h | Límite | Archivos |
 |---|---|---|---|---|
-| TA-20.1 | Dockerfile multi-etapa de la API y del frontend (build de Vite + nginx con proxy `/api` → `api:5000`) | 2 | Lun 9, 12:00 | `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.dockerignore` |
+| TA-20.1 | Dockerfile multi-etapa de la API y del frontend (build de Vite + nginx con proxy `/api` → `api:5000`). `frontend/src/services/api.js` usa `VITE_API_URL ?? ''` para que en Docker la app llame a `/api` en la misma dirección | 2 | Lun 9, 12:00 | `backend/Dockerfile`, `frontend/Dockerfile`, `frontend/nginx.conf`, `.dockerignore`, `frontend/src/services/api.js` |
 | TA-20.2 | Dockerfile del agente y servicio `ollama` con GPU y descarga de `qwen2.5:7b` | 2 | Lun 9, 12:00 | `agent/Dockerfile`, `docker-compose.yml` |
 | TA-20.3 | `docker-compose.yml` de EduMonitor en la raíz (`name: edumonitor`: web, api, sqlserver, agent, ollama) y `moodle-lab/docker-compose.yml` solo con moodle y moodle-db (`name: aula-virtual`); healthchecks, `depends_on` con `service_healthy`, mismos volúmenes | 2 | Lun 9, 12:00 | `docker-compose.yml`, `moodle-lab/docker-compose.yml`, `.env.example` |
 | TA-20.4 | Configuración de Moodle en la tabla `ConfiguracionMoodle`, token protegido con Data Protection y llaves en el volumen `api-keys` | 2 | Mar 10 | `backend/EduMonitor.Domain`, `backend/EduMonitor.Infrastructure/Moodle`, migración |
