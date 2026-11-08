@@ -1,6 +1,6 @@
-# Contratos de API · Sprint 1 (versión 1.0, 21 oct 2026)
+# Contratos de API · Sprints 1 y 2 (versión 1.0 del 21 oct 2026; bloque del Sprint 2 al final)
 
-Este archivo define lo que el frontend y el agente pueden pedir al backend en el Sprint 1. Santiago y Jeremy trabajan contra estos JSON con datos simulados mientras el backend se termina. Un cambio aquí se hace con un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
+Este archivo define lo que el frontend y el agente pueden pedir al backend en los Sprints 1 y 2. Santiago y Jeremy trabajan contra estos JSON con datos simulados mientras el backend se termina. Un cambio aquí se hace con un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
 
 ## Reglas generales
 
@@ -25,7 +25,9 @@ Este archivo define lo que el frontend y el agente pueden pedir al backend en el
 | 401 | Sin token, token vencido o credenciales incorrectas |
 | 403 | Token válido pero sin permiso (curso ajeno, rol insuficiente) |
 | 404 | Recurso inexistente |
+| 409 | Curso sin sincronizar (Sprint 2, indicadores) |
 | 502 | Moodle no responde o devuelve error |
+| 503 | Asistente no disponible (Sprint 2, chat) |
 
 - Roles en el JWT: `DOCENTE` o `ADMIN` (claim `role`). El id del usuario va en `sub`.
 
@@ -181,3 +183,235 @@ Respuesta 200:
 }
 ```
 Si la herramienta falla, `estado` es `"ERROR"`, la respuesta dice que no pudo consultar los cursos y no lista cursos inventados.
+
+---
+
+# Contratos de API · Sprint 2 (versión 2.0, propuesta del 8 nov 2026)
+
+Lo de arriba sigue vigente salvo estos cambios:
+
+- La configuración de Moodle es persistente: se guarda en la base (HU-20).
+- Las herramientas del agente aceptan el rol `AGENTE` con el token de servicio (HU-13, HU-14).
+- `POST /chat` del agente tiene cuerpo nuevo: lleva `cursoId` y el token de servicio en lugar del JWT del docente.
+- El agente no publica puerto: solo lo llama la API por la red interna.
+- Códigos nuevos: 409 (curso sin sincronizar) y 503 (asistente no disponible).
+
+Los cambios de este bloque se aprueban en la Sprint Planning del domingo 8 nov; después, cualquier cambio se avisa en el grupo antes de fusionarlo.
+
+Base local con Docker: la aplicación en `http://localhost:5173` (nginx pasa `/api` a la API) y la API directa en `http://localhost:5000`.
+
+## Configuración de Moodle persistente (HU-20, TA-20.4)
+
+Mismas rutas y JSON que en el Sprint 1. Cambia el almacenamiento:
+
+- `PUT /api/admin/moodle-config` guarda URL y token en la tabla `ConfiguracionMoodle` (una fila). El token se protege con ASP.NET Core Data Protection; las llaves viven en el volumen `api-keys` (`/keys`).
+- Al arrancar, la API usa la fila de la base si existe; si no, usa `Moodle__Url` y `Moodle__Token` del entorno.
+- `tokenEnmascarado` sigue siendo «••••» más los últimos 4 caracteres.
+
+## Estado del sistema (HU-20, TA-20.5)
+
+### GET /api/admin/estado · ADMIN
+
+```json
+{
+  "generado": "2026-11-11T10:00:00-05:00",
+  "servicios": [
+    { "nombre": "api", "estado": "OK", "detalle": "versión 0.2.0" },
+    { "nombre": "sqlserver", "estado": "OK", "detalle": "EduMonitorDB" },
+    { "nombre": "moodle", "estado": "OK", "detalle": "Moodle-Lab-UTA 4.5" },
+    { "nombre": "agente", "estado": "NO_DISPONIBLE", "detalle": "No respondió en 3 s" },
+    { "nombre": "modelo", "estado": "NO_DISPONIBLE", "detalle": "Sin dato: el agente no respondió" }
+  ]
+}
+```
+`estado`: `OK` o `NO_DISPONIBLE`. Cada servicio se consulta con un tiempo máximo de 3 s y un servicio caído no detiene a los demás. Para `agente` y `modelo` la API llama a `GET /salud` del agente. 403 para DOCENTE.
+
+## Indicadores del curso (HU-09)
+
+### GET /api/cursos/{id}/indicadores · DOCENTE
+
+Se calcula con los datos guardados de la última sincronización. 403 si el curso es ajeno. 404 si no existe. 409 con `ProblemDetails` («Curso sin sincronizar») si nunca se sincronizó.
+
+```json
+{
+  "cursoId": 1,
+  "escala": 10,
+  "aprobacion": 7.0,
+  "sincronizacion": { "id": 12, "fecha": "2026-11-09T07:10:00-05:00", "estado": "COMPLETADA" },
+  "unidades": [
+    { "numero": 1, "nombre": "Unidad 1", "parcial": 1, "actividades": 4, "calificadas": 4 }
+  ],
+  "curso": {
+    "estudiantes": 32,
+    "actividadesEvaluadas": 16,
+    "promedio": 7.42,
+    "mediana": 7.6,
+    "desviacion": 1.35,
+    "tasaFinalizacion": 0.81,
+    "tendencia": -0.4
+  },
+  "distribucion": [ { "desde": 0, "hasta": 1, "cantidad": 0 } ],
+  "grupos": { "alto": 6, "medio": 18, "bajo": 8 },
+  "estudiantes": [
+    {
+      "id": 5,
+      "nombre": "Ana",
+      "apellido": "Pérez",
+      "promedioPonderado": 6.1,
+      "parcial": false,
+      "z": -0.98,
+      "grupo": "MEDIO",
+      "notas": { "calificadas": 12, "ceros": 1, "sinEntrega": 2, "pendientes": 1 },
+      "tasaFinalizacion": 0.75,
+      "tendencia": -1.8
+    }
+  ],
+  "noDisponibles": []
+}
+```
+- Los valores del ejemplo son ilustrativos.
+- `distribucion` tiene 10 tramos de 1 punto (0–1 … 9–10). `grupo`: `ALTO`, `MEDIO` o `BAJO`.
+- `parcial: true` cuando faltó una categoría y se normalizaron los pesos.
+- Si la última sincronización fue `PARCIAL` y faltó la función de finalización, `tasaFinalizacion` va en `null` y `"tasaFinalizacion"` aparece en `noDisponibles`. La interfaz muestra «no disponible», nunca 0.
+- `tendencia` = promedio de las últimas 3 calificadas − promedio de las anteriores. `null` si hay menos de 4 notas.
+
+## Reglas y alertas (HU-12)
+
+### GET /api/cursos/{id}/reglas · DOCENTE
+
+Si el curso no tiene reglas, se crean las tres con sus umbrales por defecto en la primera consulta.
+
+```json
+[
+  { "codigo": "R1", "nombre": "Descenso reciente", "umbral": 1.5, "activa": true, "condicion": "Tendencia menor o igual a −umbral con las últimas 3 notas" },
+  { "codigo": "R2", "nombre": "Atrasos", "umbral": 2, "activa": true, "condicion": "Actividades vencidas sin entrega mayor o igual a umbral" },
+  { "codigo": "R4", "nombre": "Promedio bajo", "umbral": 7.0, "activa": true, "condicion": "Promedio ponderado menor a umbral con al menos 4 notas" }
+]
+```
+
+### PUT /api/cursos/{id}/reglas · DOCENTE
+
+```json
+[ { "codigo": "R4", "umbral": 5.0, "activa": true } ]
+```
+Respuesta 204 y recálculo de las alertas del curso. 400 si el umbral sale de rango (R1: 0,5 a 5; R2: 1 a 10; R4: 1 a 10) o el código no existe.
+
+### GET /api/cursos/{id}/alertas?estado=ACTIVA · DOCENTE
+
+`estado`: `ACTIVA` (por defecto) o `REVISADA`. Las alertas se recalculan al terminar una sincronización y al cambiar una regla.
+
+```json
+[
+  {
+    "id": 31,
+    "regla": "R4",
+    "titulo": "Requiere atención",
+    "estudiante": { "id": 5, "nombre": "Ana", "apellido": "Pérez" },
+    "estado": "ACTIVA",
+    "generada": "2026-11-10T07:12:00-05:00",
+    "revisada": null,
+    "evidencia": { "promedio": 6.1, "notas": 12, "umbral": 7.0 }
+  }
+]
+```
+Forma de `evidencia` por regla:
+- R1: `{ "ultimas": [5.0, 4.5, 4.0], "anteriores": [7.5, 8.0], "diferencia": -3.25, "umbral": 1.5 }`
+- R2: `{ "actividades": [ { "nombre": "Tarea 5", "fechaLimite": "2026-11-03T23:59:00-05:00" } ], "umbral": 2 }`
+- R4: `{ "promedio": 6.1, "notas": 12, "umbral": 7.0 }`
+
+Requiere migración: `Alerta` agrega `Generada` y `Revisada` (fechas), y `Evidencia` guarda el JSON.
+
+### PATCH /api/cursos/{id}/alertas/{alertaId} · DOCENTE
+
+```json
+{ "estado": "REVISADA" }
+```
+Respuesta 200 con la alerta actualizada. 404 si la alerta no es de ese curso.
+
+## Herramientas para el agente (HU-13)
+
+Desde el Sprint 2 las herramientas aceptan dos tipos de token:
+- JWT del docente (rol `DOCENTE`), como en el Sprint 1.
+- Token de servicio (rol `AGENTE`) que emite la API en `POST /api/agente/chat`: claims `role=AGENTE`, `docente=<id del docente>`, `curso=<id del curso>`, vence en 2 minutos. La autorización por curso se aplica sobre el docente del claim.
+
+Todas responden 401 sin token y 403 si el curso no es del docente. El backend registra cada llamada (herramienta, docente, fecha, resultado) sin guardar el token.
+
+### GET /api/tools/cursos-autorizados
+
+Sin cambios.
+
+### GET /api/tools/calificaciones?cursoId=1&estudianteId=5
+
+`estudianteId` es opcional: sin él devuelve todo el curso.
+
+```json
+{
+  "herramienta": "obtener_calificaciones",
+  "generado": "2026-11-10T09:30:00-05:00",
+  "curso": { "id": 1, "nombreCorto": "AGIL-4B", "ultimaSincronizacion": "2026-11-10T07:10:00-05:00" },
+  "estudiantes": [
+    {
+      "id": 5, "nombre": "Ana", "apellido": "Pérez", "promedioPonderado": 6.1,
+      "calificaciones": [
+        { "actividad": "Tarea 1", "categoria": "Tareas", "unidad": 1, "nota": 6.25, "estado": "CALIFICADO" },
+        { "actividad": "Tarea 5", "categoria": "Tareas", "unidad": 3, "nota": null, "estado": "SIN_ENTREGA" }
+      ]
+    }
+  ]
+}
+```
+
+### GET /api/tools/alertas?cursoId=1
+
+```json
+{
+  "herramienta": "identificar_alertas",
+  "generado": "2026-11-10T09:30:00-05:00",
+  "curso": { "id": 1, "nombreCorto": "AGIL-4B" },
+  "alertas": [ "mismo objeto que GET /api/cursos/{id}/alertas, solo ACTIVA" ]
+}
+```
+
+## Chat del asistente (HU-14)
+
+### POST /api/agente/chat · DOCENTE
+
+Petición:
+```json
+{ "cursoId": 1, "mensaje": "¿Qué estudiantes requieren atención?" }
+```
+La API valida el curso, emite el token de servicio, llama a `POST /chat` del agente y guarda la conversación con sus trazas.
+
+Respuesta 200:
+```json
+{
+  "conversacionId": 44,
+  "respuesta": "Hechos: 4 estudiantes tienen alertas activas ...",
+  "herramientas": [
+    { "nombre": "identificar_alertas", "parametros": { "cursoId": 1 }, "estado": "OK", "duracionMs": 95 }
+  ],
+  "modelo": "qwen2.5:7b",
+  "duracionMs": 5400
+}
+```
+403 si el curso es ajeno (el agente no se llama). 503 con `ProblemDetails` («Asistente no disponible») si el agente no responde en 60 s. 400 si `mensaje` está vacío o pasa de 500 caracteres.
+
+Requiere migración: `Conversacion` agrega `Pregunta`, `Respuesta`, `Modelo` y `DuracionMs`; `TrazaHerramienta` agrega `Estado`, `DuracionMs` y `Fecha`.
+
+## Servicio de agente (HU-13, HU-14)
+
+Solo lo llama la API, por la red interna de Docker (`http://agent:8000`). No se publica puerto.
+
+### POST /chat
+
+```json
+{ "mensaje": "¿Qué estudiantes requieren atención?", "cursoId": 1, "token": "<token de servicio>" }
+```
+Respuesta: la misma forma de la respuesta de `POST /api/agente/chat` sin `conversacionId`. Si una herramienta falla, su `estado` es `"ERROR"` y la respuesta dice qué no pudo consultar, sin datos inventados. Si la herramienta responde 403, el agente dice que no tiene acceso a ese curso.
+
+### GET /salud
+
+```json
+{ "estado": "OK", "modelo": "qwen2.5:7b", "ollama": "OK" }
+```
+`ollama`: `OK` o `NO_DISPONIBLE`.
