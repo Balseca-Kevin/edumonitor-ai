@@ -6,7 +6,7 @@ Monolito modular por capas (estilo Clean Architecture). La API expone controlado
 
 | Proyecto | Contiene | No contiene |
 |---|---|---|
-| `EduMonitor.Domain` | Entidades (`Curso`, `Unidad`, `Estudiante`, `Matricula`, `Actividad`, `Calificacion`, `Usuario`, `Rol`, `CursoDocente`, `Sincronizacion`, `TrazaHerramienta`), enums (`EstadoCalificacion`, `EstadoSincronizacion`, `RolSistema`) | Referencias a EF Core, ASP.NET, HttpClient |
+| `EduMonitor.Domain` | Entidades (`Actividad`, `ActividadTema`, `Alerta`, `Auditoria`, `Calificacion`, `ContenidoMinimo`, `Conversacion`, `Curso`, `CursoDocente`, `Estudiante`, `Matricula`, `ReglaAlerta`, `Sincronizacion`, `TareaRefuerzo`, `Tema`, `TrazaHerramienta`, `Unidad`, `Usuario`), enums (`EstadoCalificacion`, `EstadoSincronizacion`, `RolSistema`) | Referencias a EF Core, ASP.NET, HttpClient |
 | `EduMonitor.Application` | Interfaces (`IMoodleClient`, `IJwtService`, `IPasswordHasher`, repositorios o `IEduMonitorDbContext`), servicios de caso de uso (`AuthService`, `CursoService`, `SincronizacionService`), DTOs de entrada y salida, validaciones | Código de EF Core, llamadas HTTP, controladores |
 | `EduMonitor.Infrastructure` | `EduMonitorDbContext`, configuraciones Fluent API, migraciones, semillas, `MoodleClient` (HttpClient tipado), implementación de JWT y hashing, `DependencyInjection.cs` con `AddInfrastructure()` | Lógica de negocio, controladores |
 | `EduMonitor.Api` | `Program.cs`, controladores delgados en `Controllers/`, políticas de autorización (`CursoAutorizado`), manejo de errores a `ProblemDetails`, Swagger, CORS para `http://localhost:5173` | Consultas a la base o a Moodle directas |
@@ -32,3 +32,12 @@ dotnet run --project backend/EduMonitor.Api
 dotnet ef migrations add <Nombre> --project backend/EduMonitor.Infrastructure --startup-project backend/EduMonitor.Api
 dotnet ef database update --project backend/EduMonitor.Infrastructure --startup-project backend/EduMonitor.Api
 ```
+
+## Sprint 2
+
+- Controladores nuevos: `IndicadoresController` (HU-09), `AlertasController` con reglas y alertas (HU-12), `AgenteController` con `POST /api/agente/chat` (HU-14), `Admin/EstadoController` (HU-20). `ToolsController` suma `calificaciones` y `alertas` (HU-13).
+- Servicios nuevos en Application: `Indicadores/IndicadorService`, `Alertas/` (una clase por regla: R1, R2, R4), `Agente/AgenteService` con `IAgenteClient` (HttpClient tipado en Infrastructure).
+- Los cálculos de indicadores y alertas viven solo en Application y se prueban con casos conocidos. Ningún controlador calcula.
+- Token de servicio para el agente: rol `AGENTE`, claims `docente` y `curso`, 2 minutos. La política `CursoAutorizado` toma el docente del claim cuando el rol es `AGENTE`.
+- La configuración de Moodle se guarda en `ConfiguracionMoodle` con el token protegido por Data Protection; las llaves en `/keys` (volumen `api-keys`).
+- Dentro de Docker la API escucha en `http://+:5000` y usa `Server=sqlserver,1433`. Moodle está en otro entorno (`moodle-lab/`): la API lo llama por `Moodle__Url`, `http://host.docker.internal:8080` desde Docker.
