@@ -14,6 +14,9 @@ internal sealed class ConversacionConfiguracion : IEntityTypeConfiguration<Conve
         builder.HasKey(c => c.Id);
         builder.HasOne(c => c.Usuario).WithMany().HasForeignKey(c => c.UsuarioId).OnDelete(DeleteBehavior.NoAction);
         builder.HasOne(c => c.Curso).WithMany().HasForeignKey(c => c.CursoId).OnDelete(DeleteBehavior.NoAction);
+        builder.Property(c => c.Pregunta).HasMaxLength(500).IsRequired();
+        builder.Property(c => c.Respuesta).IsRequired();
+        builder.Property(c => c.Modelo).HasMaxLength(100).IsRequired();
     }
 }
 
@@ -27,6 +30,7 @@ internal sealed class TrazaHerramientaConfiguracion : IEntityTypeConfiguration<T
         builder.Property(t => t.Herramienta).HasMaxLength(100).IsRequired();
         builder.Property(t => t.Parametros).IsRequired();
         builder.Property(t => t.Resultado).IsRequired();
+        builder.Property(t => t.Estado).HasMaxLength(20).IsRequired();
     }
 }
 

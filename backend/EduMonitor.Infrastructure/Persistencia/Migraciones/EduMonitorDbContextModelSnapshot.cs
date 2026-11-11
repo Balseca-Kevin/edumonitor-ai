@@ -231,8 +231,25 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Property<int>("CursoId")
                         .HasColumnType("int");
 
+                    b.Property<int>("DuracionMs")
+                        .HasColumnType("int");
+
                     b.Property<DateTimeOffset>("Fecha")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Pregunta")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Respuesta")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("UsuarioId")
                         .HasColumnType("int");
@@ -499,6 +516,17 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     b.Property<int>("ConversacionId")
                         .HasColumnType("int");
+
+                    b.Property<int>("DuracionMs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Herramienta")
                         .IsRequired()

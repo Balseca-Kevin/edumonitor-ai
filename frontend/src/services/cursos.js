@@ -47,6 +47,12 @@ export async function obtenerCursos() {
   return response.data
 }
 
+/** Un curso por id: 403 si no está asignado al docente, 404 si no existe. */
+export async function obtenerCurso(id) {
+  const response = await api.get(`/api/cursos/${id}`)
+  return response.data
+}
+
 export async function sincronizarCurso(id) {
   if (USE_MOCK) {
     const resultado = {

@@ -63,6 +63,22 @@ public class JwtServiceTests
         Assert.False(resultado.IsValid);
     }
 
+    /// <summary>TA-14.2 · El token de servicio del agente: rol AGENTE, docente y curso, 2 minutos.</summary>
+    [Fact]
+    public async Task Token_del_agente_lleva_rol_AGENTE_docente_curso_y_vence_en_2_minutos()
+    {
+        var ahora = DateTimeOffset.UtcNow;
+        var emitido = new JwtService(Options.Create(Opciones), new RelojFijo(ahora)).EmitirTokenAgente(docenteId: 2, cursoId: 1);
+
+        var resultado = await new JsonWebTokenHandler().ValidateTokenAsync(emitido.Token, JwtService.ParametrosValidacion(Opciones));
+
+        Assert.True(resultado.IsValid, resultado.Exception?.Message);
+        Assert.Equal("AGENTE", resultado.Claims["role"]);
+        Assert.Equal("2", resultado.Claims["docente"]);
+        Assert.Equal("1", resultado.Claims["curso"]);
+        Assert.Equal(ahora.AddMinutes(2).ToUnixTimeSeconds(), emitido.ExpiraEn.ToUnixTimeSeconds());
+    }
+
     private sealed class RelojFijo(DateTimeOffset ahora) : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => ahora;

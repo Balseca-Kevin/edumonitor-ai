@@ -10,14 +10,16 @@ namespace EduMonitor.Api.Autorizacion;
 public sealed class CursoAutorizadoRequirement : IAuthorizationRequirement
 {
     public const string Politica = "CursoAutorizado";
+
+    /// <summary>Misma regla para las herramientas del agente: acepta además el token de servicio (rol AGENTE), con el docente del claim.</summary>
+    public const string PoliticaHerramientas = "CursoAutorizadoHerramientas";
 }
 
 public sealed class CursoAutorizadoHandler(CursoService cursos) : AuthorizationHandler<CursoAutorizadoRequirement>
 {
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, CursoAutorizadoRequirement requirement)
     {
-        var usuario = context.User.ComoUsuarioActual();
-        if (usuario is null || context.Resource is not HttpContext http)
+        if (context.Resource is not HttpContext http || await context.User.ResolverUsuarioAsync(cursos, http.RequestAborted) is not { } usuario)
         {
             return;
         }

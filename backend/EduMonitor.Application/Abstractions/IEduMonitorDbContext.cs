@@ -15,6 +15,8 @@ public interface IEduMonitorDbContext
     DbSet<Actividad> Actividades { get; }
     DbSet<Calificacion> Calificaciones { get; }
     DbSet<Domain.Entities.Sincronizacion> Sincronizaciones { get; }
+    DbSet<Conversacion> Conversaciones { get; }
+    DbSet<TrazaHerramienta> TrazasHerramienta { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

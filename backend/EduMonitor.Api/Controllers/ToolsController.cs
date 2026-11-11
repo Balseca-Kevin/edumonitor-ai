@@ -1,4 +1,5 @@
 using EduMonitor.Api.Autorizacion;
+using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Herramientas;
 using Microsoft.AspNetCore.Authorization;
@@ -6,17 +7,20 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EduMonitor.Api.Controllers;
 
-/// <summary>Herramientas que llama el agente de IA. Cada llamada queda registrada (herramienta, docente, fecha, resultado), sin el token.</summary>
+/// <summary>
+/// Herramientas que llama el agente de IA, con el JWT del docente o con el token de servicio (rol AGENTE) que emite el chat (TA-14.2).
+/// Cada llamada queda registrada (herramienta, docente, fecha, resultado), sin el token.
+/// </summary>
 [ApiController]
 [Route("api/tools")]
-[Authorize(Roles = "DOCENTE,ADMIN")]
+[Authorize(Roles = "DOCENTE,ADMIN," + TokenAgente.Rol)]
 public sealed class ToolsController(CursoService cursos, HerramientasService herramientas, TimeProvider reloj, ILogger<ToolsController> logger) : ControllerBase
 {
     [HttpGet("cursos-autorizados")]
     [ProducesResponseType<RespuestaCursosAutorizados>(StatusCodes.Status200OK)]
     public async Task<IActionResult> CursosAutorizados(CancellationToken ct)
     {
-        var usuario = User.ComoUsuarioActual();
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
         if (usuario is null)
         {
             return Unauthorized();
@@ -40,14 +44,14 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
     /// 400 sin <c>cursoId</c>; 403 si el curso no es del docente; 404 si el curso no existe o el estudiante no está matriculado.
     /// </summary>
     [HttpGet("calificaciones")]
-    [Authorize(Policy = CursoAutorizadoRequirement.Politica)]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
     [ProducesResponseType<RespuestaCalificacionesHerramienta>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Calificaciones([FromQuery] int? cursoId, [FromQuery] int? estudianteId, CancellationToken ct)
     {
-        var usuario = User.ComoUsuarioActual();
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
         if (usuario is null)
         {
             return Unauthorized();

@@ -531,6 +531,14 @@ export default function Cursos() {
                 <div className="course-actions">
                   <button
                     type="button"
+                    className="boton-secundario"
+                    onClick={() => navigate(`/cursos/${curso.id}/asistente`)}
+                  >
+                    Abrir
+                  </button>
+
+                  <button
+                    type="button"
                     className={`boton-primario ${sincronizando ? "en-curso" : ""}`}
                     onClick={() =>
                       manejarSincronizacion(curso)

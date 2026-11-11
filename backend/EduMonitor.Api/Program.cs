@@ -1,6 +1,7 @@
 using EduMonitor.Api.Autorizacion;
 using EduMonitor.Api.Errores;
 using EduMonitor.Application;
+using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Infrastructure;
 using EduMonitor.Infrastructure.Persistencia;
@@ -29,9 +30,16 @@ builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationSc
         bearer.MapInboundClaims = false; // conserva sub, name y role tal como se emiten
         bearer.TokenValidationParameters = JwtService.ParametrosValidacion(jwt.Value);
     });
-builder.Services.AddAuthorization(opciones => opciones.AddPolicy(
-    CursoAutorizadoRequirement.Politica,
-    politica => politica.RequireRole("DOCENTE", "ADMIN").AddRequirements(new CursoAutorizadoRequirement())));
+builder.Services.AddAuthorization(opciones =>
+{
+    opciones.AddPolicy(
+        CursoAutorizadoRequirement.Politica,
+        politica => politica.RequireRole("DOCENTE", "ADMIN").AddRequirements(new CursoAutorizadoRequirement()));
+    // Herramientas del agente: también el token de servicio (rol AGENTE), autorizado sobre el docente del claim (TA-14.2).
+    opciones.AddPolicy(
+        CursoAutorizadoRequirement.PoliticaHerramientas,
+        politica => politica.RequireRole("DOCENTE", "ADMIN", TokenAgente.Rol).AddRequirements(new CursoAutorizadoRequirement()));
+});
 builder.Services.AddScoped<IAuthorizationHandler, CursoAutorizadoHandler>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacionProblemDetails>();
 

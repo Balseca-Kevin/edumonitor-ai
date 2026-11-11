@@ -41,6 +41,31 @@ public sealed class JwtService(IOptions<JwtOptions> opciones, TimeProvider reloj
         return new TokenEmitido(token, expira.ToLocalTime());
     }
 
+    public TokenEmitido EmitirTokenAgente(int docenteId, int cursoId)
+    {
+        var jwt = opciones.Value;
+        var ahora = reloj.GetUtcNow();
+        var expira = ahora.AddMinutes(TokenAgente.Minutos);
+
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Issuer = jwt.Issuer,
+            Audience = jwt.Audience,
+            IssuedAt = ahora.UtcDateTime,
+            NotBefore = ahora.UtcDateTime,
+            Expires = expira.UtcDateTime,
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimRol, TokenAgente.Rol),
+                new Claim(TokenAgente.ClaimDocente, docenteId.ToString()),
+                new Claim(TokenAgente.ClaimCurso, cursoId.ToString()),
+            }),
+            SigningCredentials = new SigningCredentials(ClaveFirma(jwt), SecurityAlgorithms.HmacSha256),
+        };
+
+        return new TokenEmitido(new JsonWebTokenHandler().CreateToken(descriptor), expira.ToLocalTime());
+    }
+
     /// <summary>Parámetros con los que la API valida el token. Se comparten con las pruebas para que no se desalineen.</summary>
     public static TokenValidationParameters ParametrosValidacion(JwtOptions jwt) => new()
     {
