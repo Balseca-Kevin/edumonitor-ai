@@ -66,4 +66,79 @@ public class AgenteApiTests
         Assert.Equal(84, traza.DuracionMs);
         Assert.DoesNotContain("eyJ", traza.Parametros); // ningún token en la traza
     }
+
+    // --- TA-14.4 · Pruebas del proxy: 401, 403 sin llamar al agente, 503 con el agente caído ---
+
+    [Fact]
+    public async Task Sin_token_responde_401_y_no_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+
+        var respuesta = await factory.CreateClient().PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = "Hola" });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, respuesta.StatusCode);
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Curso_ajeno_responde_403_y_no_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var bdd = factory.IdCurso("BDD-4B");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = bdd, mensaje = "¿Qué estudiantes requieren atención?" });
+
+        Assert.Equal(HttpStatusCode.Forbidden, respuesta.StatusCode);
+        var problema = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Acceso denegado", problema.GetProperty("title").GetString());
+        Assert.Equal($"El curso {bdd} no está asignado a este docente.", problema.GetProperty("detail").GetString());
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Agente_caido_responde_503_asistente_no_disponible_y_no_guarda_conversacion()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        factory.Agente.Caido = true;
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = "¿Qué estudiantes requieren atención?" });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, respuesta.StatusCode);
+        var problema = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Asistente no disponible", problema.GetProperty("title").GetString());
+        Assert.Equal(503, problema.GetProperty("status").GetInt32());
+        using var alcance = factory.Services.CreateScope();
+        Assert.Empty(alcance.ServiceProvider.GetRequiredService<EduMonitorDbContext>().Conversaciones);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task Mensaje_vacio_responde_400_sin_llamar_al_agente(string mensaje)
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje });
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Mensaje_de_mas_de_500_caracteres_responde_400_y_curso_inexistente_404()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var admin = await factory.ClienteConSesionAsync("admin");
+
+        var largo = await admin.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = new string('a', 501) });
+        var inexistente = await admin.PostAsJsonAsync("/api/agente/chat", new { cursoId = 9999, mensaje = "Hola" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, largo.StatusCode);
+        Assert.Contains("500 caracteres", (await largo.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, inexistente.StatusCode);
+        Assert.Empty(factory.Agente.Peticiones);
+    }
 }
