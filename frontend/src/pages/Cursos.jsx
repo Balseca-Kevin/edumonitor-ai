@@ -532,7 +532,7 @@ export default function Cursos() {
                   <button
                     type="button"
                     className="boton-secundario"
-                    onClick={() => navigate(`/cursos/${curso.id}/asistente`)}
+                    onClick={() => navigate(`/cursos/${curso.id}/panel`)}
                   >
                     Abrir
                   </button>
