@@ -2,7 +2,8 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  // Vacío (Docker y desarrollo): la app llama a /api en su misma dirección; nginx o el proxy de Vite la pasan a la API.
+  baseURL: import.meta.env.VITE_API_URL ?? '',
   headers: {
     'Content-Type': 'application/json',
   },

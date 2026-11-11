@@ -1,0 +1,6 @@
+**/bin/
+**/obj/
+**/TestResults/
+EduMonitor.Tests/
+*.user
+.vs/
