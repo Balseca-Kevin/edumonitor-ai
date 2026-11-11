@@ -45,7 +45,7 @@ public static class CalculadoraIndicadores
     /// <summary>Indicadores de todos los estudiantes, del curso, la distribución, los grupos y las unidades.</summary>
     public static IndicadoresCalculados Calcular(DatosCurso datos)
     {
-        var actividades = Ordenar(datos.Actividades, datos.Unidades);
+        var actividades = OrdenarActividades(datos.Actividades, datos.Unidades);
         var porEstudiante = datos.Calificaciones.ToLookup(c => c.EstudianteId);
 
         var parciales = datos.Estudiantes
@@ -102,7 +102,7 @@ public static class CalculadoraIndicadores
     /// <summary>Notas calificadas de un estudiante en escala 0 a 10, en el orden del curso (unidad, fecha límite, ítem de Moodle).</summary>
     public static IReadOnlyList<NotaCalculo> NotasOrdenadas(DatosCurso datos, int estudianteId)
     {
-        var actividades = Ordenar(datos.Actividades, datos.Unidades);
+        var actividades = OrdenarActividades(datos.Actividades, datos.Unidades);
         var calificaciones = datos.Calificaciones.Where(c => c.EstudianteId == estudianteId).ToList();
         return NotasOrdenadas(actividades, calificaciones);
     }
@@ -285,7 +285,7 @@ public static class CalculadoraIndicadores
     }
 
     /// <summary>Orden cronológico del curso: número de unidad, fecha límite y, al final, el orden del ítem en Moodle.</summary>
-    private static List<Actividad> Ordenar(IReadOnlyList<Actividad> actividades, IReadOnlyList<Unidad> unidades)
+    public static List<Actividad> OrdenarActividades(IReadOnlyList<Actividad> actividades, IReadOnlyList<Unidad> unidades)
     {
         var numeroUnidad = unidades.ToDictionary(u => u.Id, u => u.Numero);
         return actividades
