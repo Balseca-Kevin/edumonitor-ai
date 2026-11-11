@@ -1,0 +1,151 @@
+# EduMonitor con su agente: un solo comando y una sola dirección.
+#   docker compose up -d        →  http://localhost:5173
+# El aula virtual (Moodle de laboratorio) es otro entorno, aparte, como pide la especificación:
+#   docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
+# EduMonitor solo conoce Moodle por su URL y su token; ningún servicio de aquí depende de moodle-lab/.
+# Los valores salen del .env de la raíz (ver .env.example). Nunca «down -v»: borra la base, las llaves y los modelos.
+
+name: edumonitor
+
+services:
+  # Interfaz: React compilado servido por nginx, que pasa /api a la API por la red interna.
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # API ASP.NET Core. Única pieza que habla con SQL Server, con Moodle y con el agente.
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      # Development aplica las migraciones y carga las semillas de laboratorio al arrancar.
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__EduMonitorDB: Server=sqlserver,1433;Database=EduMonitorDB;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Falta MSSQL_SA_PASSWORD en .env};TrustServerCertificate=True
+      # Moodle está en otro entorno. Moodle solo acepta su SITE_URL (http://localhost:8080) y dentro de este contenedor
+      # localhost es la API: el servicio moodle-puente lleva ese puerto al Moodle publicado en el host.
+      Moodle__Url: http://localhost:${MOODLE_PORT:-8080}
+      Moodle__Servicio: ${Moodle__Servicio:-edumonitor_ws}
+      Moodle__Token: ${Moodle__Token:-}
+      Jwt__Secret: ${Jwt__Secret:?Falta Jwt__Secret en .env}
+      Jwt__Issuer: ${Jwt__Issuer:-EduMonitor}
+      Jwt__Audience: ${Jwt__Audience:-EduMonitor}
+      Jwt__ExpiraMinutos: ${Jwt__ExpiraMinutos:-120}
+      Semillas__Contrasena: ${Semillas__Contrasena:-}
+      Agente__Url: http://agent:8000
+      DataProtection__Llaves: /keys
+    ports:
+      - "5000:5000"
+    volumes:
+      - api-keys:/keys
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:5000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  # Puente hacia el aula virtual: comparte la red de la API y lleva localhost:<MOODLE_PORT> al Moodle publicado en el host
+  # (host.docker.internal). Así la URL de Moodle coincide con su SITE_URL y Moodle no redirige. No depende de moodle-lab/.
+  moodle-puente:
+    image: alpine/socat:1.8.0.1
+    restart: unless-stopped
+    network_mode: "service:api"
+    command: TCP-LISTEN:${MOODLE_PORT:-8080},fork,reuseaddr TCP:host.docker.internal:${MOODLE_PORT:-8080}
+    depends_on:
+      api:
+        condition: service_started
+        # Comparte la red de la API: si la API se reinicia, el puente se reinicia con ella.
+        restart: true
+
+  # Base de EduMonitor (EduMonitorDB). Reutiliza el volumen del Sprint 1.
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Falta MSSQL_SA_PASSWORD en .env}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      # $$ hace que la contraseña se lea dentro del contenedor y no quede en la configuración de Compose.
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Agente de IA. Sin puerto publicado: solo lo llama la API por la red interna.
+  agent:
+    build: ./agent
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://api:5000
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-modelo:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # Modelo de lenguaje local con la GPU NVIDIA. Sin puerto publicado.
+  ollama:
+    image: ollama/ollama:0.40.13
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Descarga el modelo una sola vez (si ya está en el volumen, termina enseguida).
+  ollama-modelo:
+    image: ollama/ollama:0.40.13
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-qwen2.5:7b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+volumes:
+  sqlserver-data:
+    name: edumonitor_sqlserver-data
+  api-keys:
+    name: edumonitor_api-keys
+  ollama-models:
+    name: edumonitor_ollama-models

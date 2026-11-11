@@ -40,4 +40,4 @@ dotnet ef database update --project backend/EduMonitor.Infrastructure --startup-
 - Los cálculos de indicadores y alertas viven solo en Application y se prueban con casos conocidos. Ningún controlador calcula.
 - Token de servicio para el agente: rol `AGENTE`, claims `docente` y `curso`, 2 minutos. La política `CursoAutorizado` toma el docente del claim cuando el rol es `AGENTE`.
 - La configuración de Moodle se guarda en `ConfiguracionMoodle` con el token protegido por Data Protection; las llaves en `/keys` (volumen `api-keys`).
-- Dentro de Docker la API escucha en `http://+:5000` y usa `Server=sqlserver,1433`. Moodle está en otro entorno (`moodle-lab/`): la API lo llama por `Moodle__Url`, `http://host.docker.internal:8080` desde Docker.
+- Dentro de Docker la API escucha en `http://+:5000` y usa `Server=sqlserver,1433`. Moodle está en otro entorno (`moodle-lab/`): la API lo llama por `Moodle__Url` = `http://localhost:8080`; dentro de Docker el servicio `moodle-puente` comparte la red de la API y lleva ese puerto a `host.docker.internal:8080`, porque Moodle redirige toda llamada que no use su `SITE_URL`.

@@ -95,10 +95,10 @@ Requisitos: Git, Docker Desktop, .NET 8 SDK y, para las siguientes historias, No
    ```
 3. **Servicios web de Moodle** (una vez por equipo). Crea el servicio `edumonitor_ws`, el usuario técnico de solo lectura y su token. Copia el token que imprime a `Moodle__Token` en `.env`:
    ```powershell
-   docker cp moodle-lab/scripts/configurar_servicios_web.php edumonitor-moodle-1:/tmp/
-   docker exec edumonitor-moodle-1 php /var/www/html/admin/cli/cfg.php --name=enablewebservices --set=1
-   docker exec edumonitor-moodle-1 php /var/www/html/admin/cli/cfg.php --name=webserviceprotocols --set=rest
-   docker exec edumonitor-moodle-1 php /tmp/configurar_servicios_web.php
+   docker cp moodle-lab/scripts/configurar_servicios_web.php aula-virtual-moodle-1:/tmp/
+   docker exec aula-virtual-moodle-1 php /var/www/html/admin/cli/cfg.php --name=enablewebservices --set=1
+   docker exec aula-virtual-moodle-1 php /var/www/html/admin/cli/cfg.php --name=webserviceprotocols --set=rest
+   docker exec aula-virtual-moodle-1 php /tmp/configurar_servicios_web.php
    ```
 4. **Backend.** En Development, la API lee `.env`, aplica las migraciones de EF Core y crea los usuarios semilla (`admin`, `doc01`, `doc02`) con la contraseña de `Semillas__Contrasena`:
    ```powershell

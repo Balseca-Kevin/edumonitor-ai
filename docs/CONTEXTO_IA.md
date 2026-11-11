@@ -42,7 +42,7 @@ No se cambia sin acuerdo del equipo.
 - Base de datos: SQL Server 2022 en Docker, base `EduMonitorDB`, migraciones de EF Core versionadas.
 - Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Tipografía Archivo.
 - Agente: Python 3.11, FastAPI, LangGraph, Pydantic, Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`), pytest.
-- Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
+- Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. `moodle-puente` comparte la red de la API y lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
 - Gestión: Git + GitHub con Git Flow, GitHub Actions, Jira (tablero: Por hacer, En curso, En revisión, Finalizada).
 
 ## Arquitectura
@@ -60,7 +60,7 @@ Monolito modular con un servicio de agente aparte. No hay microservicios.
  └───────────────────────────────────────────────┬────────────────────────────────────────────┘
                                                  │ REST solo lectura con token
                                                  ▼  http://host.docker.internal:8080
- Aula virtual de laboratorio · docker compose -f moodle-lab/docker-compose.yml up -d
+ Aula virtual de laboratorio · docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
  ┌──────────────────────────────┐
  │ moodle (4.5) ──► moodle-db    │
  └──────────────────────────────┘
@@ -73,13 +73,14 @@ Monolito modular con un servicio de agente aparte. No hay microservicios.
 | EduMonitor (raíz) | sqlserver | 1433 | edumonitor_sqlserver-data |
 | EduMonitor (raíz) | agent | ninguno, solo red interna | ninguno |
 | EduMonitor (raíz) | ollama | ninguno, solo red interna | ollama-models |
+| EduMonitor (raíz) | moodle-puente | ninguno, comparte la red de api | ninguno |
 | Aula virtual (`moodle-lab/`) | moodle | 8080 | edumonitor_moodledata |
 | Aula virtual (`moodle-lab/`) | moodle-db | ninguno | edumonitor_moodle-db-data |
 
 - El docente usa una sola dirección, `http://localhost:5173`. El asistente es una pantalla de la app (`/cursos/:id/asistente`); el navegador nunca habla con el agente.
 - El navegador solo habla con `web`; `web` pasa `/api` a `api`.
 - El agente solo habla con `api` (`/api/tools/*`) y con `ollama`. Nunca lee la base ni conoce el token de Moodle.
-- Solo `api` habla con Moodle y con SQL Server. Moodle está en otro entorno: la API lo llama por `Moodle__Url` (`http://host.docker.internal:8080` desde Docker), como llamaría al Moodle institucional.
+- Solo `api` habla con Moodle y con SQL Server. Moodle está en otro entorno: la API lo llama por `Moodle__Url` (`http://localhost:8080`, que dentro de Docker lleva `moodle-puente` a `host.docker.internal:8080`), como llamaría al Moodle institucional.
 - Desde el Sprint 2 el docente pregunta en `POST /api/agente/chat`. La API valida el curso, emite un token de servicio corto para el agente y llama a `agent`. El agente ya no recibe el JWT del docente.
 - Promedios, desviaciones y alertas se calculan en el backend con código probado. El modelo de lenguaje solo explica resultados y recomienda.
 

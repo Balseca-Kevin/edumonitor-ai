@@ -102,8 +102,8 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 Después de restaurar los cursos base (ver «Restaurar desde cero») y configurar los servicios web (TA-02.1), desde la raíz del repo:
 
 ```powershell
-docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 ```
 
 Tarda alrededor de un minuto y medio. Sobre los cursos base agrega el libro 40/30/30, las 16 tareas por curso, doc01, doc02, est01 a est32 y las notas (TA-01.3 a TA-01.5). Un curso que ya tiene tareas no se vuelve a cargar, y las categorías y los usuarios se reutilizan si ya existen. Si los cursos base no están, el script los crea con la misma estructura: AGIL-4B con id 2 y BDD-4B con id 3, que son los ids que esperan las semillas del backend.
@@ -139,23 +139,23 @@ Con el Moodle recién instalado («Levantar» o «Borrar todo»), desde la raíz
 
 ```powershell
 # 1. Servicios web, usuario técnico y token (TA-02.1). Copia el TOKEN_NUEVO a Moodle__Token en .env
-docker exec edumonitor-moodle-1 php admin/cli/cfg.php --name=enablewebservices --set=1
-docker exec edumonitor-moodle-1 php admin/cli/cfg.php --name=webserviceprotocols --set=rest
-docker cp moodle-lab/scripts/configurar_servicios_web.php edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php /tmp/configurar_servicios_web.php
+docker exec aula-virtual-moodle-1 php admin/cli/cfg.php --name=enablewebservices --set=1
+docker exec aula-virtual-moodle-1 php admin/cli/cfg.php --name=webserviceprotocols --set=rest
+docker cp moodle-lab/scripts/configurar_servicios_web.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/configurar_servicios_web.php
 
 # 2. Categorías UTA › FISEI › Software; imprime «Software=<id>»
-docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php --categorias
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php --categorias
 
 # 3. Cursos base de Sebastián en Software. Primero AGIL-4B y después BDD-4B, para que queden con los ids 2 y 3.
-docker cp moodle-lab/backups/cursos_base_AGIL-4B.mbz edumonitor-moodle-1:/tmp/
-docker cp moodle-lab/backups/cursos_base_BDD-4B.mbz edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_AGIL-4B.mbz --categoryid=<id de Software>
-docker exec edumonitor-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_BDD-4B.mbz --categoryid=<id de Software>
+docker cp moodle-lab/backups/cursos_base_AGIL-4B.mbz aula-virtual-moodle-1:/tmp/
+docker cp moodle-lab/backups/cursos_base_BDD-4B.mbz aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_AGIL-4B.mbz --categoryid=<id de Software>
+docker exec aula-virtual-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_BDD-4B.mbz --categoryid=<id de Software>
 
 # 4. Libro, actividades, usuarios y notas
-docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 ```
 
 Atajo: si se omiten los pasos 2 y 3, el paso 4 crea las categorías y los dos cursos con la misma estructura y los mismos ids.
