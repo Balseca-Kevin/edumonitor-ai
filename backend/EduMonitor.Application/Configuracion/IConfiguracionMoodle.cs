@@ -1,9 +1,9 @@
 namespace EduMonitor.Application.Configuracion;
 
 /// <summary>
-/// Conexión con Moodle vigente. Arranca con <c>Moodle__Url</c> y <c>Moodle__Token</c> del entorno; un ADMIN puede cambiarla con
-/// <c>PUT /api/admin/moodle-config</c>. El cambio vive en memoria mientras corre la API (decisión del Sprint 1: el token
-/// no se guarda en la base) y se pierde al reiniciar.
+/// Conexión con Moodle vigente. Desde el Sprint 2 (TA-20.4) se guarda en la tabla <c>ConfiguracionMoodle</c> con el token protegido
+/// por Data Protection y sobrevive al reinicio; si no hay fila, se usan <c>Moodle__Url</c> y <c>Moodle__Token</c> del entorno.
+/// Un ADMIN la cambia con <c>PUT /api/admin/moodle-config</c>.
 /// </summary>
 public interface IConfiguracionMoodle
 {
