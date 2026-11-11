@@ -1,4 +1,6 @@
 using EduMonitor.Application.Abstractions;
+using EduMonitor.Application.Agente;
+using EduMonitor.Infrastructure.Agente;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Infrastructure.Moodle;
 using System.Text;
@@ -33,6 +35,15 @@ public static class DependencyInjection
         services.AddHttpClient<IMoodleClient, MoodleClient>((sp, http) =>
             http.Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<MoodleOptions>>().Value.TiempoEsperaSegundos));
         services.AddHostedService<RegistroConfiguracionMoodle>();
+
+        // HU-14 · Servicio de agente: solo la API lo llama, por la red interna en Docker (Agente__Url).
+        services.Configure<AgenteOptions>(configuration.GetSection(AgenteOptions.Seccion));
+        services.AddHttpClient<IAgenteClient, AgenteClient>((sp, http) =>
+        {
+            var agente = sp.GetRequiredService<IOptions<AgenteOptions>>().Value;
+            http.BaseAddress = new Uri(agente.Url.TrimEnd('/') + "/");
+            http.Timeout = TimeSpan.FromSeconds(agente.TiempoEsperaSegundos);
+        });
 
         return services;
     }

@@ -15,4 +15,11 @@ public class TrazaHerramienta
 
     /// <summary>Resultado de la llamada (OK, ERROR y resumen).</summary>
     public string Resultado { get; set; } = string.Empty;
+
+    /// <summary>Estado de la llamada: <c>OK</c> o <c>ERROR</c>.</summary>
+    public string Estado { get; set; } = string.Empty;
+
+    public int DuracionMs { get; set; }
+
+    public DateTimeOffset Fecha { get; set; }
 }
