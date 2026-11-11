@@ -49,6 +49,16 @@ public sealed class CursoService(IEduMonitorDbContext db, TimeProvider reloj)
     public async Task<bool> TieneAccesoAsync(UsuarioActual usuario, int cursoId, CancellationToken ct = default) =>
         usuario.EsAdmin || await db.CursosDocentes.AnyAsync(cd => cd.UsuarioId == usuario.Id && cd.CursoId == cursoId, ct);
 
+    /// <summary>
+    /// TA-14.2 · Docente al que está atado un token de servicio del agente, con su rol real. Null si el usuario ya no existe:
+    /// el token no da más permisos que los del docente que preguntó.
+    /// </summary>
+    public async Task<UsuarioActual?> UsuarioDelAgenteAsync(int docenteId, CancellationToken ct = default)
+    {
+        var usuario = await db.Usuarios.AsNoTracking().SingleOrDefaultAsync(u => u.Id == docenteId, ct);
+        return usuario is null ? null : new UsuarioActual(usuario.Id, usuario.Rol);
+    }
+
     /// <summary>Datos de la herramienta <c>listar_cursos_autorizados</c> del agente.</summary>
     public async Task<RespuestaCursosAutorizados> CursosAutorizadosAsync(UsuarioActual usuario, CancellationToken ct = default)
     {
