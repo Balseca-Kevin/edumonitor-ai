@@ -17,7 +17,7 @@ async def chat_endpoint(request: ChatPeticion):
             "token": request.token,
             "iterations": 0,
             "trazas": [],
-            "error": False
+            "error": None
         }
         
         result = await app_graph.ainvoke(inputs)
