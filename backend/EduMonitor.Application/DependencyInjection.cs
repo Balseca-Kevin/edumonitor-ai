@@ -1,6 +1,7 @@
 using EduMonitor.Application.Auth;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
+using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Sincronizaciones;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,6 +14,7 @@ public static class DependencyInjection
     {
         services.AddScoped<AuthService>();
         services.AddScoped<CursoService>();
+        services.AddScoped<IndicadorService>();
         services.AddScoped<ImportadorUnidades>();
         services.AddScoped<ImportadorMatriculados>();
         services.AddScoped<ImportadorCalificaciones>();
