@@ -492,3 +492,95 @@
     grid-row: auto;
   }
 }
+
+/* --- Panel: avance por unidad, gráfico y pie de fuente --- */
+.s2-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-32);
+}
+
+.s2-avance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-32);
+}
+
+.s2-avance-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-8);
+}
+
+.s2-avance-unidades {
+  display: flex;
+  gap: var(--e-16);
+}
+
+.s2-avance-unidad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+  min-width: var(--e-64);
+}
+
+.s2-avance-barra {
+  display: block;
+  height: var(--e-8);
+  border: var(--grosor-linea) solid var(--tinta);
+  border-radius: var(--radio);
+}
+
+.s2-avance-barra--completa {
+  background: var(--tinta);
+}
+
+.s2-grupo {
+  font-size: var(--fs-12);
+  font-weight: var(--peso-etiqueta);
+  letter-spacing: var(--letras-encabezado);
+}
+
+.s2 .s2-fuente {
+  padding-top: var(--e-16);
+  border-top: var(--grosor-linea) solid var(--linea);
+}
+
+.s2-grafico {
+  color: var(--tinta);
+  font-size: var(--fs-12);
+}
+
+.s2-grafico .recharts-bar-rectangle path {
+  fill: var(--tinta);
+}
+
+.s2-grafico .recharts-cartesian-grid line {
+  stroke: var(--linea);
+}
+
+.s2-grafico .recharts-cartesian-axis-line {
+  stroke: var(--linea);
+}
+
+.s2-grafico .recharts-cartesian-axis-tick-value,
+.s2-grafico .recharts-label {
+  fill: var(--tinta-2);
+  font-family: var(--fuente);
+  font-variant-numeric: tabular-nums;
+}
+
+.s2-grafico .s2-linea-aprobacion line {
+  stroke: var(--acento);
+  stroke-width: var(--grosor-regla);
+}
+
+.s2-grafico .recharts-reference-line .recharts-label {
+  fill: var(--acento);
+}
+
+.s2-grafico .recharts-tooltip-wrapper .recharts-default-tooltip {
+  border: var(--grosor-linea) solid var(--linea) !important;
+  border-radius: var(--radio);
+  background: var(--fondo) !important;
+}
