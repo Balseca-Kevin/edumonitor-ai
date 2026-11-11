@@ -19,6 +19,13 @@ class TrazaHerramienta(BaseModel):
     estado: Literal["OK", "ERROR"]
     duracionMs: int
 
+class ParametrosAlertas(BaseModel):
+    model_config = {"extra": "forbid"}
+    cursoId: int = Field(gt=0, strict=True)
+
+class ParametrosCalificaciones(ParametrosAlertas):
+    estudianteId: Optional[int] = Field(default=None, gt=0, strict=True)
+
 class ChatPeticion(BaseModel):
     mensaje: str = Field(min_length=1)
     token: str = Field(min_length=1, repr=False)
