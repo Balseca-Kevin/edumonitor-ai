@@ -11,8 +11,10 @@ public static class TitulosProblemDetails
         [StatusCodes.Status401Unauthorized] = "No autenticado",
         [StatusCodes.Status403Forbidden] = "Acceso denegado",
         [StatusCodes.Status404NotFound] = "Recurso no encontrado",
+        [StatusCodes.Status409Conflict] = "Curso sin sincronizar",
         [StatusCodes.Status500InternalServerError] = "Error interno",
         [StatusCodes.Status502BadGateway] = "Moodle no disponible",
+        [StatusCodes.Status503ServiceUnavailable] = "Asistente no disponible",
     };
 
     public static void Aplicar(ProblemDetailsContext contexto)
@@ -33,7 +35,7 @@ public static class TitulosProblemDetails
 
     // Títulos en inglés que pone ASP.NET Core por defecto.
     private static bool EsTituloPorDefecto(string titulo) =>
-        titulo is "Bad Request" or "Unauthorized" or "Forbidden" or "Not Found" or "Bad Gateway"
+        titulo is "Bad Request" or "Unauthorized" or "Forbidden" or "Not Found" or "Conflict" or "Bad Gateway" or "Service Unavailable"
             or "An error occurred while processing your request."
             or "One or more validation errors occurred.";
 }
