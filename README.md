@@ -119,6 +119,8 @@ Requisitos: Git y Docker Desktop con WSL 2. Para el modelo con GPU, una tarjeta 
    La primera vez construye las imágenes y descarga `qwen2.5:7b` (unos 4,7 GB) al volumen `edumonitor_ollama-models`; `--wait` termina cuando los servicios están sanos y el modelo quedó cargado en la GPU. La API aplica las migraciones y crea los usuarios semilla (`admin`, `doc01`, `doc02`) con la contraseña de `Semillas__Contrasena`. Después de cambiar código: `docker compose up -d --build --wait`.
 4. **Abrir** <http://localhost:5173>. Como `admin`, «Estado del sistema» muestra la API, la base, Moodle, el agente y el modelo en verde.
 
+En Windows, `scripts\iniciar-sistema.bat` hace los pasos 2 y 3 en orden (enciende Docker Desktop si hace falta) y abre <http://localhost:5173>; `scripts\detener-sistema.bat` apaga los dos entornos sin borrar datos.
+
 Apagar sin perder datos:
 
 ```powershell
