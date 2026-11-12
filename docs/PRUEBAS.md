@@ -10,7 +10,7 @@ Guía para comprobar en la aplicación cada historia entregada hasta el 12 nov 2
 | Usuario | Rol | Qué ve |
 |---|---|---|
 | `admin` | ADMIN | Configuración de Moodle, Estado del sistema y todos los cursos |
-| `doc01` | DOCENTE | Solo AGIL-4B «Metodologías Ágiles (lab)» |
+| `doc01` | DOCENTE | AGIL-4B «Metodologías Ágiles (lab)» y MCS-4B «Manejo y Configuración del Software (lab)» |
 | `doc02` | DOCENTE | Solo BDD-4B «Bases de Datos (lab)» |
 
 La contraseña de los tres es la de `Semillas__Contrasena` en el `.env` de quien levanta el sistema; no se escribe en el repositorio. El aula virtual está en <http://localhost:8080>, con el usuario `MOODLE_ADMIN_USER` del `.env`.
@@ -189,6 +189,34 @@ Antes de la Review:
   4. La alerta sale de las activas.
   5. Aparece como «Revisada» con su fecha. Úrsula Vaca ya está revisada desde las 07:12.
 - **Evidencia:** [HU-12](evidencias/sprint-2/HU-12/README.md).
+
+### Curso adicional MCS-4B (12 nov 2026)
+
+Lo carga el script del laboratorio con `--curso-mcs` (ver [moodle-lab/README.md](../moodle-lab/README.md#curso-adicional-mcs-4b-12-nov-2026)); la API lo asigna a doc01 al arrancar. Todo lo demás se hace en la aplicación:
+
+- **Usuario:** `doc01` y `doc02`.
+- **Pasos:**
+  1. `doc01` → «Mis cursos».
+  2. «Sincronizar curso» en MCS-4B.
+  3. «Abrir» MCS-4B → Panel, Alertas y Asistente.
+  4. En «Asistente» pregunta «¿Qué cursos tengo asignados?».
+  5. `doc02` abre `/cursos/1002/panel` (el id de MCS-4B en EduMonitor).
+- **Resultado esperado:**
+  1. AGIL-4B y MCS-4B; MCS-4B «PENDIENTE» hasta sincronizarlo.
+  2. «COMPLETADA» con 4 unidades, 16 actividades, 12 estudiantes y 192 calificaciones.
+  3. Panel:
+     - promedio 7,59;
+     - «La mitad del curso tiene más de 7,96»;
+     - actividades completadas 76 %;
+     - «Requiere atención 5»;
+     - tira con U4 «0/4 · actual».
+     Alertas, 5 activas:
+     - 3 «Promedio bajo»: Javier Jácome 5,42, Gabriela Guerrero 6,21 y Ana Acosta 6,62.
+     - 1 «Atrasos»: Diego Dávila, «2 actividades vencidas sin entregar: Tarea 5 (14/10) · APE 3 (22/10)».
+     - 1 «Descenso reciente»: Bruno Benítez.
+  4. AGIL-4B y MCS-4B.
+  5. «Acceso no permitido».
+- **AGIL-4B no cambia:** después de cargar MCS-4B y volver a sincronizar AGIL-4B, sus indicadores, sus 32 estudiantes y sus 16 alertas son idénticos. Siguen el promedio 7,60, 16 alertas para 14 estudiantes y Karina Lara con 5,29.
 
 ### HU-13 y HU-14 · Asistente con herramientas
 

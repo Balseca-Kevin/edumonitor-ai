@@ -22,21 +22,52 @@ public static class SembradorDatos
 
         await db.Database.MigrateAsync(ct);
 
-        if (await db.Usuarios.AnyAsync(ct))
+        if (!await db.Usuarios.AnyAsync(ct))
         {
-            return;
+            var contrasena = alcance.ServiceProvider.GetRequiredService<IConfiguration>()["Semillas:Contrasena"];
+            if (string.IsNullOrWhiteSpace(contrasena))
+            {
+                logger.LogWarning("Semillas__Contrasena no está configurada; no se crean los usuarios semilla.");
+                return;
+            }
+
+            var hasher = alcance.ServiceProvider.GetRequiredService<IHasherContrasenas>();
+            await SembrarAsync(db, hasher, contrasena, ct);
+            logger.LogInformation("Datos semilla cargados: admin, doc01 (AGIL-4B) y doc02 (BDD-4B).");
         }
 
-        var contrasena = alcance.ServiceProvider.GetRequiredService<IConfiguration>()["Semillas:Contrasena"];
-        if (string.IsNullOrWhiteSpace(contrasena))
+        // En cada arranque, también sobre una base que ya tiene datos: el curso adicional del laboratorio.
+        if (await AsegurarCursoMcsAsync(db, ct))
         {
-            logger.LogWarning("Semillas__Contrasena no está configurada; no se crean los usuarios semilla.");
-            return;
+            logger.LogInformation("Curso de laboratorio agregado: MCS-4B (Moodle {MoodleId}) asignado a doc01.", MoodleIdMcs);
+        }
+    }
+
+    /// <summary>Id de MCS-4B en el Moodle de laboratorio: el script lo crea después de AGIL-4B (2) y BDD (3).</summary>
+    public const int MoodleIdMcs = 4;
+
+    /// <summary>
+    /// Curso adicional del 12 nov 2026: MCS-4B «Manejo y Configuración del Software (lab)», asignado solo a doc01. Idempotente:
+    /// no hace nada si el curso ya existe o si doc01 no existe. No toca usuarios, AGIL-4B ni BDD-4B. El docente lo ve en «Mis cursos»
+    /// y lo sincroniza con el botón, como los otros.
+    /// </summary>
+    public static async Task<bool> AsegurarCursoMcsAsync(EduMonitorDbContext db, CancellationToken ct = default)
+    {
+        if (await db.Cursos.AnyAsync(c => c.NombreCorto == "MCS-4B" || c.MoodleCursoId == MoodleIdMcs, ct))
+        {
+            return false;
         }
 
-        var hasher = alcance.ServiceProvider.GetRequiredService<IHasherContrasenas>();
-        await SembrarAsync(db, hasher, contrasena, ct);
-        logger.LogInformation("Datos semilla cargados: admin, doc01 (AGIL-4B) y doc02 (BDD-4B).");
+        var doc01 = await db.Usuarios.SingleOrDefaultAsync(u => u.NombreUsuario == "doc01", ct);
+        if (doc01 is null)
+        {
+            return false;
+        }
+
+        var mcs = new Curso { MoodleCursoId = MoodleIdMcs, NombreCorto = "MCS-4B", Nombre = "Manejo y Configuración del Software (lab)", Periodo = "2026-2" };
+        db.CursosDocentes.Add(new CursoDocente { Curso = mcs, Usuario = doc01 });
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     /// <summary>1 administrador, 2 docentes y 2 cursos, cada docente con un curso distinto. También lo usan las pruebas.</summary>

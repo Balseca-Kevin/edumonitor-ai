@@ -108,6 +108,10 @@ Dependencias permitidas: Api → Application, Infrastructure · Infrastructure �
 - Si una función de Moodle falla, la sincronización queda `PARCIAL` y el indicador afectado se muestra como «no disponible», nunca como 0.
 - Roles del sistema: `DOCENTE` y `ADMIN`. El agente usa un token de servicio con rol `AGENTE` atado al docente que preguntó. No existe rol estudiante.
 - Cada docente ve solo sus cursos. Acceso a un curso ajeno: 403. Sin token: 401. En la interfaz, 403 lleva a «Acceso no permitido» y 401 a «Tu sesión venció».
+- Cursos del laboratorio:
+  - doc01 tiene AGIL-4B (Moodle 2) y MCS-4B «Manejo y Configuración del Software (lab)» (Moodle 4, desde el 12 nov 2026, con est01 a est12).
+  - doc02 tiene BDD-4B (Moodle 3).
+  - La API agrega MCS-4B al arrancar si no existe (`SembradorDatos.AsegurarCursoMcsAsync`).
 - Datos mínimos de estudiantes: id de Moodle, nombre y apellido.
 - Ponderación UTA: exámenes 40 %, tareas 30 %, APE 30 %. Aprobación con 7,0. Si falta una categoría, los pesos se normalizan y el valor se marca como parcial.
 - Indicadores (planificación, tabla 5): promedio ponderado, media, mediana, desviación estándar muestral, grupos (alto ≥ 8,5; medio 6,0 a 8,49; bajo < 6,0), puntuación z, tasa de finalización, tendencia con N = 3. Caso de prueba fijo: 9, 8, 6, 3, 3 → promedio 5,80, desviación 2,77.
