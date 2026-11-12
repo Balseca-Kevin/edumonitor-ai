@@ -19,4 +19,8 @@ public class Alerta
 
     /// <summary>Estado de revisión, p. ej. <c>ACTIVA</c> o <c>REVISADA</c> (HU-12).</summary>
     public string Estado { get; set; } = string.Empty;
+
+    public DateTimeOffset Generada { get; set; }
+
+    public DateTimeOffset? Revisada { get; set; }
 }
