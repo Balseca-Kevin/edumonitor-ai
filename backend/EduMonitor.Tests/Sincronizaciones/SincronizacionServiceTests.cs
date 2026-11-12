@@ -1,6 +1,8 @@
 using EduMonitor.Application.Abstractions.Moodle;
+using EduMonitor.Application.Alertas;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
+using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Sincronizaciones;
 using EduMonitor.Domain.Enums;
 using EduMonitor.Infrastructure.Moodle;
@@ -8,6 +10,7 @@ using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Infrastructure.Seguridad;
 using EduMonitor.Tests.Infraestructura;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace EduMonitor.Tests.Sincronizaciones;
@@ -38,7 +41,9 @@ public class SincronizacionServiceTests : IDisposable
             new ImportadorCalificaciones(_moodle, db),
             new ImportadorEntregas(_moodle, db),
             new ConfiguracionMoodleEnMemoria(Options.Create(new MoodleOptions { Url = "http://localhost:8080" }), TimeProvider.System),
-            TimeProvider.System);
+            TimeProvider.System,
+            new AlertasService(db, new IndicadorService(db), TimeProvider.System),
+            NullLogger<SincronizacionService>.Instance);
         return await servicio.SincronizarAsync(cursoId ?? _cursoId, _doc01);
     }
 
