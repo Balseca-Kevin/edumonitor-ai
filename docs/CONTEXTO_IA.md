@@ -42,7 +42,7 @@ No se cambia sin acuerdo del equipo.
 - Moodle 4.5 en Docker (`erseco/alpine-moodle:v4.5.15`), datos ficticios. Lectura solo por servicios web REST con el servicio externo `edumonitor_ws` y un token de solo lectura.
 - Backend: ASP.NET Core Web API sobre .NET 8 (`net8.0`), controladores, Entity Framework Core 8 con SQL Server, JWT, Swagger, xUnit. Paquetes `Microsoft.*` siempre en versión 8.0.x.
 - Base de datos: SQL Server 2022 en Docker, base `EduMonitorDB`, migraciones de EF Core versionadas.
-- Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Tipografía Archivo.
+- Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Diseño D (`docs/sprint-2/diseno.md`): Archivo y JetBrains Mono para códigos de curso.
 - Agente: Python 3.11, FastAPI, LangGraph, Pydantic, Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`), pytest.
 - Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. La API usa la red de `moodle-puente`, que lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`; el puente es el dueño de esa red para que un reinicio de la API no lo rompa. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
 - Gestión: Git + GitHub con Git Flow, GitHub Actions, Jira (tablero: Por hacer, En curso, En revisión, Finalizada).
@@ -131,17 +131,17 @@ Solo estas. Ninguna otra.
 
 ## Alcance por sprint
 
-Estado al cierre del Sprint 2 según los Pull Request fusionados en `develop` (11 nov 2026; detalle por tarea en `docs/sprint-2/PLAN.md`).
+Estado al cierre del Sprint 2 según los Pull Request fusionados en `develop` (12 nov 2026, día de la Review; detalle por tarea en `docs/sprint-2/PLAN.md`).
 
 | HU | Historia | Sprint | Responsable | Estado al cierre del Sprint 2 |
 |---|---|---|---|---|
 | HU-01 a HU-07 | Moodle de laboratorio, conexión, modelo de datos, autenticación, sincronización, pantallas iniciales, spike del agente | 1 | varios | Hechas en el Sprint 1 (#1 a #18) |
 | HU-20 | Entorno único de ejecución con Docker Compose | 2 | Kevin | Hecha (#27, #29) |
-| HU-19 | Identidad visual y pantallas de acceso | 2 | Santiago | No iniciada en `develop` (sin Pull Request) |
+| HU-19 | Identidad visual y pantallas de acceso | 2 | Santiago | Hecha con el diseño D (#35) |
 | HU-09 | Panel de indicadores del curso | 2 | Kevin | Hecha (#23, #26) |
-| HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | No iniciada en `develop` (sin Pull Request) |
-| HU-13 | Herramientas del agente con trazas | 2 | Jeremy | A medias: TA-13.1 y TA-13.3 a 13.6 y 13.8 hechas (#21, #24, #28); TA-13.2 espera HU-12; la evaluación de TA-13.7 está sin ejecutar |
-| HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25) |
+| HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | Hecha (#38) |
+| HU-13 | Herramientas del agente con trazas | 2 | Jeremy | Hecha (#21, #24, #28, #37, #39, #40) |
+| HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25, #36, #35) |
 | HU-08, HU-10, HU-11, HU-15, HU-16, HU-17, HU-18 | Mapeo temático, ficha del estudiante, desempeño por tema, refuerzo, informe, auditoría, cierre | 3 | varios | No iniciadas |
 
 No construir nada del Sprint 3 mientras el sprint activo sea el 2.

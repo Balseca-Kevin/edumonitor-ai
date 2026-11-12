@@ -60,7 +60,7 @@ Release Plan vigente, re-planificado el 8 nov 2026 ([docs/sprint-2/PLAN.md](docs
 | Sprint | Período | Objetivo | SP | Estado |
 |---|---|---|---|---|
 | 1 | 19 oct – 30 oct 2026 | Moodle de laboratorio, conexión por servicios web, modelo de datos, autenticación con autorización por curso, Mis cursos, primera sincronización y spike del agente | 39 | Cerrado · Review el 29 oct 2026 |
-| 2 | 2 nov – 12 nov 2026 | Panel de indicadores, alertas con evidencia, asistente en la app, herramientas del agente con trazas, identidad visual y entorno único con Docker | 39 comprometidos | Re-planificado el 8 nov · Review el jueves 12 nov 2026 |
+| 2 | 2 nov – 12 nov 2026 | Panel de indicadores, alertas con evidencia, asistente en la app, herramientas del agente con trazas, identidad visual y entorno único con Docker | 39 de 39 hechos | Cerrado · Review el jueves 12 nov 2026 · v0.2.1 |
 | 3 | 16 nov – 27 nov 2026 | Mapeo temático, ficha del estudiante, desempeño por tema, tareas de refuerzo, informe, auditoría y cierre (HU-08, HU-10, HU-11, HU-15 a HU-18) | 42 | Por iniciar |
 
 Cambio frente a la planificación inicial (110 SP), por la retroalimentación de la Review del Sprint 1: entran las HU nuevas HU-19 y HU-20, HU-14 se adelanta al Sprint 2, y HU-08, HU-10 y HU-11 pasan al Sprint 3.
@@ -87,16 +87,22 @@ Cambio frente a la planificación inicial (110 SP), por la retroalimentación de
 
 > **Sprint Goal:** El docente abre EduMonitor, ve el panel de indicadores de su curso y las alertas que requieren atención con su evidencia, y pregunta al asistente desde la misma aplicación; EduMonitor se levanta con un solo comando y el aula virtual corre aparte.
 
-6 HU · 34 TA · 39 SP. Estado al 11 nov 2026 según los Pull Request fusionados en `develop`. Plan, diseño y daily en [docs/sprint-2/](docs/sprint-2/PLAN.md).
+6 HU · 34 TA · 39 SP. Estado al 12 nov 2026, día de la Review, según los Pull Request fusionados en `develop`: las 6 HU y las 34 TA hechas. Quién hizo cada tarea, en [docs/sprint-2/PLAN.md](docs/sprint-2/PLAN.md).
+
+Cambio de diseño del 12 nov 2026, 08:14 (decisión de Kevin):
+- La interfaz pasó al **diseño D**, sobre el PR #35 de Santiago, para que HU-19 siga siendo suya.
+- Motivo: el Product Owner vio genérico el inicio de sesión y pidió una herramienta que hable como docente.
+- El panel y las alertas usan lenguaje de aula, sin términos estadísticos ni códigos de regla, y el asistente es un chat con historial.
+- Reglas y motivo en [docs/sprint-2/diseno.md](docs/sprint-2/diseno.md).
 
 | HU | Historia | Responsable | SP | Estado | PR |
 |---|---|---|---|---|---|
 | HU-20 | Entorno único de ejecución con Docker Compose | Kevin Balseca | 5 | Hecha | [#27](https://github.com/Balseca-Kevin/edumonitor-ai/pull/27), [#29](https://github.com/Balseca-Kevin/edumonitor-ai/pull/29) |
-| HU-19 | Identidad visual y pantallas de acceso | Santiago Escobar | 5 | No iniciada en `develop` (sin PR) | — |
-| HU-09 | Panel de indicadores del curso | Kevin Balseca | 8 | Hecha | [#23](https://github.com/Balseca-Kevin/edumonitor-ai/pull/23), [#26](https://github.com/Balseca-Kevin/edumonitor-ai/pull/26) |
-| HU-12 | Alertas académicas con reglas configurables | Sebastián Freire | 5 | No iniciada en `develop` (sin PR) | — |
-| HU-13 | Herramientas del agente con trazas | Jeremy Guamán (TA-13.1 y TA-13.2: Kevin) | 8 | A medias: falta TA-13.2, que espera HU-12, y ejecutar la evaluación de TA-13.7 | [#21](https://github.com/Balseca-Kevin/edumonitor-ai/pull/21), [#24](https://github.com/Balseca-Kevin/edumonitor-ai/pull/24), [#28](https://github.com/Balseca-Kevin/edumonitor-ai/pull/28) |
-| HU-14 | Consulta al asistente desde la aplicación | Kevin Balseca | 8 | Hecha | [#25](https://github.com/Balseca-Kevin/edumonitor-ai/pull/25) |
+| HU-19 | Identidad visual y pantallas de acceso | Santiago Escobar (diseño D aplicado por Kevin) | 5 | Hecha | [#35](https://github.com/Balseca-Kevin/edumonitor-ai/pull/35) |
+| HU-09 | Panel de indicadores del curso | Kevin Balseca | 8 | Hecha | [#23](https://github.com/Balseca-Kevin/edumonitor-ai/pull/23), [#26](https://github.com/Balseca-Kevin/edumonitor-ai/pull/26), [#35](https://github.com/Balseca-Kevin/edumonitor-ai/pull/35) |
+| HU-12 | Alertas académicas con reglas configurables | Sebastián Freire (revisión y corrección de Kevin) | 5 | Hecha | [#38](https://github.com/Balseca-Kevin/edumonitor-ai/pull/38) |
+| HU-13 | Herramientas del agente con trazas | Jeremy Guamán (TA-13.1, TA-13.2 y la ejecución de TA-13.7: Kevin) | 8 | Hecha | [#21](https://github.com/Balseca-Kevin/edumonitor-ai/pull/21), [#24](https://github.com/Balseca-Kevin/edumonitor-ai/pull/24), [#28](https://github.com/Balseca-Kevin/edumonitor-ai/pull/28), [#37](https://github.com/Balseca-Kevin/edumonitor-ai/pull/37), [#39](https://github.com/Balseca-Kevin/edumonitor-ai/pull/39), [#40](https://github.com/Balseca-Kevin/edumonitor-ai/pull/40) |
+| HU-14 | Consulta al asistente desde la aplicación | Kevin Balseca | 8 | Hecha | [#25](https://github.com/Balseca-Kevin/edumonitor-ai/pull/25), [#36](https://github.com/Balseca-Kevin/edumonitor-ai/pull/36), [#35](https://github.com/Balseca-Kevin/edumonitor-ai/pull/35) |
 
 Evidencias: [docs/evidencias/sprint-2/](docs/evidencias/sprint-2/README.md). Guía para comprobar cada HU en el navegador: [docs/PRUEBAS.md](docs/PRUEBAS.md).
 
