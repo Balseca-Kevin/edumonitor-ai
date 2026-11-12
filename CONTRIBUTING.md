@@ -12,7 +12,7 @@ Trabajamos con Scrum: cada cambio sale de una historia de usuario (HU) y una tar
 | `release/sprint-n` | Preparación de la entrega del sprint n; se fusiona en `main` y `develop`. |
 | `hotfix/descripcion` | Corrección urgente sobre `main`. |
 
-El ruleset `proteger-main-develop` exige en `main` y `develop`: Pull Request con **aprobación del code owner**, CI en verde (`backend`, `frontend` y `agent`), **sin force push** y sin borrar la rama. Solo quien está en la lista de bypass del ruleset puede actualizar `develop` y `main`. Nadie sube directo a `main` ni a `develop`.
+El ruleset `proteger-main-develop` exige en `main` y `develop`: Pull Request con **una aprobación** (`.github/CODEOWNERS` asigna a Kevin como revisor), CI en verde (`backend`, `frontend` y `agent`), **sin force push** y sin borrar la rama. Solo quien está en la lista de bypass del ruleset puede actualizar `develop` y `main`. Nadie sube directo a `main` ni a `develop`.
 
 ## Commits
 
@@ -34,7 +34,7 @@ La política de integración del Sprint 2 reemplaza la revisión por pares del S
 - Cada integrante empuja su rama `feature/HU-xx-descripcion` y abre un Pull Request hacia `develop`.
 - **Kevin es el único que aprueba** y el único que fusiona en `develop` y `main`.
 - `.github/CODEOWNERS` pide la aprobación de Kevin en todo Pull Request hacia `develop` o `main`.
-- El Pull Request se fusiona solo con la CI en verde y la aprobación de Kevin, como exige el ruleset `proteger-main-develop`.
+- El Pull Request se fusiona solo con la CI en verde y una aprobación, como exige el ruleset `proteger-main-develop`; por decisión del equipo, esa aprobación es la de Kevin.
 - GitHub no deja aprobar el Pull Request propio, así que Kevin fusiona los suyos con el bypass del ruleset, también con la CI en verde.
 - Usa la plantilla `.github/pull_request_template.md` completa: qué hace, cómo probarlo, evidencia y Definition of Done.
 - Un cambio en `docs/contratos-api.md` va en un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
