@@ -89,7 +89,7 @@ Cambio frente a la planificación inicial (110 SP), por la retroalimentación de
 
 6 HU · 34 TA · 39 SP. Estado al 12 nov 2026, día de la Review, según los Pull Request fusionados en `develop`: las 6 HU y las 34 TA hechas. Quién hizo cada tarea, en [docs/sprint-2/PLAN.md](docs/sprint-2/PLAN.md).
 
-Cambio de diseño del 12 nov 2026, 08:14 (decisión de Kevin):
+Cambio de diseño del 09 nov 2026, 08:14 (decisión de Kevin):
 - La interfaz pasó al **diseño D**, sobre el PR #35 de Santiago, para que HU-19 siga siendo suya.
 - Motivo: el Product Owner vio genérico el inicio de sesión y pidió una herramienta que hable como docente.
 - El panel y las alertas usan lenguaje de aula, sin términos estadísticos ni códigos de regla, y el asistente es un chat con historial.
