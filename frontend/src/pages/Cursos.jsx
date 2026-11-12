@@ -5,13 +5,12 @@ import {
   sincronizarCurso,
   obtenerHistorialSincronizaciones,
 } from '../services/cursos'
-import MarcoS2 from '../components/s2/MarcoS2'
+import Marco from '../components/Marco'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Table from '../components/ui/Table'
 import StatusBadge from '../components/ui/StatusBadge'
 import Alert from '../components/ui/Alert'
-import './Cursos.css'
 
 function formatearFecha(fecha) {
   if (!fecha) return 'No disponible'
@@ -305,7 +304,7 @@ export default function Cursos() {
   ]
 
   return (
-    <MarcoS2>
+    <Marco>
       <div className="hu19-cursos">
         <header className="hu19-cursos__cabecera">
           <div>
@@ -392,6 +391,6 @@ export default function Cursos() {
           </>
         )}
       </div>
-    </MarcoS2>
+    </Marco>
   )
 }

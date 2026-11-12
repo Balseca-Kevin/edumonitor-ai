@@ -1,274 +1,77 @@
+/* Componentes base de HU-19 (TA-19.1, Santiago) con el diseño D (docs/sprint-2/diseno.md). Todo valor sale de tokens.css. */
 
-/* HU-19 · Componentes base del sistema de diseño */
-
-.ui-button,
-.ui-input {
-  font-family: var(--fuente);
-  font-size: var(--fs-16);
-  font-weight: var(--peso-etiqueta);
-  border-radius: var(--radio);
-  transition:
-    background-color var(--duracion),
-    border-color var(--duracion),
-    color var(--duracion);
-}
-
-/* Botones */
-
+/* Botón */
 .ui-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--e-8);
-  min-height: var(--e-48);
-  padding: var(--e-8) var(--e-24);
+  height: 44px;
+  padding: 0 var(--e-20);
   border: var(--grosor-linea) solid var(--tinta);
-  cursor: pointer;
-}
-
-.ui-button--primary {
+  border-radius: var(--radio-4);
   background: var(--tinta);
   color: var(--fondo);
+  font: 600 var(--fs-14) var(--fuente);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--t-rapido) ease, border-color var(--t-rapido) ease;
 }
+.ui-button:hover:not(:disabled) { background: var(--grafico); border-color: var(--grafico); }
+.ui-button--secondary { background: var(--fondo); color: var(--tinta); border-color: var(--linea-2); }
+.ui-button--secondary:hover:not(:disabled) { background: var(--fondo-2); border-color: var(--linea-2); }
+.ui-button--danger { background: var(--fondo); color: var(--error); border-color: var(--error); }
+.ui-button--danger:hover:not(:disabled) { background: var(--error-fondo); border-color: var(--error); }
+.ui-button--small { height: 34px; padding: 0 var(--e-14); font-size: var(--fs-13); }
+.ui-button:disabled { opacity: 0.55; cursor: not-allowed; }
 
-.ui-button--primary:hover:not(:disabled) {
-  background: var(--acento);
-  border-color: var(--acento);
-}
-
-.ui-button--secondary {
-  background: var(--fondo);
-  color: var(--tinta);
-  border-color: var(--linea);
-}
-
-.ui-button--secondary:hover:not(:disabled) {
-  border-color: var(--acento);
-  color: var(--acento);
-}
-
-.ui-button--danger {
-  background: var(--error);
-  color: var(--fondo);
-  border-color: var(--error);
-}
-
-.ui-button--small {
-  min-height: var(--e-32);
-  padding: var(--e-4) var(--e-16);
-  font-size: var(--fs-14);
-}
-
-.ui-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.ui-button:focus-visible,
-.ui-input:focus-visible {
-  outline: var(--grosor-regla) solid var(--acento);
-  outline-offset: var(--grosor-regla);
-  box-shadow: none;
-}
-
-/* Campos */
-
-.ui-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--e-8);
-  width: 100%;
-}
-
-.ui-field__label {
-  margin: 0;
-  color: var(--tinta);
-  font-size: var(--fs-14);
-  font-weight: var(--peso-etiqueta);
-}
-
+/* Campo */
+.ui-field { display: flex; flex-direction: column; gap: var(--e-8); }
+.ui-field__label { font-size: var(--fs-12); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--tinta-2); }
 .ui-input {
   width: 100%;
-  min-height: var(--e-48);
-  padding: var(--e-8) var(--e-16);
-  background: var(--fondo);
-  border: var(--grosor-linea) solid var(--linea);
-  color: var(--tinta);
-}
-
-.ui-input:hover:not(:disabled) {
-  border-color: var(--acento);
-}
-
-.ui-input--error {
-  border-color: var(--error);
-}
-
-.ui-field__helper,
-.ui-field__error {
-  margin: 0;
-  font-size: var(--fs-12);
-  line-height: var(--interlineado);
-}
-
-.ui-field__helper {
-  color: var(--tinta-2);
-}
-
-.ui-field__error {
-  color: var(--error);
-}
-
-
-/* HU-19 · Tarjetas */
-
-.ui-card {
-  border: var(--grosor-linea) solid var(--linea);
-  border-radius: var(--radio);
-  padding: var(--e-24);
+  height: 46px;
+  padding: 0 var(--e-14);
+  border: var(--grosor-linea) solid var(--linea-2);
+  border-radius: var(--radio-4);
   background: var(--fondo);
   color: var(--tinta);
+  font: 400 var(--fs-16) var(--fuente);
 }
+.ui-input:focus { outline: var(--grosor-regla) solid var(--acento); outline-offset: 2px; }
+.ui-input--error { border-color: var(--error); }
+.ui-field__helper { margin: 0; font-size: var(--fs-13); color: var(--tinta-2); }
+.ui-field__error { margin: 0; font-size: var(--fs-13); color: var(--error); }
 
-.ui-card__title {
-  margin: 0 0 var(--e-16);
-  padding-top: var(--e-8);
-  border-top: var(--grosor-regla) solid var(--tinta);
-  font-family: var(--fuente);
-  font-size: var(--fs-20);
-  font-weight: var(--peso-titulo);
-  color: var(--tinta);
-}
+/* Tarjeta: regla de 2 px arriba del título, sin sombra */
+.ui-card { display: flex; flex-direction: column; gap: var(--e-16); }
+.ui-card::before { content: ''; height: var(--grosor-regla); background: var(--tinta); transform-origin: left; animation: trazar var(--t-barra) var(--curva-suave) both; }
+.ui-card__title { margin: 0; font-size: var(--fs-20); font-weight: 800; }
+.ui-card__content { display: flex; flex-direction: column; gap: var(--e-16); }
 
-.ui-card__content {
-  font-size: var(--fs-16);
-  line-height: var(--interlineado);
-}
+/* Tabla */
+.ui-table-wrapper { overflow-x: auto; }
+.ui-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ui-table caption { text-align: left; padding-bottom: var(--e-8); font-size: var(--fs-13); color: var(--tinta-2); }
+.ui-table th { font-size: var(--fs-12); font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--tinta-2); text-align: left; padding: var(--e-10) var(--e-12); border-bottom: var(--grosor-regla) solid var(--tinta); white-space: nowrap; }
+.ui-table td { padding: var(--e-12); border-bottom: var(--grosor-linea) solid var(--linea); font-size: var(--fs-15); vertical-align: middle; }
+.ui-table tbody tr { transition: background-color var(--t-rapido) ease; }
+.ui-table tbody tr:hover { background: var(--fondo-2); }
+.ui-table__empty { color: var(--tinta-2); text-align: center; padding: var(--e-24) var(--e-12); }
 
-/* HU-19 · Insignias de estado */
+/* Insignia de estado: punto de color y texto, nunca solo color */
+.ui-status { display: inline-flex; align-items: center; gap: var(--e-8); font-size: var(--fs-13); font-weight: 600; white-space: nowrap; }
+.ui-status__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.ui-status--success { color: var(--ok); }
+.ui-status--warning { color: var(--atencion); }
+.ui-status--error { color: var(--error); }
+.ui-status--neutral { color: var(--neutro); }
 
-.ui-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--e-8);
-  font-family: var(--fuente);
-  font-size: var(--fs-12);
-  font-weight: var(--peso-etiqueta);
-}
-
-.ui-status__dot {
-  width: var(--e-8);
-  height: var(--e-8);
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.ui-status--success {
-  color: var(--ok);
-}
-
-.ui-status--warning {
-  color: var(--atencion);
-}
-
-.ui-status--error {
-  color: var(--error);
-}
-
-.ui-status--neutral {
-  color: var(--neutro);
-}
-
-/* HU-19 · Avisos */
-
-.ui-alert {
-  padding: var(--e-16);
-  border: var(--grosor-linea) solid var(--linea);
-  border-left: var(--grosor-regla) solid currentColor;
-  background: var(--fondo);
-  font-family: var(--fuente);
-  font-size: var(--fs-14);
-  line-height: var(--interlineado);
-}
-
-.ui-alert--info {
-  color: var(--tinta-2);
-}
-
-.ui-alert--success {
-  color: var(--ok);
-}
-
-.ui-alert--warning {
-  color: var(--atencion);
-}
-
-.ui-alert--error {
-  color: var(--error);
-}
-
-.ui-alert__title {
-  display: block;
-  margin-bottom: var(--e-8);
-  font-weight: var(--peso-titulo);
-}
-
-.ui-alert__content {
-  color: var(--tinta);
-}
-
-/* HU-19 · Tablas */
-
-.ui-table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  border: var(--grosor-linea) solid var(--linea);
-}
-
-.ui-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--fondo);
-  color: var(--tinta);
-  font-family: var(--fuente);
-  font-size: var(--fs-14);
-  font-variant-numeric: tabular-nums;
-  text-align: left;
-}
-
-.ui-table caption {
-  padding: var(--e-16);
-  text-align: left;
-  font-weight: var(--peso-titulo);
-}
-
-.ui-table th {
-  padding: var(--e-16);
-  border-bottom: var(--grosor-regla) solid var(--tinta);
-  color: var(--tinta-2);
-  font-size: var(--fs-12);
-  font-weight: var(--peso-etiqueta);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.ui-table td {
-  padding: var(--e-16);
-  border-bottom: var(--grosor-linea) solid var(--linea);
-  vertical-align: middle;
-}
-
-.ui-table tbody tr:nth-child(even) {
-  background: var(--fondo-2);
-}
-
-.ui-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.ui-table__empty {
-  padding: var(--e-32);
-  text-align: center;
-  color: var(--tinta-2);
-}
+/* Aviso */
+.ui-alert { display: flex; gap: var(--e-12); padding: var(--e-14) var(--e-16); border-radius: var(--radio-10); border: var(--grosor-linea) solid var(--linea); border-left-width: 3px; background: var(--fondo); font-size: var(--fs-14); line-height: var(--interlineado); }
+.ui-alert__content { display: flex; flex-direction: column; gap: var(--e-4); }
+.ui-alert__title { margin: 0; font-weight: 600; }
+.ui-alert--error { border-left-color: var(--error); background: var(--error-fondo); }
+.ui-alert--warning { border-left-color: var(--arena); }
+.ui-alert--success { border-left-color: var(--ok); background: var(--ok-fondo); }
+.ui-alert--info { border-left-color: var(--tinta-3); background: var(--fondo-2); }

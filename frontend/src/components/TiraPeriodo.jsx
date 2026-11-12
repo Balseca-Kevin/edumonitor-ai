@@ -1,160 +1,88 @@
-
 import { useEffect, useState } from 'react'
 import { obtenerIndicadores } from '../services/indicadores'
-import StatusBadge from './ui/StatusBadge'
-import './TiraPeriodo.css'
+import Estado from './Estado'
+import { formatearFecha } from './formato'
+import { unidadActual, valida } from './lenguaje'
 
 const PARCIALES = [
   { numero: 1, unidades: [1, 2] },
   { numero: 2, unidades: [3, 4] },
 ]
 
-function SegmentoUnidad({ numero, unidad, cargando }) {
-  const total = unidad?.actividades
-  const calificadas = unidad?.calificadas
-
-  const disponible =
-    Number.isInteger(total) &&
-    Number.isInteger(calificadas) &&
-    total >= 0 &&
-    calificadas >= 0 &&
-    calificadas <= total
-
-  const completa =
-    disponible && total > 0 && calificadas === total
-
-  const estado = completa
-    ? 'completa'
-    : disponible
-      ? 'pendiente'
-      : 'sin-datos'
+function Unidad({ numero, unidad, cargando, actual }) {
+  const disponible = valida(unidad)
+  const completa = disponible && unidad.actividades > 0 && unidad.calificadas === unidad.actividades
+  const estado = !disponible ? 'sin-datos' : completa ? 'completa' : numero === actual ? 'actual' : 'futura'
+  const avance = disponible && unidad.actividades > 0 ? Math.round((unidad.calificadas / unidad.actividades) * 100) : 0
 
   return (
     <div
-      className={`hu19-unidad hu19-unidad--${estado}`}
-      aria-label={`Unidad ${numero}: ${
-        disponible
-          ? `${calificadas} de ${total} actividades calificadas`
-          : 'sin datos disponibles'
-      }`}
+      className={`tira-unidad tira-unidad--${estado}`}
+      style={estado === 'actual' ? { '--avance': `${avance}%` } : undefined}
+      aria-label={`Unidad ${numero}: ${disponible ? `${unidad.calificadas} de ${unidad.actividades} actividades calificadas` : 'sin datos disponibles'}`}
     >
-      <strong>U{numero}</strong>
-
-      <span className="hu19-unidad__avance">
-        {cargando
-          ? 'Consultando'
-          : disponible
-            ? `${calificadas}/${total}`
-            : 'Sin datos'}
+      <b>U{numero}</b>
+      <span>
+        <span>{cargando ? 'Consultando' : disponible ? `${unidad.calificadas}/${unidad.actividades}` : 'Sin datos'}</span>
+        {estado === 'actual' && <span> · actual</span>}
       </span>
     </div>
   )
 }
 
-export default function TiraPeriodo({
-  cursoId,
-  ultimaSincronizacion,
-}) {
-  const [consulta, setConsulta] = useState({
-    cursoId: null,
-    cargando: true,
-    unidades: [],
-  })
+/**
+ * HU-19 · TA-19.2 · Tira del período en la cabecera oscura del curso (diseño D): Parcial 1 con U1 y U2, Parcial 2 con U3 y U4,
+ * cada unidad con «calificadas/actividades» de `unidades` de GET /api/cursos/{id}/indicadores; a la derecha, la fecha y el estado
+ * de la última sincronización. Un 409 o un error se ven como «Sin datos», nunca como 0/0.
+ */
+export default function TiraPeriodo({ cursoId, ultimaSincronizacion }) {
+  const [consulta, setConsulta] = useState({ cursoId: null, cargando: true, unidades: [] })
 
   useEffect(() => {
     let activo = true
-
     obtenerIndicadores(cursoId)
-      .then((datos) => {
-        if (!activo) return
-
-        setConsulta({
-          cursoId,
-          cargando: false,
-          unidades: Array.isArray(datos?.unidades)
-            ? datos.unidades
-            : [],
-        })
-      })
-      .catch(() => {
-        if (!activo) return
-
-        // Un 409, o un servicio no disponible,
-        // no equivale a cero actividades calificadas.
-        setConsulta({
-          cursoId,
-          cargando: false,
-          unidades: [],
-        })
-      })
-
+      .then((datos) => activo && setConsulta({ cursoId, cargando: false, unidades: Array.isArray(datos?.unidades) ? datos.unidades : [] }))
+      .catch(() => activo && setConsulta({ cursoId, cargando: false, unidades: [] }))
     return () => {
       activo = false
     }
   }, [cursoId])
 
-  const cargando = consulta.cursoId !== cursoId ||
-    consulta.cargando
-
+  const cargando = consulta.cursoId !== cursoId || consulta.cargando
   const unidades = cargando ? [] : consulta.unidades
+  const actual = unidadActual(unidades)
 
   return (
-    <section
-      className="hu19-periodo"
-      aria-label="Progreso del período académico"
-    >
-      <div className="hu19-periodo__parciales">
+    <div className="cabecera-curso-derecha">
+      <section className="tira" aria-label="Avance del período académico">
         {PARCIALES.map((parcial) => (
-          <div
-            className="hu19-periodo__parcial"
-            key={parcial.numero}
-          >
-            <h2>Parcial {parcial.numero}</h2>
-
-            <div className="hu19-periodo__unidades">
+          <div className="tira-parcial" key={parcial.numero}>
+            <span className="tira-etiqueta">PARCIAL {parcial.numero}</span>
+            <div className="tira-unidades">
               {parcial.unidades.map((numero) => (
-                <SegmentoUnidad
+                <Unidad
                   key={numero}
                   numero={numero}
                   cargando={cargando}
-                  unidad={unidades.find(
-                    (unidad) => unidad.numero === numero,
-                  )}
+                  actual={actual}
+                  unidad={unidades.find((u) => u.numero === numero)}
                 />
               ))}
             </div>
           </div>
         ))}
-      </div>
+      </section>
 
-      <div className="hu19-periodo__sincronizacion">
-        <span>Última sincronización</span>
-
-        <StatusBadge
-          status={
-            ultimaSincronizacion?.estado ??
-            'PENDIENTE'
-          }
-          label={
-            ultimaSincronizacion?.estado ??
-            'Sin sincronizar'
-          }
-        />
-
-        {ultimaSincronizacion?.fecha && (
-          <time
-            dateTime={ultimaSincronizacion.fecha}
-            className="hu19-periodo__fecha"
-          >
-            {new Date(
-              ultimaSincronizacion.fecha,
-            ).toLocaleString('es-EC', {
-              dateStyle: 'short',
-              timeStyle: 'short',
-            })}
-          </time>
+      <div className="sincronizacion">
+        <span>
+          {ultimaSincronizacion?.fecha ? `Sincronizado ${formatearFecha(ultimaSincronizacion.fecha)}` : 'Sin sincronizar'}
+        </span>
+        {ultimaSincronizacion?.estado && (
+          <span>
+            <Estado estado={ultimaSincronizacion.estado} />
+          </span>
         )}
       </div>
-    </section>
+    </div>
   )
 }

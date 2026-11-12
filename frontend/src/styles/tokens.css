@@ -1,175 +1,113 @@
-/* Tokens de diseño de EduMonitor AI · «registro académico». Único lugar con colores, fuentes y tiempos. */
+/* Tokens globales de EduMonitor AI · diseño D (docs/sprint-2/diseno.md). Único lugar con colores, fuentes, espacios y tiempos.
+   Reemplaza al bloque .s2 del Sprint 2 y a la paleta «registro académico» del Sprint 1. */
 :root {
-  /* HU-19 · Sistema de diseño suizo */
-  /* Colores */
-  --ancho-formulario: 400px;
-  --letras-encabezado: 0.04em;
-  --fondo: #ffffff;
-  --fondo-2: #f4f4f3;
-  --tinta-2: #555555;
-  --tinta-3: #8a8a8a;
-  --acento: #2346d8;
-  --ok: #2e7d32;
-  --atencion: #a35f00;
-  --neutro: #6b7280;
-  --error: #c62828;
-
-  /* Tipografía */
+  /* Tipografía: Archivo (300 a 800) para todo; JetBrains Mono solo para códigos de curso y datos técnicos menores. */
   --fuente: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --fuente-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --fs-11: 11px;
   --fs-12: 12px;
+  --fs-13: 13px;
   --fs-14: 14px;
+  --fs-15: 15px;
   --fs-16: 16px;
   --fs-20: 20px;
-  --fs-28: 28px;
-  --fs-40: 40px;
-  --fs-64: 64px;
+  --fs-24: 24px;
+  --fs-30: 30px;
+  --fs-34: 34px;
+  --fs-44: 44px;
+  --fs-60: 60px;
+  --fs-92: 92px;
+  --interlineado: 1.5;
+  --interlineado-titulo: 1.05;
 
-  --interlineado: 1.45;
-  --interlineado-titulo: 1.1;
-  --peso-texto: 400;
-  --peso-etiqueta: 500;
-  --peso-titulo: 600;
-  --peso-cifra: 700;
+  /* Color de la app clara */
+  --fondo: #ffffff;
+  --fondo-2: #f6f7f9;
+  --fondo-3: #eef0f3;
+  --fondo-suave: #f3f4fa;
+  --tinta: #1e2026;
+  --tinta-2: #6b7080;
+  --tinta-3: #8a90a0;
+  --linea: #e6e8ec;
+  --linea-2: #d5d8e0;
+  --cabecera: #1e2026;
+  --cabecera-texto: #ffffff;
+  --cabecera-texto-2: #bdbdbd;
+  --grafico: #5b6170;
+  --arena: #d2b48a;
+  --arena-texto: #8a5a1c;
+  --acento: #7b8bd6;
+  --acento-texto: #3f51b5;
+  --ok: #2f6b3a;
+  --ok-fondo: #eef5ef;
+  --ok-punto: #7cd17f;
+  --atencion: #a35f00;
+  --neutro: #6b7080;
+  --error: #b3463f;
+  --error-fondo: #fbeeed;
 
-  /* Espaciado */
+  /* Color de la pantalla oscura de inicio de sesión */
+  --oscuro-fondo: #16181d;
+  --oscuro-fondo-2: rgba(28, 31, 37, 0.92);
+  --oscuro-texto: #e6e7ea;
+  --oscuro-texto-2: #9aa0ab;
+  --oscuro-texto-3: #7d8390;
+  --oscuro-linea: #2a2e36;
+  --oscuro-linea-2: #343944;
+  --oscuro-linea-3: #3a3f49;
+  --oscuro-segmento: #5b616d;
+  --oscuro-punto: #aeb6c6;
+  --oscuro-arena: #c9a877;
+  --oscuro-ok: #8fc79a;
+
+  /* Espacio y forma: base 8 px */
   --e-4: 4px;
+  --e-6: 6px;
   --e-8: 8px;
+  --e-10: 10px;
+  --e-12: 12px;
+  --e-14: 14px;
   --e-16: 16px;
+  --e-20: 20px;
   --e-24: 24px;
+  --e-28: 28px;
   --e-32: 32px;
+  --e-40: 40px;
   --e-48: 48px;
   --e-64: 64px;
-
-  /* Estructura */
-  --ancho-maximo: 1280px;
-  --medianil: 24px;
+  --radio-2: 2px;
+  --radio-4: 4px;
+  --radio-8: 8px;
+  --radio-10: 10px;
+  --radio-14: 14px;
+  --radio-18: 18px;
+  --radio-24: 24px;
+  --radio-pildora: 999px;
   --ancho-lateral: 240px;
-  --ancho-conversacion: 720px;
+  --ancho-lateral-chat: 288px;
+  --ancho-conversacion: 760px;
+  --ancho-formulario: 380px;
   --grosor-linea: 1px;
   --grosor-regla: 2px;
-  --duracion: 150ms;
 
-  /* Paleta institucional */
-  --azul: #1f3864;
-  --azul-oscuro: #172a4b;
-  --azul-claro: #e6eaf2;
-  --granate: #7a1f2b;
-  --granate-claro: #f4e6e7;
-  --papel: #f6f3ec;
-  --papel-claro: #fbf9f4;
-  --tinta: #111111;
-  --tinta-suave: #4a5561;
-  --linea: #e3e3e1;
-  --linea-suave: #e7e2d6;
-  --blanco: #ffffff;
-
-  /* Estados de sincronización (el texto usa la variante oscura para contraste AA) */
-  --estado-completada: #4f7a3a;
-  --estado-completada-texto: #3d602c;
-  --estado-parcial: #b7852b;
-  --estado-parcial-texto: #7d5a14;
-  --estado-fallida: #7a1f2b;
-  --estado-pendiente: #6b7280;
-
-  /* Tipografía */
-  --fuente-titulo: 'Fraunces', 'Source Serif 4', Georgia, serif;
-  --fuente-cuerpo: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
-  --fuente-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
-
-  /* Forma y ritmo */
-  --radio: 4px;
-  --radio-ficha: 6px;
-  --celda: 24px;
-  --foco: 0 0 0 3px var(--papel), 0 0 0 5px var(--azul);
-
-  /* Movimiento */
+  /* Movimiento: una sola vez al entrar y en menos de 3 s. */
+  --curva-salida: cubic-bezier(0.16, 1, 0.3, 1);
+  --curva-suave: cubic-bezier(0.2, 0.8, 0.2, 1);
   --t-rapido: 150ms;
-  --t-medio: 220ms;
-  --t-lento: 300ms;
-  --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
-
-  /* Motivo: cuadrícula del libro de calificaciones */
-  --cuadricula: linear-gradient(var(--linea-suave) 1px, transparent 1px),
-    linear-gradient(90deg, var(--linea-suave) 1px, transparent 1px);
+  --t-medio: 400ms;
+  --t-entrada: 600ms;
+  --t-barra: 800ms;
+  --t-cifra: 1100ms;
+  --t-curva: 1600ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --t-rapido: 0ms;
     --t-medio: 0ms;
-    --t-lento: 0ms;
-  }
-
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0ms !important;
-    animation-delay: 0ms !important;
-    transition-duration: 0ms !important;
-  }
-}
-
-/* Sprint 2 (diseno.md) · Diseño suizo de docs/sprint-2/diseno.md para las pantallas nuevas (panel, asistente, estado del sistema).
-   Va dentro de .s2 para no cambiar las pantallas del Sprint 1 mientras llegan los tokens globales de TA-19.1. Sin Fraunces. */
-.s2 {
-  /* Color */
-  --fondo: #ffffff;
-  --fondo-2: #f4f4f3;
-  --tinta: #111111;
-  --tinta-2: #555555;
-  --tinta-3: #8a8a8a;
-  --linea: #e3e3e1;
-  --acento: #2346d8;
-  --ok: #2e7d32;
-  --atencion: #a35f00;
-  --neutro: #6b7280;
-  --error: #c62828;
-
-  /* Tipografía: familia única Archivo, escala 12 · 14 · 16 · 20 · 28 · 40 · 64 */
-  --fuente: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
-  --fs-12: 12px;
-  --fs-14: 14px;
-  --fs-16: 16px;
-  --fs-20: 20px;
-  --fs-28: 28px;
-  --fs-40: 40px;
-  --fs-64: 64px;
-  --interlineado: 1.45;
-  --interlineado-titulo: 1.1;
-  --peso-texto: 400;
-  --peso-etiqueta: 500;
-  --peso-titulo: 600;
-  --peso-cifra: 700;
-  --letras-encabezado: 0.04em;
-
-  /* Espacio y forma: base 8 px */
-  --e-4: 4px;
-  --e-8: 8px;
-  --e-16: 16px;
-  --e-24: 24px;
-  --e-32: 32px;
-  --e-48: 48px;
-  --e-64: 64px;
-  --ancho-maximo: 1280px;
-  --medianil: 24px;
-  --ancho-conversacion: 720px;
-  --ancho-lateral: 240px;
-  --radio: 2px;
-  --grosor-linea: 1px;
-  --grosor-regla: 2px;
-  --punto: 8px;
-  --duracion: 150ms;
-
-  font-family: var(--fuente);
-  font-size: var(--fs-16);
-  font-weight: var(--peso-texto);
-  line-height: var(--interlineado);
-  color: var(--tinta);
-  background: var(--fondo);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .s2 {
-    --duracion: 0ms;
+    --t-entrada: 0ms;
+    --t-barra: 0ms;
+    --t-cifra: 0ms;
+    --t-curva: 0ms;
   }
 }

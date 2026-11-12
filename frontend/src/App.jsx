@@ -9,7 +9,6 @@ import Asistente from './pages/curso/Asistente'
 import Alertas from './pages/curso/Alertas'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
-import './App.css'
 
 export default function App() {
   return (

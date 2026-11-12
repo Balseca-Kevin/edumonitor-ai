@@ -1,30 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import Estado from '../../components/s2/Estado'
-import { formatearFecha, formatearNumero } from '../../components/s2/formato'
+import { formatearFecha } from '../../components/formato'
+import { DESCRIPCION_REGLA, textoEvidencia } from '../../components/lenguaje'
 import { actualizarReglas, marcarAlerta, obtenerAlertas, obtenerReglas } from '../../services/alertas'
 import { describirError } from '../../services/errores'
-
-/** Línea de evidencia de una alerta con sus números (docs/contratos-api.md), según la regla que la activó. */
-function textoEvidencia(alerta) {
-  const e = alerta.evidencia ?? {}
-  const numero = (valor) => formatearNumero(valor) ?? 'no disponible'
-
-  switch (alerta.regla) {
-    case 'R1':
-      return `Últimas ${(e.ultimas ?? []).map(numero).join(' · ')} · anteriores ${(e.anteriores ?? [])
-        .map(numero)
-        .join(' · ')} · diferencia ${numero(e.diferencia)} · umbral ${numero(e.umbral)}`
-    case 'R2':
-      return `Actividades vencidas sin entrega: ${(e.actividades ?? [])
-        .map((a) => `${a.nombre} (${formatearFecha(a.fechaLimite)})`)
-        .join(' · ')} · umbral ${numero(e.umbral)}`
-    case 'R4':
-      return `Promedio ${numero(e.promedio)} · ${e.notas ?? 'no disponible'} notas · umbral ${numero(e.umbral)}`
-    default:
-      return '—'
-  }
-}
 
 /** Alertas agrupadas por estudiante, en el orden en que llegan del backend. */
 function agruparPorEstudiante(alertas) {
@@ -83,7 +62,7 @@ export default function Alertas() {
   const error = reglasVigentes.error ?? listaVigente.error
   if (error) {
     return (
-      <div className="s2-aviso s2-aviso--error" role="alert">
+      <div className="aviso aviso--error" role="alert">
         <strong>{error.titulo}</strong>
         {error.detalle}
       </div>
@@ -91,7 +70,7 @@ export default function Alertas() {
   }
 
   if (reglasVigentes.datos === null || listaVigente.datos === null) {
-    return <p className="s2-ayuda">Cargando alertas…</p>
+    return <p className="ayuda">Cargando alertas…</p>
   }
 
   async function guardar(event) {
@@ -138,121 +117,117 @@ export default function Alertas() {
     }
   }
 
-  const nombreRegla = (codigo) => reglasVigentes.datos.find((r) => r.codigo === codigo)?.nombre ?? codigo
+  const nombreRegla = (codigo) => reglasVigentes.datos.find((r) => r.codigo === codigo)?.nombre ?? 'Regla del curso'
 
   return (
-    <div className="s2-panel">
-      <div className="s2-bento">
-        <section className="s2-col-8 s2-seccion s2-seccion--columna" aria-labelledby="titulo-alertas">
-          <h3 id="titulo-alertas" className="s2-seccion-titulo">
+    <div className="panel-medio">
+      <section className="seccion ancho-2" aria-labelledby="titulo-alertas">
+        <div className="regla" />
+        <div className="seccion-cabecera">
+          <h2 id="titulo-alertas" className="seccion-titulo">
             Alertas
-          </h3>
+          </h2>
+          <div className="alertas-filtros" role="group" aria-label="Filtrar alertas por estado">
+            <button
+              type="button"
+              className={`chip${filtro === 'ACTIVA' ? ' chip--activo' : ''}`}
+              aria-pressed={filtro === 'ACTIVA'}
+              onClick={() => setFiltro('ACTIVA')}
+            >
+              Activas
+            </button>
+            <button
+              type="button"
+              className={`chip${filtro === 'REVISADA' ? ' chip--activo' : ''}`}
+              aria-pressed={filtro === 'REVISADA'}
+              onClick={() => setFiltro('REVISADA')}
+            >
+              Revisadas
+            </button>
+          </div>
+        </div>
 
-          <div className="s2-alertas">
-            {aviso && (
-              <div
-                className={`s2-aviso s2-aviso--${aviso.tipo === 'ok' ? 'neutro' : 'error'}`}
-                role={aviso.tipo === 'ok' ? 'status' : 'alert'}
-              >
-                <strong>{aviso.titulo}</strong>
-                {aviso.detalle}
-              </div>
-            )}
+        {aviso && (
+          <div className={`aviso aviso--${aviso.tipo === 'ok' ? 'ok' : 'error'}`} role={aviso.tipo === 'ok' ? 'status' : 'alert'}>
+            <strong>{aviso.titulo}</strong>
+            {aviso.detalle}
+          </div>
+        )}
 
-            <div className="s2-alerta-filtros" role="group" aria-label="Filtrar alertas por estado">
-              <button
-                type="button"
-                className={`s2-boton s2-boton--chico${filtro === 'ACTIVA' ? '' : ' s2-boton--secundario'}`}
-                aria-pressed={filtro === 'ACTIVA'}
-                onClick={() => setFiltro('ACTIVA')}
-              >
-                Activas
-              </button>
-              <button
-                type="button"
-                className={`s2-boton s2-boton--chico${filtro === 'REVISADA' ? '' : ' s2-boton--secundario'}`}
-                aria-pressed={filtro === 'REVISADA'}
-                onClick={() => setFiltro('REVISADA')}
-              >
-                Revisadas
-              </button>
-            </div>
-
-            {listaVigente.datos.length === 0 ? (
-              <p className="s2-ayuda">
-                {filtro === 'ACTIVA'
-                  ? 'No hay alertas activas. Al sincronizar el curso, las reglas detectan quiénes requieren atención.'
-                  : 'Todavía no hay alertas revisadas.'}
-              </p>
-            ) : (
-              agruparPorEstudiante(listaVigente.datos).map(([grupo, alertas]) => (
-                <div key={grupo} className="s2-alerta-grupo">
-                  <h4 className="s2-tarjeta-titulo">{grupo}</h4>
+        {listaVigente.datos.length === 0 ? (
+          <p className="ayuda">
+            {filtro === 'ACTIVA'
+              ? 'No hay alertas activas. Al sincronizar el curso, las reglas detectan quiénes requieren atención.'
+              : 'Todavía no hay alertas revisadas.'}
+          </p>
+        ) : (
+          <div className="alertas-lista">
+            {agruparPorEstudiante(listaVigente.datos).map(([grupo, alertas], i) => (
+              <div key={grupo} className="alerta-grupo entra" style={{ animationDelay: `${Math.min(i * 40, 1200)}ms` }}>
+                <div>
+                  <h3>{grupo}</h3>
+                  <span className="alerta-titulo">{filtro === 'ACTIVA' ? 'Requiere atención' : 'Revisada'}</span>
+                </div>
+                <div className="alerta-grupo-items">
                   {alertas.map((alerta) => (
-                    <article key={alerta.id} className="s2-tarjeta">
-                      <Estado estado={alerta.estado} texto={alerta.titulo} />
-                      <p>
-                        <span className="s2-grupo">{alerta.regla}</span> {nombreRegla(alerta.regla)}
-                      </p>
-                      <p className="s2-contexto s2-num">{textoEvidencia(alerta)}</p>
-                      <div className="s2-alerta-pie">
-                        <span className="s2-ayuda s2-num">
-                          <Estado estado={alerta.estado} texto={alerta.estado === 'ACTIVA' ? 'Activa' : 'Revisada'} /> ·
-                          Generada {formatearFecha(alerta.generada)}
-                          {alerta.revisada && ` · Revisada ${formatearFecha(alerta.revisada)}`}
+                    <article key={alerta.id} className="alerta" aria-label={`${nombreRegla(alerta.regla)} de ${grupo}`}>
+                      <div>
+                        <span className="alerta-regla">{nombreRegla(alerta.regla)}</span>
+                        <span className="alerta-evidencia">{textoEvidencia(alerta)}</span>
+                        <span className="alerta-fecha">
+                          Detectada el {formatearFecha(alerta.generada)}
+                          {alerta.revisada && ` · revisada el ${formatearFecha(alerta.revisada)}`}
                         </span>
-                        {alerta.estado === 'ACTIVA' && (
-                          <button
-                            type="button"
-                            className="s2-boton s2-boton--secundario s2-boton--chico"
-                            disabled={marcando === alerta.id}
-                            onClick={() => revisar(alerta)}
-                          >
-                            {marcando === alerta.id ? 'Marcando…' : 'Marcar como revisada'}
-                          </button>
-                        )}
                       </div>
+                      {alerta.estado === 'ACTIVA' && (
+                        <button
+                          type="button"
+                          className="boton boton--secundario boton--chico"
+                          disabled={marcando === alerta.id}
+                          onClick={() => revisar(alerta)}
+                        >
+                          {marcando === alerta.id ? 'Marcando…' : 'Marcar como revisada'}
+                        </button>
+                      )}
                     </article>
                   ))}
                 </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="s2-col-4 s2-seccion s2-seccion--columna" aria-labelledby="titulo-umbrales">
-          <h3 id="titulo-umbrales" className="s2-seccion-titulo">
-            Umbrales
-          </h3>
-
-          <form className="s2-umbrales" onSubmit={guardar}>
-            <p className="s2-ayuda">Cada regla compara con su umbral. Al guardar, las alertas se recalculan.</p>
-            {reglasVigentes.datos.map((regla) => (
-              <div key={regla.codigo} className="s2-umbral">
-                <label htmlFor={`umbral-${regla.codigo}`} className="s2-ayuda">
-                  <span className="s2-grupo">{regla.codigo}</span> {regla.nombre}
-                </label>
-                <input
-                  id={`umbral-${regla.codigo}`}
-                  className="s2-campo"
-                  type="number"
-                  step="0.1"
-                  inputMode="decimal"
-                  value={umbrales[regla.codigo] ?? ''}
-                  onChange={(e) => setUmbrales((u) => ({ ...u, [regla.codigo]: e.target.value }))}
-                  aria-describedby={`condicion-${regla.codigo}`}
-                />
-                <span id={`condicion-${regla.codigo}`} className="s2-ayuda">
-                  {regla.condicion}
-                </span>
               </div>
             ))}
-            <button type="submit" className="s2-boton" disabled={guardando}>
-              {guardando ? 'Guardando…' : 'Guardar'}
-            </button>
-          </form>
-        </section>
-      </div>
+          </div>
+        )}
+      </section>
+
+      <section className="seccion" aria-labelledby="titulo-umbrales">
+        <div className="regla" style={{ animationDelay: '80ms' }} />
+        <h2 id="titulo-umbrales" className="seccion-titulo">
+          Cuándo avisar
+        </h2>
+        <form className="umbrales" onSubmit={guardar}>
+          <p className="ayuda">Al guardar, las alertas del curso se recalculan con los valores nuevos.</p>
+          {reglasVigentes.datos.map((regla) => (
+            <div key={regla.codigo} className="umbral">
+              <label htmlFor={`umbral-${regla.codigo}`}>{regla.nombre}</label>
+              <input
+                id={`umbral-${regla.codigo}`}
+                className="campo"
+                type="number"
+                step="0.1"
+                inputMode="decimal"
+                value={umbrales[regla.codigo] ?? ''}
+                onChange={(e) => setUmbrales((u) => ({ ...u, [regla.codigo]: e.target.value }))}
+                aria-describedby={`condicion-${regla.codigo}`}
+              />
+              <span id={`condicion-${regla.codigo}`} className="ayuda">
+                {DESCRIPCION_REGLA[regla.codigo] ?? regla.condicion}
+              </span>
+            </div>
+          ))}
+          <button type="submit" className="boton" disabled={guardando}>
+            {guardando ? 'Guardando…' : 'Guardar'}
+          </button>
+        </form>
+      </section>
     </div>
   )
 }

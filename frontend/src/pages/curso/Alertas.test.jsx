@@ -79,25 +79,24 @@ describe('TA-12.4 · Pantalla Alertas', () => {
     expect(await screen.findByRole('heading', { name: 'Pérez, Ana' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Mora, Luis' })).toBeInTheDocument()
 
-    // Evidencia en una línea con sus números, por regla.
-    expect(screen.getByText('Promedio 6,10 · 12 notas · umbral 7,00')).toBeInTheDocument()
-    expect(screen.getByText(/Actividades vencidas sin entrega: Tarea 5 .* umbral 2,00/)).toBeInTheDocument()
+    // Evidencia en una línea con sus números, por regla, en lenguaje docente.
+    expect(screen.getByText('Promedio 6,10 con 12 notas registradas; el mínimo es 7,0')).toBeInTheDocument()
+    expect(screen.getByText('1 actividad vencida sin entregar: Tarea 5 (03/11)')).toBeInTheDocument()
 
-    // Título, código y nombre de la regla, y el botón en cada alerta.
+    // «Requiere atención» y el nombre de la regla, sin su código, y el botón en cada alerta.
     const tarjetas = screen.getAllByRole('article')
     expect(tarjetas).toHaveLength(2)
-    expect(within(tarjetas[0]).getByText('Requiere atención')).toBeInTheDocument()
-    expect(within(tarjetas[0]).getByText('R4')).toBeInTheDocument()
-    expect(within(tarjetas[0]).getByText(/Promedio bajo/)).toBeInTheDocument()
+    expect(screen.getAllByText('Requiere atención')).toHaveLength(2)
+    expect(within(tarjetas[0]).getByText('Promedio bajo')).toBeInTheDocument()
+    expect(within(tarjetas[1]).getByText('Atrasos')).toBeInTheDocument()
     expect(within(tarjetas[1]).getByRole('button', { name: 'Marcar como revisada' })).toBeInTheDocument()
+    expect(screen.queryByText(/R[124]/)).not.toBeInTheDocument()
 
-    // «Requiere atención» de una alerta activa lleva el punto ámbar, nunca solo color.
-    expect(tarjetas[0].querySelector('.s2-estado--atencion')).toBeInTheDocument()
-
-    // Panel de umbrales con un campo por regla y el botón Guardar.
-    expect(screen.getByLabelText(/R1 Descenso reciente/)).toHaveValue(1.5)
-    expect(screen.getByLabelText(/R2 Atrasos/)).toHaveValue(2)
-    expect(screen.getByLabelText(/R4 Promedio bajo/)).toHaveValue(7)
+    // Panel «Cuándo avisar» con un campo por regla y el botón Guardar.
+    expect(screen.getByLabelText('Descenso reciente')).toHaveValue(1.5)
+    expect(screen.getByLabelText('Atrasos')).toHaveValue(2)
+    expect(screen.getByLabelText('Promedio bajo')).toHaveValue(7)
+    expect(screen.getByText('Avisa cuando el promedio queda bajo este valor, con al menos 4 notas registradas.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
 
     expect(obtenerAlertas).toHaveBeenCalledWith('1', 'ACTIVA')
@@ -124,7 +123,7 @@ describe('TA-12.4 · Pantalla Alertas', () => {
 
     renderAlertas()
 
-    const campoR4 = await screen.findByLabelText(/R4 Promedio bajo/)
+    const campoR4 = await screen.findByLabelText('Promedio bajo')
     fireEvent.change(campoR4, { target: { value: '5' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
@@ -144,7 +143,7 @@ describe('TA-12.4 · Pantalla Alertas', () => {
 
     renderAlertas()
 
-    fireEvent.change(await screen.findByLabelText(/R1 Descenso reciente/), { target: { value: '' } })
+    fireEvent.change(await screen.findByLabelText('Descenso reciente'), { target: { value: '' } })
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Captura un número en cada campo antes de guardar.')
@@ -179,5 +178,12 @@ describe('TA-12.4 · Pantalla Alertas', () => {
     expect(aviso).toHaveTextContent('Error interno')
     expect(aviso).toHaveTextContent('Ocurrió un error inesperado.')
     expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument()
+  })
+
+  it('la evidencia de descenso reciente dice cuánto bajaron las últimas notas', async () => {
+    const { textoEvidencia } = await import('../../components/lenguaje')
+    expect(
+      textoEvidencia({ regla: 'R1', evidencia: { ultimas: [5, 4.5, 4], anteriores: [7.5, 8], diferencia: -3.25, umbral: 1.5 } }),
+    ).toBe('Sus últimas notas (5,0 · 4,5 · 4,0) están 3,3 puntos bajo las anteriores (7,5 · 8,0); el aviso salta desde 1,5')
   })
 })

@@ -4,8 +4,10 @@ React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. La int
 
 ## Diseño
 
-- `docs/sprint-2/diseno.md` manda. Todo color, tamaño de letra, espacio y radio sale de `src/styles/tokens.css`.
-- Componentes base en `src/components/ui/` (Boton, Campo, Tarjeta, Tabla, InsigniaEstado, Aviso). Las páginas los usan; no crean estilos propios para lo mismo. Al cierre del Sprint 2 esa carpeta no está en `develop` (HU-19): el panel, el asistente y «Estado del sistema» usan `src/components/s2/` y el bloque `.s2` de `tokens.css`.
+- `docs/sprint-2/diseno.md` (diseño D, 12 nov 2026) manda. Todo color, tamaño de letra, espacio, radio y tiempo sale de `src/styles/tokens.css`; las clases de las pantallas están en `src/styles/app.css`.
+- Componentes base de Santiago en `src/components/ui/` (Button, Input, Card, Table, StatusBadge, Alert). Estructura en `src/components/Marco.jsx`, estados en `Estado.jsx`, páginas de 401 y 403 en `PaginaError.jsx`, tira del período en `TiraPeriodo.jsx`.
+- Textos en lenguaje docente en `src/components/lenguaje.js`: en pantalla no van términos estadísticos (z, desviación, tendencia), códigos de regla (R1, R2, R4) ni nombres de funciones del agente.
+- Movimiento una sola vez y en menos de 3 s, quieto con `prefers-reduced-motion` (`src/components/movimiento.js`).
 - Gráficos con Recharts, colores tomados de los tokens.
 
 ## Estructura
@@ -19,17 +21,15 @@ React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. La int
 | `/cursos/:id/asistente` | `pages/curso/Asistente.jsx` | HU-14 |
 | `/admin/moodle` | `pages/ConfiguracionMoodle.jsx` | HU-02 |
 | `/admin/estado` | `pages/admin/EstadoSistema.jsx` | HU-20 |
-| `/acceso-no-permitido` | `pages/AccesoNoPermitido.jsx` | HU-19 |
-| `/sesion-vencida` | `pages/SesionVencida.jsx` | HU-19 |
 
-Al cierre del Sprint 2 el router (`src/App.jsx`) tiene `/login`, `/cursos`, `/cursos/:id/panel`, `/cursos/:id/asistente`, `/admin/moodle` y `/admin/estado`. `/cursos/:id/alertas` (HU-12), `/acceso-no-permitido` y `/sesion-vencida` (HU-19) no están en `develop`.
+El router (`src/App.jsx`) tiene `/login`, `/cursos`, `/cursos/:id/panel`, `/cursos/:id/alertas`, `/cursos/:id/asistente`, `/admin/moodle` y `/admin/estado`. «Acceso no permitido» y «Tu sesión venció» se muestran en la misma ruta con `components/PaginaError.jsx`, sin rutas propias.
 
 Un servicio por recurso en `src/services/` (`indicadores.js`, `alertas.js`, `agente.js`, `estado.js`), con las rutas y JSON de `docs/contratos-api.md`.
 
 ## Reglas
 
 - Cada pantalla resuelve cuatro estados: cargando, vacío, error y «no disponible». Un dato en `noDisponibles` nunca se muestra como 0.
-- El interceptor de Axios manda 401 a `/sesion-vencida` y 403 de un curso a `/acceso-no-permitido` (HU-19, no está en `develop`). Mientras tanto, cada pantalla del Sprint 2 muestra «Acceso no permitido» o «Tu sesión venció» en su misma ruta con `components/s2/PaginaError.jsx`.
+- El interceptor de Axios avisa un 401 con el evento `edumonitor:sesion-vencida` y `Layout.jsx` muestra «Tu sesión venció». Un 403 de un curso se ve como «Acceso no permitido» en pantalla completa (`CursoMarco.jsx`).
 - Textos en español. Alertas siempre como «Requiere atención».
 - Cada página nueva trae su prueba en Vitest con datos simulados del contrato.
 - Comandos: `npm run dev`, `npm test -- --run`, `npm run build`, `npm run lint`.

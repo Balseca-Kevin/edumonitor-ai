@@ -5,7 +5,7 @@ import {
   Outlet,
   useLocation,
 } from 'react-router-dom'
-import PaginaError from './s2/PaginaError'
+import PaginaError from './PaginaError'
 
 function obtenerUsuario() {
   try {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import MarcoS2 from '../components/s2/MarcoS2'
+import Marco from '../components/Marco'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Card from '../components/ui/Card'
@@ -12,7 +12,6 @@ import {
   obtenerConfiguracion,
   probarConexion,
 } from '../services/moodleConfig'
-import './ConfiguracionMoodle.css'
 
 function formatearFecha(fecha) {
   if (!fecha) return 'No disponible'
@@ -116,7 +115,7 @@ export default function ConfiguracionMoodle() {
   const noDisponibles = funciones.filter((funcion) => !funcion.disponible)
 
   return (
-    <MarcoS2>
+    <Marco>
       <div className="hu19-config">
         <header className="hu19-config__cabecera">
           <div>
@@ -226,6 +225,6 @@ export default function ConfiguracionMoodle() {
           </Card>
         </div>
       </div>
-    </MarcoS2>
+    </Marco>
   )
 }

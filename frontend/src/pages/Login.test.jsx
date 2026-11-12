@@ -51,7 +51,7 @@ function completarFormulario(usuario, contrasena) {
 
   fireEvent.click(
     screen.getByRole('button', {
-      name: /iniciar sesión/i,
+      name: /ingresar/i,
     }),
   )
 }
@@ -70,7 +70,7 @@ describe('Login', () => {
 
     expect(
       screen.getByRole('button', {
-        name: /iniciar sesión/i,
+        name: /ingresar/i,
       }),
     ).toBeInTheDocument()
   })

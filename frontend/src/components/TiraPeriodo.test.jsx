@@ -12,6 +12,7 @@ import {
   screen,
 } from '@testing-library/react'
 import TiraPeriodo from './TiraPeriodo'
+import { unidadActual } from './lenguaje'
 import { obtenerIndicadores } from '../services/indicadores'
 
 vi.mock('../services/indicadores', () => ({
@@ -63,7 +64,7 @@ describe('HU-19 · Tira del período', () => {
       'Unidad 1: 4 de 4 actividades calificadas',
     )
 
-    expect(unidad).toHaveClass('hu19-unidad--completa')
+    expect(unidad).toHaveClass('tira-unidad--completa')
   })
 
   it('muestra Sin datos cuando la API devuelve 409', async () => {
@@ -82,5 +83,29 @@ describe('HU-19 · Tira del período', () => {
 
     expect(screen.getAllByText('Sin datos')).toHaveLength(4)
     expect(screen.queryByText('0/0')).not.toBeInTheDocument()
+  })
+
+  it('marca como actual la primera unidad con actividades sin calificar', async () => {
+    obtenerIndicadores.mockResolvedValue({
+      unidades: [
+        { numero: 1, actividades: 4, calificadas: 4 },
+        { numero: 2, actividades: 4, calificadas: 4 },
+        { numero: 3, actividades: 4, calificadas: 2 },
+        { numero: 4, actividades: 4, calificadas: 0 },
+      ],
+    })
+
+    render(<TiraPeriodo cursoId={1} ultimaSincronizacion={{ fecha: '2026-10-30T16:59:00-05:00', estado: 'COMPLETADA' }} />)
+
+    const u3 = await screen.findByLabelText('Unidad 3: 2 de 4 actividades calificadas')
+    expect(u3).toHaveClass('tira-unidad--actual')
+    expect(u3).toHaveTextContent('2/4 · actual')
+    expect(screen.getByLabelText('Unidad 4: 0 de 4 actividades calificadas')).toHaveClass('tira-unidad--futura')
+    expect(screen.getByText('COMPLETADA')).toBeInTheDocument()
+  })
+
+  it('unidadActual devuelve null cuando todas las unidades están completas', () => {
+    expect(unidadActual([{ numero: 1, actividades: 4, calificadas: 4 }])).toBeNull()
+    expect(unidadActual([{ numero: 2, actividades: 4, calificadas: 1 }, { numero: 1, actividades: 4, calificadas: 3 }])).toBe(1)
   })
 })
