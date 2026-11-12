@@ -103,9 +103,14 @@ export default function ConfiguracionMoodle() {
           <h1>Configuración de la conexión con Moodle</h1>
           <p>Última actualización: {formatearFecha(configuracion?.actualizado)}</p>
         </div>
-        <button className="logout-button" type="button" onClick={manejarCierreSesion}>
-          Cerrar sesión
-        </button>
+        <div className="courses-user">
+          <button className="boton-secundario" type="button" onClick={() => navigate('/admin/estado')}>
+            Estado del sistema
+          </button>
+          <button className="logout-button" type="button" onClick={manejarCierreSesion}>
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
       {error && (

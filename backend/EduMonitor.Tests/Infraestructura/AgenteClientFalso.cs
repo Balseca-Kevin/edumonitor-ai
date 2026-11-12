@@ -13,6 +13,27 @@ public sealed class AgenteClientFalso : IAgenteClient
 
     public bool Caido { get; set; }
 
+    /// <summary>Estado de Ollama que informa <c>GET /salud</c>.</summary>
+    public string Ollama { get; set; } = "OK";
+
+    /// <summary>Simula un agente que no contesta /salud: la espera se corta con el tiempo máximo de la API.</summary>
+    public bool Lento { get; set; }
+
+    public async Task<SaludAgente> SaludAsync(CancellationToken ct = default)
+    {
+        if (Caido)
+        {
+            throw new AgenteNoDisponibleException("No se pudo conectar con el agente.");
+        }
+
+        if (Lento)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(30), ct);
+        }
+
+        return new SaludAgente("OK", "qwen2.5:7b", Ollama);
+    }
+
     public Task<RespuestaAgente> ConsultarAsync(PeticionAgente peticion, CancellationToken ct = default)
     {
         Peticiones.Add(peticion);

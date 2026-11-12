@@ -3,7 +3,8 @@ import logging
 from fastapi import FastAPI, HTTPException
 from langchain_core.messages import HumanMessage
 from app.schemas.tools import ChatPeticion, ChatRespuesta
-from app.graph import app_graph, MODEL_NAME
+from app.graph import app_graph, MODEL_NAME, OLLAMA_BASE_URL
+import httpx
 
 logger = logging.getLogger("agent")
 app = FastAPI(title="EduMonitor AI - Servicio de Agente", version="0.1.0")
@@ -36,3 +37,18 @@ async def chat_endpoint(request: ChatPeticion):
     except Exception as e:
         logger.exception("Error procesando solicitud en /chat")
         raise HTTPException(status_code=500, detail="Error interno del servicio de agente.")
+
+
+@app.get("/salud")
+async def salud():
+    """HU-20 · Estado del agente y de Ollama para la pantalla «Estado del sistema» (docs/contratos-api.md).
+    Solo lo llama la API por la red interna. ollama es OK si responde /api/tags en 2 s; si no, NO_DISPONIBLE."""
+    ollama = "NO_DISPONIBLE"
+    try:
+        async with httpx.AsyncClient(timeout=2) as cliente:
+            respuesta = await cliente.get(f"{OLLAMA_BASE_URL}/api/tags")
+            if respuesta.status_code == 200:
+                ollama = "OK"
+    except httpx.HTTPError:
+        logger.warning("Ollama no respondió en /api/tags")
+    return {"estado": "OK", "modelo": MODEL_NAME, "ollama": ollama}

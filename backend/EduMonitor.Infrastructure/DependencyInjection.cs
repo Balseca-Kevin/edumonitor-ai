@@ -6,6 +6,7 @@ using EduMonitor.Infrastructure.Moodle;
 using System.Text;
 using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Infrastructure.Seguridad;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,7 +32,16 @@ public static class DependencyInjection
             opciones.UseSqlServer(configuration.GetConnectionString("EduMonitorDB")));
         services.AddScoped<IEduMonitorDbContext>(sp => sp.GetRequiredService<EduMonitorDbContext>());
 
-        services.AddSingleton<IConfiguracionMoodle, ConfiguracionMoodleEnMemoria>();
+        // HU-20 · La conexión con Moodle se guarda en la base con el token protegido. Las llaves viven en DataProtection__Llaves
+        // (en Docker, el volumen api-keys en /keys); sin esa variable se usan las llaves por defecto del usuario.
+        var proteccion = services.AddDataProtection().SetApplicationName("EduMonitor");
+        var llaves = configuration["DataProtection:Llaves"];
+        if (!string.IsNullOrWhiteSpace(llaves))
+        {
+            proteccion.PersistKeysToFileSystem(new DirectoryInfo(llaves));
+        }
+
+        services.AddSingleton<IConfiguracionMoodle, ConfiguracionMoodleEnBase>();
         services.AddHttpClient<IMoodleClient, MoodleClient>((sp, http) =>
             http.Timeout = TimeSpan.FromSeconds(sp.GetRequiredService<IOptions<MoodleOptions>>().Value.TiempoEsperaSegundos));
         services.AddHostedService<RegistroConfiguracionMoodle>();

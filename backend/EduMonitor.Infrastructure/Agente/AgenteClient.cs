@@ -14,6 +14,23 @@ public sealed class AgenteClient(HttpClient http, ILogger<AgenteClient> logger) 
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    public async Task<SaludAgente> SaludAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            var salud = await http.GetFromJsonAsync<SaludAgente>("salud", Json, ct);
+            return salud ?? throw new AgenteNoDisponibleException("El agente devolvió una respuesta vacía en /salud.");
+        }
+        catch (HttpRequestException e)
+        {
+            throw new AgenteNoDisponibleException("No se pudo conectar con el agente.", e);
+        }
+        catch (JsonException e)
+        {
+            throw new AgenteNoDisponibleException("El agente respondió /salud con un formato inesperado.", e);
+        }
+    }
+
     public async Task<RespuestaAgente> ConsultarAsync(PeticionAgente peticion, CancellationToken ct = default)
     {
         HttpResponseMessage respuesta;
