@@ -1,0 +1,32 @@
+using EduMonitor.Application.Agente;
+using EduMonitor.Application.Auth;
+using EduMonitor.Application.Configuracion;
+using EduMonitor.Application.Cursos;
+using EduMonitor.Application.Estado;
+using EduMonitor.Application.Herramientas;
+using EduMonitor.Application.Indicadores;
+using EduMonitor.Application.Sincronizaciones;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace EduMonitor.Application;
+
+public static class DependencyInjection
+{
+    /// <summary>Servicios de casos de uso. Se llenan con cada historia (AuthService, CursoService, SincronizacionService).</summary>
+    public static IServiceCollection AddApplication(this IServiceCollection services)
+    {
+        services.AddScoped<AuthService>();
+        services.AddScoped<CursoService>();
+        services.AddScoped<IndicadorService>();
+        services.AddScoped<HerramientasService>();
+        services.AddScoped<AgenteService>();
+        services.AddScoped<EstadoSistemaService>();
+        services.AddScoped<ImportadorUnidades>();
+        services.AddScoped<ImportadorMatriculados>();
+        services.AddScoped<ImportadorCalificaciones>();
+        services.AddScoped<ImportadorEntregas>();
+        services.AddScoped<SincronizacionService>();
+        services.AddScoped<ConfiguracionMoodleService>();
+        return services;
+    }
+}

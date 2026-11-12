@@ -1,0 +1,6 @@
+# Para equipos sin GPU NVIDIA: Ollama corre en la CPU, sin reservar la GPU.
+#   docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d --wait
+# En la CPU las respuestas son lentas; OLLAMA_MODEL=llama3.2:3b en .env responde más rápido. Si pasa de 60 s, el asistente sale como no disponible.
+services:
+  ollama:
+    deploy: !reset {}

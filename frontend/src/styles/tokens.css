@@ -1,0 +1,126 @@
+/* Tokens de diseño de EduMonitor AI · «registro académico». Único lugar con colores, fuentes y tiempos. */
+:root {
+  /* Paleta institucional */
+  --azul: #1f3864;
+  --azul-oscuro: #172a4b;
+  --azul-claro: #e6eaf2;
+  --granate: #7a1f2b;
+  --granate-claro: #f4e6e7;
+  --papel: #f6f3ec;
+  --papel-claro: #fbf9f4;
+  --tinta: #1f2933;
+  --tinta-suave: #4a5561;
+  --linea: #d8d2c4;
+  --linea-suave: #e7e2d6;
+  --blanco: #ffffff;
+
+  /* Estados de sincronización (el texto usa la variante oscura para contraste AA) */
+  --estado-completada: #4f7a3a;
+  --estado-completada-texto: #3d602c;
+  --estado-parcial: #b7852b;
+  --estado-parcial-texto: #7d5a14;
+  --estado-fallida: #7a1f2b;
+  --estado-pendiente: #6b7280;
+
+  /* Tipografía */
+  --fuente-titulo: 'Fraunces', 'Source Serif 4', Georgia, serif;
+  --fuente-cuerpo: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --fuente-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+
+  /* Forma y ritmo */
+  --radio: 4px;
+  --radio-ficha: 6px;
+  --celda: 24px;
+  --foco: 0 0 0 3px var(--papel), 0 0 0 5px var(--azul);
+
+  /* Movimiento */
+  --t-rapido: 150ms;
+  --t-medio: 220ms;
+  --t-lento: 300ms;
+  --curva: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Motivo: cuadrícula del libro de calificaciones */
+  --cuadricula: linear-gradient(var(--linea-suave) 1px, transparent 1px),
+    linear-gradient(90deg, var(--linea-suave) 1px, transparent 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-rapido: 0ms;
+    --t-medio: 0ms;
+    --t-lento: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+/* Sprint 2 (diseno.md) · Diseño suizo de docs/sprint-2/diseno.md para las pantallas nuevas (panel, asistente, estado del sistema).
+   Va dentro de .s2 para no cambiar las pantallas del Sprint 1 mientras llegan los tokens globales de TA-19.1. Sin Fraunces. */
+.s2 {
+  /* Color */
+  --fondo: #ffffff;
+  --fondo-2: #f4f4f3;
+  --tinta: #111111;
+  --tinta-2: #555555;
+  --tinta-3: #8a8a8a;
+  --linea: #e3e3e1;
+  --acento: #2346d8;
+  --ok: #2e7d32;
+  --atencion: #a35f00;
+  --neutro: #6b7280;
+  --error: #c62828;
+
+  /* Tipografía: familia única Archivo, escala 12 · 14 · 16 · 20 · 28 · 40 · 64 */
+  --fuente: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --fs-12: 12px;
+  --fs-14: 14px;
+  --fs-16: 16px;
+  --fs-20: 20px;
+  --fs-28: 28px;
+  --fs-40: 40px;
+  --fs-64: 64px;
+  --interlineado: 1.45;
+  --interlineado-titulo: 1.1;
+  --peso-texto: 400;
+  --peso-etiqueta: 500;
+  --peso-titulo: 600;
+  --peso-cifra: 700;
+  --letras-encabezado: 0.04em;
+
+  /* Espacio y forma: base 8 px */
+  --e-4: 4px;
+  --e-8: 8px;
+  --e-16: 16px;
+  --e-24: 24px;
+  --e-32: 32px;
+  --e-48: 48px;
+  --e-64: 64px;
+  --ancho-maximo: 1280px;
+  --medianil: 24px;
+  --ancho-conversacion: 720px;
+  --ancho-lateral: 240px;
+  --radio: 2px;
+  --grosor-linea: 1px;
+  --grosor-regla: 2px;
+  --punto: 8px;
+  --duracion: 150ms;
+
+  font-family: var(--fuente);
+  font-size: var(--fs-16);
+  font-weight: var(--peso-texto);
+  line-height: var(--interlineado);
+  color: var(--tinta);
+  background: var(--fondo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s2 {
+    --duracion: 0ms;
+  }
+}
