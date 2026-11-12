@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EduMonitor.Application.Abstractions;
+using EduMonitor.Application.Herramientas;
+using EduMonitor.Application.Abstractions.Moodle;
 using EduMonitor.Tests.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,10 +18,12 @@ public class HerramientaCalificacionesApiTests
 {
     private sealed class ApiConMoodleFalso : ApiConDatosFactory
     {
+        public MoodleClientFalso Moodle { get; } = MoodleClientFalso.ConCursoDeEjemplo();
+
         protected override void ConfigurarServicios(IServiceCollection services)
         {
             services.RemoveAll<IMoodleClient>();
-            services.AddSingleton<IMoodleClient>(MoodleClientFalso.ConCursoDeEjemplo());
+            services.AddSingleton<IMoodleClient>(Moodle);
         }
     }
 
@@ -123,5 +127,63 @@ public class HerramientaCalificacionesApiTests
 
         Assert.Empty(cuerpo.GetProperty("estudiantes").EnumerateArray());
         Assert.Equal(JsonValueKind.Null, cuerpo.GetProperty("curso").GetProperty("ultimaSincronizacion").ValueKind);
+    }
+
+    // --- 12 nov · búsqueda por nombre, para que el modelo no tenga que adivinar ids ---
+
+    [Theory]
+    [InlineData("ana")]
+    [InlineData("PÉREZ")]
+    [InlineData("perez")]
+    [InlineData("Ana Pé")]
+    public async Task Con_nombre_y_una_sola_coincidencia_devuelve_el_detalle_sin_distinguir_tildes_ni_mayusculas(string nombre)
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var cuerpo = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&nombre={Uri.EscapeDataString(nombre)}");
+
+        var ana = cuerpo.GetProperty("estudiantes").EnumerateArray().Single();
+        Assert.Equal("Ana", ana.GetProperty("nombre").GetString());
+        Assert.Equal("Pérez", ana.GetProperty("apellido").GetString());
+        Assert.Equal(2, ana.GetProperty("calificaciones").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Con_nombre_y_varias_coincidencias_devuelve_la_lista_corta_para_elegir()
+    {
+        var factory = new ApiConMoodleFalso();
+        await using var _ = factory;
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var curso = factory.IdCurso("AGIL-4B");
+        factory.Moodle.Matriculados.Add(new MatriculadoMoodle(103, "Ana Lucía", "Mora", new[] { "student" }));
+        factory.Moodle.Calificaciones.Add(new CalificacionesUsuarioMoodle(103, new[]
+        {
+            new ItemCalificacionMoodle(10, "Exámenes", "category", null, 20, 1, 0.4m, null, 10m),
+            new ItemCalificacionMoodle(31, "Examen P1", "mod", "quiz", 3, 20, 1m, 9m, 10m),
+        }));
+        (await doc01.PostAsync($"/api/cursos/{curso}/sync", null)).EnsureSuccessStatusCode();
+
+        var cuerpo = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&nombre=ana");
+
+        var lista = cuerpo.GetProperty("estudiantes").EnumerateArray().ToList();
+        Assert.Equal(2, lista.Count);
+        Assert.All(lista, e => Assert.False(e.TryGetProperty("calificaciones", out JsonElement _)));
+        Assert.All(lista, e => Assert.StartsWith("Ana", e.GetProperty("nombre").GetString()));
+        Assert.All(lista, e => Assert.True(e.GetProperty("id").GetInt32() > 0));
+    }
+
+    [Fact]
+    public async Task Con_nombre_sin_coincidencias_responde_404_y_adriana_no_coincide_con_ana()
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var respuesta = await doc01.GetAsync($"/api/tools/calificaciones?cursoId={curso}&nombre=zoila");
+
+        Assert.Equal(HttpStatusCode.NotFound, respuesta.StatusCode);
+        Assert.Contains("se llama «zoila»", (await respuesta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
+        Assert.False(HerramientasService.CoincideNombre("ana", "Adriana", "Toapanta"));
+        Assert.True(HerramientasService.CoincideNombre("elena espi", "Elena", "Espinoza"));
     }
 }
