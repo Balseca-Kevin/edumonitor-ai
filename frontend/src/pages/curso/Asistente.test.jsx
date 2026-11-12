@@ -4,6 +4,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import CursoMarco from './CursoMarco'
 import Asistente from './Asistente'
 import { datoUsado, estudiantesMencionados, grupoDeFecha, motivo } from '../../components/lenguaje'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+// Vitest no procesa el CSS: se lee el archivo para comprobar las reglas de alto y desplazamiento.
+const estilos = readFileSync(resolve(process.cwd(), 'src/styles/app.css'), 'utf8').replaceAll('\r\n', '\n')
 
 vi.mock('../../services/agente', () => ({ preguntarAlAsistente: vi.fn(), listarConversaciones: vi.fn(), obtenerConversacion: vi.fn() }))
 vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn() }))
@@ -168,6 +173,53 @@ describe('Asistente como chat', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Nueva conversación/ }))
     expect(screen.queryByText('Tienes asignado el curso AGIL-4B.')).not.toBeInTheDocument()
+  })
+
+  it('con 60 conversaciones en el historial, el cuadro de la pregunta sigue en pantalla', async () => {
+    obtenerCurso.mockResolvedValue(curso)
+    listarConversaciones.mockResolvedValue(
+      Array.from({ length: 60 }, (_, i) => ({
+        id: 100 + i,
+        fecha: new Date(Date.now() - i * 6 * 60 * 60 * 1000).toISOString(),
+        pregunta: `Pregunta guardada número ${i + 1}`,
+        modelo: 'qwen2.5:7b',
+        duracionMs: 10000,
+        herramientas: 1,
+      })),
+    )
+    const { container } = renderAsistente()
+
+    const historial = await screen.findByRole('navigation', { name: 'Historial de preguntas' })
+    await within(historial).findByText('Pregunta guardada número 60')
+    expect(within(historial).getAllByRole('button')).toHaveLength(60)
+
+    // El historial se desplaza dentro de su propia caja; «Nueva conversación», la navegación y el docente quedan fuera de ella.
+    expect(historial).toHaveClass('chat-historial')
+    const lateral = historial.closest('.chat-lateral')
+    expect(historial).not.toContainElement(screen.getByRole('button', { name: /Nueva conversación/ }))
+    expect(historial).not.toContainElement(within(lateral).getByRole('link', { name: 'Panel' }))
+    expect(historial).not.toContainElement(lateral.querySelector('.chat-lateral-pie'))
+
+    // El cuadro de la pregunta no está en el historial ni en los mensajes: está en el pie fijo, después de los mensajes.
+    const campo = screen.getByLabelText('Tu pregunta')
+    const pie = campo.closest('.chat-pie')
+    const principal = container.querySelector('.chat-main')
+    expect(pie.parentElement).toBe(principal)
+    expect(principal.lastElementChild).toBe(pie)
+    expect(principal.querySelector('.chat-cuerpo')).not.toContainElement(campo)
+
+    // La pantalla mide el alto de la ventana y la página no se desplaza: solo el historial y los mensajes (styles/app.css).
+    const regla = (selector) => {
+      const inicio = estilos.indexOf(`\n${selector} {`)
+      return inicio < 0 ? '' : estilos.slice(inicio, estilos.indexOf('}', inicio))
+    }
+    expect(regla('.chat')).toMatch(/height: 100dvh/)
+    expect(regla('.chat')).toMatch(/overflow: hidden/)
+    expect(regla('.chat-historial')).toMatch(/overflow-y: auto/)
+    expect(regla('.chat-historial')).toMatch(/min-height: 0/)
+    expect(regla('.chat-cuerpo')).toMatch(/overflow-y: auto/)
+    expect(regla('.chat-cuerpo')).toMatch(/min-height: 0/)
+    expect(regla('.chat-pie')).toMatch(/flex-shrink: 0/)
   })
 
   it('un curso ajeno muestra «Acceso no permitido» en pantalla completa', async () => {
