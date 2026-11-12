@@ -141,4 +141,49 @@ public class AgenteApiTests
         Assert.Equal(HttpStatusCode.NotFound, inexistente.StatusCode);
         Assert.Empty(factory.Agente.Peticiones);
     }
+
+    // --- HU-14 · Un código de otro curso en la pregunta se responde sin llamar al agente ---
+
+    [Fact]
+    public async Task Pregunta_por_otro_curso_del_docente_responde_que_abra_ese_curso_y_no_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var admin = await factory.ClienteConSesionAsync("admin");
+        var agil = factory.IdCurso("AGIL-4B");
+
+        var respuesta = await admin.PostAsJsonAsync("/api/agente/chat", new { cursoId = agil, mensaje = "¿Qué estudiantes de bdd-4b tienen promedio bajo 7?" });
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        var cuerpo = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Esta conversación es de AGIL-4B. Abre BDD-4B para preguntar sobre ese curso.", cuerpo.GetProperty("respuesta").GetString());
+        Assert.Empty(cuerpo.GetProperty("herramientas").EnumerateArray());
+        Assert.Equal(AgenteService.ModeloSinAgente, cuerpo.GetProperty("modelo").GetString());
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Pregunta_por_un_curso_ajeno_responde_sin_acceso_y_no_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = "¿Cómo va BDD-4B?" });
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        var cuerpo = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("No tienes acceso a BDD-4B.", cuerpo.GetProperty("respuesta").GetString());
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Nombrar_el_curso_abierto_si_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = "¿Cómo va AGIL-4B?" });
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Single(factory.Agente.Peticiones);
+    }
 }
