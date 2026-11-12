@@ -9,7 +9,13 @@ namespace EduMonitor.Application.Agente;
 public interface IAgenteClient
 {
     Task<RespuestaAgente> ConsultarAsync(PeticionAgente peticion, CancellationToken ct = default);
+
+    /// <summary>HU-20 · <c>GET /salud</c> del agente: su estado, el modelo y si Ollama responde.</summary>
+    Task<SaludAgente> SaludAsync(CancellationToken ct = default);
 }
+
+/// <summary>Respuesta de <c>GET /salud</c> del agente. <c>Ollama</c>: OK o NO_DISPONIBLE.</summary>
+public sealed record SaludAgente(string Estado, string Modelo, string Ollama);
 
 /// <summary>Cuerpo de <c>POST /chat</c> del agente. El token es el de servicio (rol AGENTE); nunca se registra.</summary>
 public sealed record PeticionAgente(string Mensaje, int CursoId, string Token)

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import ConfiguracionMoodle from './ConfiguracionMoodle'
 
 vi.mock('../services/moodleConfig', () => ({
@@ -107,5 +107,22 @@ describe('Configuración de Moodle', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('La URL de Moodle debe ser absoluta.')
+  })
+
+  it('«Estado del sistema» lleva a /admin/estado', async () => {
+    obtenerConfiguracion.mockResolvedValue(configuracion)
+
+    render(
+      <MemoryRouter initialEntries={['/admin/moodle']}>
+        <Routes>
+          <Route path="/admin/moodle" element={<ConfiguracionMoodle />} />
+          <Route path="/admin/estado" element={<p>pantalla de estado</p>} />
+        </Routes>
+      </MemoryRouter>,
+    )
+    await screen.findByDisplayValue('http://localhost:8080')
+    fireEvent.click(screen.getByRole('button', { name: 'Estado del sistema' }))
+
+    expect(await screen.findByText('pantalla de estado')).toBeInTheDocument()
   })
 })
