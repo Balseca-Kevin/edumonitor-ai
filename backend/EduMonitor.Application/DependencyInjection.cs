@@ -1,4 +1,5 @@
 using EduMonitor.Application.Agente;
+using EduMonitor.Application.Alertas;
 using EduMonitor.Application.Auth;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<CursoService>();
         services.AddScoped<IndicadorService>();
+        services.AddScoped<AlertasService>();
         services.AddScoped<HerramientasService>();
         services.AddScoped<AgenteService>();
         services.AddScoped<EstadoSistemaService>();

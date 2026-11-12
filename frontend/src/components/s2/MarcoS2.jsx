@@ -12,7 +12,7 @@ function usuarioActual() {
 
 /**
  * Estructura del Sprint 2 (diseno.md): barra lateral de 240 px con el nombre del sistema, las secciones del curso abierto,
- * las de ADMIN y cerrar sesión abajo. Las pantallas de Alertas (HU-12) suman su enlace cuando lleguen a develop.
+ * las de ADMIN y cerrar sesión abajo.
  */
 export default function MarcoS2({ curso, children }) {
   const navigate = useNavigate()
@@ -40,6 +40,7 @@ export default function MarcoS2({ curso, children }) {
           <nav className="s2-nav" aria-label={`Curso ${curso.nombreCorto ?? ''}`}>
             <span className="s2-nav-titulo">{curso.nombreCorto ?? 'Curso'}</span>
             <NavLink to={`/cursos/${curso.id}/panel`}>Panel</NavLink>
+            <NavLink to={`/cursos/${curso.id}/alertas`}>Alertas</NavLink>
             <NavLink to={`/cursos/${curso.id}/asistente`}>Asistente</NavLink>
           </nav>
         )}

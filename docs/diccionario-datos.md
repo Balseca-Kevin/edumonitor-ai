@@ -122,6 +122,8 @@ Se muestra como «Requiere atención», nunca como «reprobará» ni «en riesgo
 | EstudianteId | int | No | FK → Estudiante |
 | Evidencia | nvarchar(max) | No | Datos que justifican la alerta |
 | Estado | nvarchar(20) | No | Estado de revisión, p. ej. `ACTIVA` o `REVISADA` |
+| Generada | datetimeoffset | No | Fecha y hora en que se generó la alerta |
+| Revisada | datetimeoffset | Sí | Fecha y hora en que el docente la marcó como revisada |
 
 ### TareaRefuerzo
 

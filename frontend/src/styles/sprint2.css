@@ -493,6 +493,54 @@
   }
 }
 
+/* --- Alertas (HU-12): lista agrupada por estudiante y panel de umbrales --- */
+.s2-seccion--columna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-16);
+}
+
+.s2-seccion--columna .s2-seccion-titulo {
+  margin-bottom: 0;
+}
+
+.s2-alertas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-16);
+}
+
+.s2-alerta-filtros {
+  display: flex;
+  gap: var(--e-8);
+}
+
+.s2-alerta-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-8);
+}
+
+.s2-alerta-pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-8);
+}
+
+.s2-umbrales {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-16);
+}
+
+.s2-umbral {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-4);
+}
+
 /* --- Panel: avance por unidad, gráfico y pie de fuente --- */
 .s2-panel {
   display: flex;

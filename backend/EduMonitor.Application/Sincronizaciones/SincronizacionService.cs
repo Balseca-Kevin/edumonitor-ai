@@ -1,9 +1,11 @@
 using EduMonitor.Application.Abstractions;
+using EduMonitor.Application.Alertas;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Domain.Entities;
 using EduMonitor.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace EduMonitor.Application.Sincronizaciones;
 
@@ -19,7 +21,9 @@ public sealed class SincronizacionService(
     ImportadorCalificaciones calificaciones,
     ImportadorEntregas entregas,
     IConfiguracionMoodle moodle,
-    TimeProvider reloj)
+    TimeProvider reloj,
+    AlertasService alertas,
+    ILogger<SincronizacionService> logger)
 {
     /// <summary>Sincroniza el curso y devuelve el registro. Null si el curso no existe.</summary>
     public async Task<SincronizacionDto?> SincronizarAsync(int cursoId, UsuarioActual usuario, CancellationToken ct = default)
@@ -85,6 +89,18 @@ public sealed class SincronizacionService(
 
         db.Sincronizaciones.Add(registro);
         await db.SaveChangesAsync(ct);
+
+        // TA-12.3 · Al terminar la sincronización se recalculan las alertas del curso con los datos recién guardados.
+        // Si algo falla, la sincronización ya quedó registrada y no se deshace: solo se anota el error.
+        try
+        {
+            await alertas.RecalcularAsync(curso.Id, ct);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogError(e, "No se pudieron recalcular las alertas del curso {CursoId}", curso.Id);
+        }
+
         return SincronizacionDto.Desde(registro);
     }
 

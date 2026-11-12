@@ -390,9 +390,16 @@ En los dos casos, un curso sin sincronizar responde con `estudiantes` vacío y `
   "herramienta": "identificar_alertas",
   "generado": "2026-11-10T09:30:00-05:00",
   "curso": { "id": 1, "nombreCorto": "AGIL-4B" },
-  "alertas": [ "mismo objeto que GET /api/cursos/{id}/alertas, solo ACTIVA" ]
+  "alertas": [
+    {
+      "id": 31, "regla": "R4", "nombreRegla": "Promedio bajo",
+      "estudiante": { "id": 5, "nombre": "Ana", "apellido": "Pérez" },
+      "evidencia": { "promedio": 6.1, "notas": 12, "umbral": 7.0 }
+    }
+  ]
 }
 ```
+Solo las ACTIVAS. Desde el 12 nov 2026 (TA-13.2) cada alerta es la de `GET /api/cursos/{id}/alertas` sin `titulo`, `estado`, `generada` ni `revisada`, que son iguales en todas, y con `nombreRegla`; la `evidencia` va corta: R2 solo con los nombres de las actividades (`{ "actividades": ["Tarea 5"], "umbral": 2 }`), R1 sin `anteriores` y R4 igual. Las 16 alertas de AGIL-4B en la forma completa llenaban el contexto de 4096 tokens del modelo y la respuesta se acercaba a los 60 s. La pantalla «Alertas» usa la forma completa de `GET /api/cursos/{id}/alertas`. 400 sin `cursoId`, 403 en curso ajeno, 404 si el curso no existe.
 
 ## Chat del asistente (HU-14)
 
