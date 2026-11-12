@@ -1,5 +1,19 @@
 # HU-13 · Herramientas del agente con trazas
 
+## Evidencias en la aplicación
+
+Capturas de la aplicación en Docker (`http://localhost:5173`) del 11 nov 2026, entre las 21:45 y las 21:50, con doc01 en AGIL-4B, sección «Asistente». Modelo `qwen2.5:7b`.
+
+Los criterios salen de la planificación del Sprint 1 (RF-13, Tabla 9 criterios 5 y 7) y del contrato de las herramientas del Sprint 2. La redacción oficial en Jira queda por confirmar.
+
+| Criterio | Captura | Dato observado |
+|---|---|---|
+| CA-1 · DADO un curso sincronizado, CUANDO el docente pregunta por datos, ENTONCES el agente llama a la herramienta, responde con datos reales y muestra la traza (nombre, parámetros, estado y duración) | [CA-1_herramienta-con-datos-reales-y-traza.png](CA-1_herramienta-con-datos-reales-y-traza.png) | «¿Quiénes tienen promedio bajo 7?» en 16 s: los 9 estudiantes bajo 7, de María Naranjo (3,42) a Olga Paredes (6,97), iguales al panel; `obtener_calificaciones`, `cursoId=1`, OK |
+| CA-2 · DADO una herramienta que falla, ENTONCES el agente dice qué no pudo consultar y no inventa datos | [CA-2_herramienta-falla-sin-inventar-datos.png](CA-2_herramienta-falla-sin-inventar-datos.png) | «¿Qué estudiantes requieren atención?»: `identificar_alertas` con ERROR, porque `GET /api/tools/alertas` (TA-13.2) espera HU-12; respuesta «No pude consultar los datos académicos en este momento.» |
+| CA-3 · DADO un curso de otro docente, CUANDO la herramienta responde 403, ENTONCES el agente dice que no tiene acceso | [CA-3_curso-ajeno-sin-acceso.png](CA-3_curso-ajeno-sin-acceso.png) | «Consulta las calificaciones del curso con cursoId 2.»: `obtener_calificaciones`, `cursoId=2`, ERROR; respuesta «No tienes acceso a ese curso.» |
+
+La herramienta `obtener_calificaciones` devuelve un resumen por estudiante sin `estudianteId` y el detalle por actividad con él (#28). Las secciones siguientes son la documentación del agente de Jeremy, movida desde `agent/docs/hu-13.md`.
+
 ## MK-13 · Grafo del agente
 
 ```mermaid
