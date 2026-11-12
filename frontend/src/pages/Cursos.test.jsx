@@ -143,8 +143,10 @@ it('muestra el historial de sincronizaciones en una tabla', async () => {
   )
 
   expect(
-    await screen.findByRole('table'),
-  ).toBeInTheDocument()
+  await screen.findByRole('table', {
+    name: /Historial de sincronizaciones de AGIL-4B/i,
+  }),
+).toBeInTheDocument()
 
   expect(
     screen.getByRole('columnheader', {

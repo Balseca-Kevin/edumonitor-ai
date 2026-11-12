@@ -2,6 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import Panel from './Panel'
+import { frenteAlCurso, ultimasNotas } from '../../components/lenguaje'
 
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarAlertasActivas: vi.fn() }))
 
@@ -69,22 +70,40 @@ afterEach(() => {
 })
 
 describe('Panel del curso', () => {
-  it('muestra el promedio con su escala, la mediana, los grupos y la finalización', async () => {
+  it('muestra las cuatro cifras en lenguaje docente: promedio, la mitad del curso, actividades completadas y requiere atención', async () => {
     obtenerIndicadores.mockResolvedValue(indicadores())
     contarAlertasActivas.mockResolvedValue(4)
     renderPanel()
 
     const promedio = await screen.findByRole('region', { name: 'Promedio del curso' })
     expect(within(promedio).getByText('7,42')).toBeInTheDocument()
-    expect(within(promedio).getByText(/Escala 0 a 10/)).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Mediana y desviación' })).getByText('7,60')).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Requiere atención' })).getByText('4')).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Grupos de rendimiento' })).getByText('18')).toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Finalización' })).getByText('81 %')).toBeInTheDocument()
+    expect(within(promedio).getByText(/sobre 10 · aprobación 7,0/)).toBeInTheDocument()
+    const mitad = screen.getByRole('region', { name: 'La mitad del curso tiene más de' })
+    expect(within(mitad).getByText('7,60')).toBeInTheDocument()
+    expect(within(mitad).getByText('las notas varían unos 1,4 puntos alrededor del promedio')).toBeInTheDocument()
+    const atencion = screen.getByRole('region', { name: 'Requiere atención' })
+    expect(within(atencion).getByText('4')).toBeInTheDocument()
+    expect(within(atencion).getByRole('link', { name: 'ver alertas →' })).toHaveAttribute('href', '/cursos/1/alertas')
+    expect(within(screen.getByRole('region', { name: 'Actividades completadas' })).getByText('81 %')).toBeInTheDocument()
+    const reparto = screen.getByRole('region', { name: 'Cómo se reparte el curso' })
+    expect(within(reparto).getByText('8,5 o más')).toBeInTheDocument()
+    expect(within(reparto).getByText('18')).toBeInTheDocument()
+    expect(within(reparto).getByText('Menos de 6,0')).toBeInTheDocument()
     expect(obtenerIndicadores).toHaveBeenCalledWith('1')
   })
 
-  it('distingue nota cero, sin entrega y pendiente en la tabla de estudiantes', async () => {
+  it('no muestra términos estadísticos ni códigos internos', async () => {
+    obtenerIndicadores.mockResolvedValue(indicadores())
+    contarAlertasActivas.mockResolvedValue(4)
+    renderPanel()
+
+    await screen.findByRole('table', { name: 'Estudiantes' })
+    for (const termino of [/desviación/i, /mediana/i, /z/, /tendencia/i, /MEDIO/, /R4/]) {
+      expect(screen.queryByText(termino)).not.toBeInTheDocument()
+    }
+  })
+
+  it('distingue nota cero, sin entregar y por calificar en la tabla de estudiantes', async () => {
     obtenerIndicadores.mockResolvedValue(indicadores())
     contarAlertasActivas.mockResolvedValue(0)
     renderPanel()
@@ -95,11 +114,12 @@ describe('Panel del curso', () => {
     const celdas = within(fila).getAllByRole('cell').map((td) => td.textContent)
     const valor = (columna) => celdas[encabezados.indexOf(columna)]
 
-    expect(valor('Ceros')).toBe('1')
-    expect(valor('Sin entrega')).toBe('2')
-    expect(valor('Pendientes')).toBe('3')
-    expect(valor('Calificadas')).toBe('12')
-    expect(valor('Tendencia')).toBe('-1,80')
+    expect(valor('Con cero')).toBe('1')
+    expect(valor('Sin entregar')).toBe('2')
+    expect(valor('Por calificar')).toBe('3')
+    expect(valor('Notas registradas')).toBe('12')
+    expect(valor('Frente al curso')).toBe('1,3 bajo el promedio')
+    expect(valor('Últimas notas')).toBe('↓ bajando 1,8')
   })
 
   it('muestra «no disponible» y no 0 cuando la finalización viene en noDisponibles o faltan las alertas', async () => {
@@ -107,12 +127,10 @@ describe('Panel del curso', () => {
     contarAlertasActivas.mockResolvedValue(null)
     renderPanel()
 
-    const finalizacion = await screen.findByRole('region', { name: 'Finalización' })
+    const finalizacion = await screen.findByRole('region', { name: 'Actividades completadas' })
     expect(within(finalizacion).getByText('no disponible')).toBeInTheDocument()
     expect(within(finalizacion).queryByText('0 %')).not.toBeInTheDocument()
     expect(within(screen.getByRole('region', { name: 'Requiere atención' })).getByText('no disponible')).toBeInTheDocument()
-    const fila = within(screen.getByRole('table', { name: 'Estudiantes' })).getByText('Pérez, Ana').closest('tr')
-    expect(within(fila).getAllByText('no disponible').length).toBeGreaterThan(0)
   })
 
   it('con 409 muestra «Curso sin sincronizar» con enlace a Mis cursos', async () => {
@@ -127,5 +145,21 @@ describe('Panel del curso', () => {
     const aviso = await screen.findByRole('alert')
     expect(aviso).toHaveTextContent('Curso sin sincronizar')
     expect(within(aviso).getByRole('link', { name: 'Ir a Mis cursos' })).toHaveAttribute('href', '/cursos')
+  })
+})
+
+describe('Lenguaje docente del panel', () => {
+  it('«Frente al curso» dice cuánto está sobre o bajo el promedio del curso', () => {
+    expect(frenteAlCurso(5.92, 7.42)).toBe('1,5 bajo el promedio')
+    expect(frenteAlCurso(7.85, 7.42)).toBe('0,4 sobre el promedio')
+    expect(frenteAlCurso(7.42, 7.42)).toBe('en el promedio')
+    expect(frenteAlCurso(null, 7.42)).toBe('no disponible')
+  })
+
+  it('«Últimas notas» dice si baja, sube o se mantiene', () => {
+    expect(ultimasNotas(-1.8)).toBe('↓ bajando 1,8')
+    expect(ultimasNotas(0.2)).toBe('↑ subiendo 0,2')
+    expect(ultimasNotas(0.01)).toBe('→ se mantiene')
+    expect(ultimasNotas(null)).toBe('aún sin datos')
   })
 })

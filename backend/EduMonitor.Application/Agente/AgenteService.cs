@@ -70,6 +70,67 @@ public sealed class AgenteService(IEduMonitorDbContext db, CursoService cursos, 
         return new ResultadoChat(EstadoChat.Respondido, await GuardarAsync(usuario, cursoId, pregunta, respuesta.Respuesta, respuesta.Modelo, duracion, respuesta.Herramientas, ct));
     }
 
+    /// <summary>
+    /// HU-19 · Historial del docente en un curso, de la más reciente a la más antigua. Cada quien ve solo sus conversaciones.
+    /// CursoNoExiste si el curso no existe; Prohibido si el curso es ajeno.
+    /// </summary>
+    public async Task<(EstadoChat Estado, IReadOnlyList<ConversacionResumenDto> Conversaciones)> ListarConversacionesAsync(UsuarioActual usuario, int cursoId, CancellationToken ct = default)
+    {
+        if (!await cursos.ExisteAsync(cursoId, ct))
+        {
+            return (EstadoChat.CursoNoExiste, Array.Empty<ConversacionResumenDto>());
+        }
+
+        if (!await cursos.TieneAccesoAsync(usuario, cursoId, ct))
+        {
+            return (EstadoChat.Prohibido, Array.Empty<ConversacionResumenDto>());
+        }
+
+        var lista = await db.Conversaciones.AsNoTracking()
+            .Where(c => c.CursoId == cursoId && c.UsuarioId == usuario.Id)
+            .OrderByDescending(c => c.Id) // el id crece con la fecha; SQLite (pruebas) no ordena por DateTimeOffset
+            .Select(c => new ConversacionResumenDto(c.Id, c.Fecha, c.Pregunta, c.Modelo, c.DuracionMs, c.Trazas.Count))
+            .ToListAsync(ct);
+        return (EstadoChat.Respondido, lista);
+    }
+
+    /// <summary>Una conversación con su respuesta y sus herramientas. 404 si no existe; 403 si el curso es ajeno o la conversación es de otro docente.</summary>
+    public async Task<(EstadoChat Estado, ConversacionDto? Conversacion)> ObtenerConversacionAsync(UsuarioActual usuario, int id, CancellationToken ct = default)
+    {
+        var conversacion = await db.Conversaciones.AsNoTracking().Include(c => c.Trazas).SingleOrDefaultAsync(c => c.Id == id, ct);
+        if (conversacion is null)
+        {
+            return (EstadoChat.CursoNoExiste, null);
+        }
+
+        if (!await cursos.TieneAccesoAsync(usuario, conversacion.CursoId, ct) || (conversacion.UsuarioId != usuario.Id && !usuario.EsAdmin))
+        {
+            return (EstadoChat.Prohibido, null);
+        }
+
+        var herramientas = conversacion.Trazas
+            .OrderBy(t => t.Id)
+            .Select(t => new HerramientaUsadaDto(t.Herramienta, ParametrosDeTraza(t.Parametros), t.Estado, t.DuracionMs))
+            .ToList();
+        return (EstadoChat.Respondido, new ConversacionDto(
+            conversacion.Id, conversacion.CursoId, conversacion.Fecha, conversacion.Pregunta, conversacion.Respuesta,
+            conversacion.Modelo, conversacion.DuracionMs, herramientas));
+    }
+
+    private static JsonElement ParametrosDeTraza(string parametros)
+    {
+        try
+        {
+            using var documento = JsonDocument.Parse(string.IsNullOrWhiteSpace(parametros) ? "{}" : parametros);
+            return documento.RootElement.Clone();
+        }
+        catch (JsonException)
+        {
+            using var vacio = JsonDocument.Parse("{}");
+            return vacio.RootElement.Clone();
+        }
+    }
+
     /// <summary>Modelo que se guarda cuando la API responde sola, sin llamar al agente.</summary>
     public const string ModeloSinAgente = "ninguno";
 
@@ -131,6 +192,13 @@ public sealed record PreguntaChatDto(int CursoId, string? Mensaje);
 public sealed record RespuestaChatDto(int ConversacionId, string Respuesta, IReadOnlyList<HerramientaUsadaDto> Herramientas, string Modelo, int DuracionMs);
 
 public sealed record HerramientaUsadaDto(string Nombre, JsonElement Parametros, string Estado, int DuracionMs);
+
+/// <summary>Fila de <c>GET /api/agente/conversaciones?cursoId=</c>: <c>herramientas</c> es cuántas se usaron.</summary>
+public sealed record ConversacionResumenDto(int Id, DateTimeOffset Fecha, string Pregunta, string Modelo, int DuracionMs, int Herramientas);
+
+/// <summary>Respuesta de <c>GET /api/agente/conversaciones/{id}</c>.</summary>
+public sealed record ConversacionDto(
+    int Id, int CursoId, DateTimeOffset Fecha, string Pregunta, string Respuesta, string Modelo, int DuracionMs, IReadOnlyList<HerramientaUsadaDto> Herramientas);
 
 public enum EstadoChat
 {
