@@ -19,28 +19,39 @@ El proyecto se desarrolla con **Scrum**: 3 sprints de 2 semanas, Product Backlog
 
 ## Arquitectura
 
-Monolito modular con un servicio de agente aparte (detalle en [docs/CONTEXTO_IA.md](docs/CONTEXTO_IA.md)):
+Monolito modular con un servicio de agente aparte, en dos entornos Docker separados, como pide la especificación: EduMonitor es independiente de Moodle y el Moodle de laboratorio ocupa el lugar del institucional (detalle en [docs/CONTEXTO_IA.md](docs/CONTEXTO_IA.md)).
 
 ```
-React (SPA) ──HTTPS + JWT──► ASP.NET Core API ──► SQL Server (EduMonitorDB)
-                                   │
-                                   ├──REST token solo lectura──► Moodle de laboratorio
-                                   ▲
-Agente FastAPI + LangGraph ──/api/tools/*──┘      Agente ──► Ollama (modelo local)
+ EduMonitor · docker compose up -d --wait · http://localhost:5173
+ ┌──────────────────────────────────────────────────────────────────────────────┐
+ │ Navegador ──► web (nginx + React) ──/api──► api (ASP.NET Core) ──► sqlserver │
+ │                                               │  ▲                           │
+ │                                    POST /chat │  │ /api/tools/*              │
+ │                                               ▼  │                           │
+ │                                     agent (FastAPI + LangGraph) ──► ollama   │
+ └───────────────────────────────────────────────┬──────────────────────────────┘
+                                                 │ REST solo lectura con token (moodle-puente)
+                                                 ▼
+ Aula virtual · docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d --wait
+ ┌──────────────────────────────┐
+ │ moodle (4.5) ──► moodle-db    │
+ └──────────────────────────────┘
 ```
 
-- El frontend y el agente solo hablan con el backend; solo el backend habla con Moodle y con SQL Server.
+- El docente usa una sola dirección: <http://localhost:5173>. El navegador solo habla con `web`, que pasa `/api` a la API.
+- Solo la API habla con Moodle, con SQL Server y con el agente. El agente no publica puerto y solo llama a `/api/tools/*` y a Ollama.
 - Moodle es de solo lectura. Los cálculos se hacen en el backend con código probado; el modelo de lenguaje solo explica y recomienda.
 
-| Servicio | Puerto local | Carpeta |
-|---|---|---|
-| Moodle 4.5 LTS | 8080 | `moodle-lab/` |
-| PostgreSQL de Moodle | sin publicar (red interna de Docker) | `moodle-lab/` |
-| SQL Server 2022 (`EduMonitorDB`) | 1433 | `moodle-lab/` (contenedor), `backend/` (migraciones) |
-| Backend ASP.NET Core .NET 8 (Swagger en `/swagger`) | 5000 | `backend/` |
-| Frontend React 18 + Vite | 5173 | `frontend/` |
-| Agente FastAPI + LangGraph | 8000 | `agent/` |
-| Ollama | 11434 | instalación local |
+| Entorno | Servicio | Puerto en el equipo | Carpeta |
+|---|---|---|---|
+| EduMonitor (`edumonitor`) | web: React 18 compilado + nginx | 5173 | `frontend/` |
+| EduMonitor | api: ASP.NET Core .NET 8 (Swagger en `/swagger`) | 5000 | `backend/` |
+| EduMonitor | sqlserver: SQL Server 2022 (`EduMonitorDB`) | 1433 | `backend/` (migraciones) |
+| EduMonitor | agent: FastAPI + LangGraph | sin publicar | `agent/` |
+| EduMonitor | ollama: modelo `qwen2.5:7b` con la GPU | sin publicar | — |
+| EduMonitor | moodle-puente: lleva el `localhost:8080` de la API al Moodle del equipo | sin publicar | — |
+| Aula virtual (`aula-virtual`) | moodle: Moodle 4.5 LTS | 8080 | `moodle-lab/` |
+| Aula virtual | moodle-db: PostgreSQL de Moodle | sin publicar | `moodle-lab/` |
 
 ## Sprints
 
@@ -81,33 +92,73 @@ Commits sin merges en `develop` (`git shortlog -sn --no-merges origin/develop`, 
 | Santiago Escobar | 0 | Ninguna en `develop` todavía |
 | Jeremy Guamán | 0 | Ninguna en `develop` todavía |
 
-## Puesta en marcha local
+## Puesta en marcha
 
-Requisitos: Git, Docker Desktop, .NET 8 SDK y, para las siguientes historias, Node.js LTS, Python 3.11 y Ollama. Todos los comandos se ejecutan desde la raíz del repositorio.
+Requisitos: Git y Docker Desktop con WSL 2. Para el modelo con GPU, una tarjeta NVIDIA con su controlador al día; sin ella, ver [Equipos sin GPU NVIDIA](#equipos-sin-gpu-nvidia). Todos los comandos se ejecutan desde la raíz del repositorio.
 
-1. **Variables de entorno.** Copia `.env.example` a `.env` y cambia las contraseñas. `.env` nunca se sube.
+1. **Variables de entorno.** Copia `.env.example` a `.env` y cambia las contraseñas (`MSSQL_SA_PASSWORD`, `MOODLE_ADMIN_PASSWORD`, `MOODLE_DB_PASSWORD`, `Jwt__Secret`, `Semillas__Contrasena`). La de SQL Server necesita mayúscula, minúscula, número, símbolo y al menos 8 caracteres. `.env` nunca se sube.
    ```powershell
    Copy-Item .env.example .env
    ```
-2. **Moodle y SQL Server** (detalle en [moodle-lab/README.md](moodle-lab/README.md)):
+2. **Aula virtual** (otro entorno; detalle en [moodle-lab/README.md](moodle-lab/README.md)):
    ```powershell
-   docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
+   docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d --wait
    ```
-3. **Servicios web de Moodle** (una vez por equipo). Crea el servicio `edumonitor_ws`, el usuario técnico de solo lectura y su token. Copia el token que imprime a `Moodle__Token` en `.env`:
+   La primera vez en cada equipo, crea el servicio `edumonitor_ws`, el usuario técnico de solo lectura y su token (los cursos y los datos de laboratorio se cargan con «Restaurar desde cero» de [moodle-lab/README.md](moodle-lab/README.md#restaurar-desde-cero-ta-016)):
    ```powershell
    docker cp moodle-lab/scripts/configurar_servicios_web.php aula-virtual-moodle-1:/tmp/
    docker exec aula-virtual-moodle-1 php /var/www/html/admin/cli/cfg.php --name=enablewebservices --set=1
    docker exec aula-virtual-moodle-1 php /var/www/html/admin/cli/cfg.php --name=webserviceprotocols --set=rest
    docker exec aula-virtual-moodle-1 php /tmp/configurar_servicios_web.php
    ```
-4. **Backend.** En Development, la API lee `.env`, aplica las migraciones de EF Core y crea los usuarios semilla (`admin`, `doc01`, `doc02`) con la contraseña de `Semillas__Contrasena`:
+   Copia el token que imprime a `Moodle__Token` en `.env`, o pégalo después en la pantalla «Configuración de Moodle» como `admin`.
+3. **EduMonitor con su agente, un solo comando:**
    ```powershell
-   dotnet run --project backend/EduMonitor.Api
+   docker compose up -d --wait
    ```
-   Swagger: <http://localhost:5000/swagger>. Para aplicar las migraciones sin arrancar la API: `dotnet ef database update --project backend/EduMonitor.Infrastructure --startup-project backend/EduMonitor.Api`.
-5. **Pruebas:** `dotnet test backend/EduMonitor.sln`.
+   La primera vez construye las imágenes y descarga `qwen2.5:7b` (unos 4,7 GB) al volumen `edumonitor_ollama-models`; `--wait` termina cuando los servicios están sanos y el modelo quedó cargado en la GPU. La API aplica las migraciones y crea los usuarios semilla (`admin`, `doc01`, `doc02`) con la contraseña de `Semillas__Contrasena`. Después de cambiar código: `docker compose up -d --build --wait`.
+4. **Abrir** <http://localhost:5173>. Como `admin`, «Estado del sistema» muestra la API, la base, Moodle, el agente y el modelo en verde.
 
-El cliente real de Moodle (TA-02.2) aún no está; mientras tanto la sincronización responde 502 y queda registrada como `FALLIDA`. Los pasos del frontend y del agente se agregan con HU-06 y HU-07.
+Apagar sin perder datos:
+
+```powershell
+docker compose down
+docker compose -f moodle-lab/docker-compose.yml --env-file .env down
+```
+
+Nunca `down -v` ni `docker volume rm`: borran la base, el token de Moodle, las llaves de Data Protection y los modelos.
+
+### Prueba de reinicio
+
+La configuración de Moodle se guarda en la tabla `ConfiguracionMoodle`, con el token protegido por ASP.NET Core Data Protection; las llaves viven en el volumen `edumonitor_api-keys`. Si la tabla está vacía, la API usa `Moodle__Url` y `Moodle__Token` del entorno.
+
+1. Entra como `admin`. En «Configuración de Moodle» deja la URL `http://localhost:8080`, pega el token (o deja el campo vacío para conservar el actual) y pulsa «Guardar». Anota la hora de «Última actualización».
+2. Reinicia la API con `docker compose restart api`, o reinicia Docker Desktop o el equipo.
+3. Vuelve a entrar como `admin`. «Última actualización» muestra la misma hora del paso 1, la clave actual termina en los mismos 4 caracteres y «Probar conexión» responde «Conexión correcta» con 8/8 funciones. Si la API hubiera vuelto a leer el entorno, la hora sería la del arranque.
+
+### Cómo llega la API a Moodle
+
+Moodle solo acepta llamadas a su `SITE_URL` (`http://localhost:8080`) y redirige las demás. Dentro de Docker, `localhost` es la API, así que el servicio `moodle-puente` (socat) lleva ese puerto al Moodle publicado en el equipo (`host.docker.internal:8080`). La API usa la red del puente; por eso el puerto 5000 y el nombre `api` se publican desde `moodle-puente`. El puente es el dueño de la red para que un reinicio de la API no lo rompa. Ningún servicio de EduMonitor depende de `moodle-lab/`: con el aula virtual apagada, EduMonitor arranca y «Estado del sistema» muestra Moodle como no disponible.
+
+### Equipos sin GPU NVIDIA
+
+`docker-compose.cpu.yml` quita la reserva de la GPU y Ollama corre en la CPU:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d --wait
+```
+
+En la CPU las respuestas son lentas; `OLLAMA_MODEL=llama3.2:3b` en `.env` responde más rápido que `qwen2.5:7b`. Si una respuesta pasa de 60 s, la pantalla del asistente muestra «El asistente no está disponible».
+
+### Pruebas
+
+```powershell
+dotnet test backend/EduMonitor.sln
+cd frontend; npm ci; npm test -- --run; cd ..
+cd agent; python -m pytest; cd ..
+```
+
+Las pruebas de `MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests` llaman al Moodle real y necesitan el aula virtual encendida.
 
 ## Documentación
 
