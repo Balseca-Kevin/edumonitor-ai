@@ -342,7 +342,25 @@ Sin cambios.
 
 ### GET /api/tools/calificaciones?cursoId=1&estudianteId=5
 
-`estudianteId` es opcional: sin él devuelve todo el curso.
+`estudianteId` es opcional. Cambio del 11 nov 2026 (aprobado por Kevin): el curso completo con todas sus notas ocupaba unos 49 KB y no cabía en el contexto del modelo, así que la consulta del asistente se cortaba a los 60 s.
+
+Sin `estudianteId`: un resumen por estudiante, con los mismos números que el panel (`GET /api/cursos/{id}/indicadores`), de menor a mayor `promedioPonderado` (los que no tienen promedio van al final).
+
+```json
+{
+  "herramienta": "obtener_calificaciones",
+  "generado": "2026-11-10T09:30:00-05:00",
+  "curso": { "id": 1, "nombreCorto": "AGIL-4B", "ultimaSincronizacion": "2026-11-10T07:10:00-05:00" },
+  "estudiantes": [
+    {
+      "id": 5, "nombre": "Ana", "apellido": "Pérez", "promedioPonderado": 6.1, "parcial": false,
+      "notas": { "calificadas": 12, "ceros": 1, "sinEntrega": 2, "pendientes": 1 }
+    }
+  ]
+}
+```
+
+Con `estudianteId`: las notas y estados de ese estudiante por actividad (escala 0 a 10). 404 si no está matriculado en el curso.
 
 ```json
 {
@@ -360,6 +378,8 @@ Sin cambios.
   ]
 }
 ```
+
+En los dos casos, un curso sin sincronizar responde con `estudiantes` vacío y `ultimaSincronizacion` en `null`.
 
 ### GET /api/tools/alertas?cursoId=1
 
