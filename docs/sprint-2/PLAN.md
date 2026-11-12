@@ -1,6 +1,6 @@
 # Sprint 2 · plan de trabajo
 
-Re-planificación: domingo 8 nov 2026, después de la Review del Sprint 1. Review del Sprint 2: jueves 12 nov 2026. Corte de código: miércoles 11 nov, 23:00.
+Re-planificación: domingo 8 nov 2026, después de la Review del Sprint 1. Review del Sprint 2: jueves 12 nov 2026. Integración abierta hasta el cierre de esta sesión, antes del ensayo del jueves 12 (decisión de Kevin del 11 nov, 21:05).
 
 ## Sprint Goal
 

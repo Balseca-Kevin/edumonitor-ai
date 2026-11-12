@@ -4,7 +4,7 @@
 @docs/contratos-api.md
 @docs/sprint-2/PLAN.md
 
-Sprint activo: Sprint 2. Review el jueves 12 de noviembre de 2026. Corte de código: miércoles 11, 23:00.
+Sprint activo: Sprint 2 hasta la Review del jueves 12 de noviembre de 2026; el siguiente es el Sprint 3. Integración abierta hasta el cierre de esta sesión, antes del ensayo del jueves 12 (decisión de Kevin del 11 nov, 21:05).
 
 ## Documentos fuente
 
