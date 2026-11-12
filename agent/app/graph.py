@@ -42,7 +42,11 @@ HERRAMIENTAS = {
     ),
     "obtener_calificaciones": (
         "calificaciones", ParametrosCalificaciones,
-        "Consulta calificaciones de un curso, opcionalmente filtradas por estudiante."
+        "Consulta calificaciones de un curso. Sin estudianteId devuelve un resumen por estudiante con su id; "
+        "para ver las notas de uno, llámala otra vez con su estudianteId. estudianteId es el número id que viene "
+        "en el resumen, nunca un nombre: si solo conoces el nombre del estudiante, llámala primero sin estudianteId. "
+        "El resumen no trae las notas por actividad. Viene ordenado de menor a mayor promedio: si piden quiénes "
+        "están bajo un valor, nombra a todos los que lo están."
     ),
     "identificar_alertas": (
         "alertas", ParametrosAlertas, "Consulta las alertas ya calculadas por el backend para un curso."
