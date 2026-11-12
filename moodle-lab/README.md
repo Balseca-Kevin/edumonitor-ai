@@ -89,13 +89,13 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 | Elemento | Valor |
 |---|---|
 | Categorías | UTA › FISEI › Software |
-| Cursos | AGIL-4B «Metodologías Ágiles (lab)» · BDD-4B «Bases de Datos (lab)» |
+| Cursos | AGIL-4B «Metodologías Ágiles (lab)» (id 2) · BDD-4B «Bases de Datos (lab)» (id 3) · MCS-4B «Manejo y Configuración del Software (lab)» (id 4, desde el 12 nov 2026) |
 | Secciones | Parcial 1: Unidad 1, Unidad 2 · Parcial 2: Unidad 3, Unidad 4 |
 | Libro | Exámenes 40 % · Tareas 30 % (incluye talleres) · APE 30 % |
 | Parcial 1 | U1: Tarea 1, Tarea 2, APE 1, Taller 1 · U2: Tarea 3, Tarea 4, APE 2, Examen P1 |
 | Parcial 2 | U3: Tarea 5, Tarea 6, APE 3, Taller 2 · U4: Tarea 7, Tarea 8, APE 4, Examen P2 |
-| Estudiantes | est01 a est32, `estNN@edumonitor.test`, rol student en ambos cursos |
-| Docentes | doc01 solo en AGIL-4B, doc02 solo en BDD-4B, rol editingteacher |
+| Estudiantes | est01 a est32, `estNN@edumonitor.test`, rol student en AGIL-4B y BDD-4B; est01 a est12 en MCS-4B |
+| Docentes | doc01 en AGIL-4B y MCS-4B, doc02 solo en BDD-4B, rol editingteacher |
 
 ## Completar los cursos con el libro y los datos ficticios
 
@@ -109,6 +109,39 @@ docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 Tarda alrededor de un minuto y medio. Sobre los cursos base agrega el libro 40/30/30, las 16 tareas por curso, doc01, doc02, est01 a est32 y las notas (TA-01.3 a TA-01.5). Un curso que ya tiene tareas no se vuelve a cargar, y las categorías y los usuarios se reutilizan si ya existen. Si los cursos base no están, el script los crea con la misma estructura: AGIL-4B con id 2 y BDD-4B con id 3, que son los ids que esperan las semillas del backend.
 
 El nombre de cada categoría del libro (Exámenes, Tareas, APE) queda también en el `idnumber` de su ítem, porque `gradereport_user_get_grade_items` devuelve `itemname: null` en las categorías y EduMonitor necesita ese nombre. Las unidades 1 a 3 tienen la fecha límite vencida y la unidad 4 vence en noviembre de 2026.
+
+### Curso adicional MCS-4B (12 nov 2026)
+
+MCS-4B «Manejo y Configuración del Software (lab)» tiene la misma estructura que los otros:
+- UTA › FISEI › Software;
+- 4 unidades en dos parciales;
+- libro 40/30/30 y las mismas 16 tareas;
+- doc01 como editingteacher y est01 a est12 como estudiantes.
+
+El script lo crea al final, después de AGIL-4B y BDD-4B, con su propia semilla fija (2028). Las semillas de AGIL-4B (2026) y BDD-4B (2027), sus matrículas y su orden no cambian.
+- Las fechas de entrega se comparan con una fecha de corte fija, el 1 nov 2026: las unidades 1 a 3 quedan vencidas y la 4 abierta, como en AGIL-4B, sin importar el día de la carga.
+- Casos propios:
+
+| Estudiante | Caso |
+|---|---|
+| est02 | Descenso en la unidad 3 |
+| est04 | Atrasos: Tarea 5 y APE 3 |
+| est06 | Nota 0 en Tarea 4 |
+| est08 | Tarea 6 pendiente de calificar |
+| est10 | Promedio bajo |
+
+Para cargarlo solo a él en un Moodle que ya tiene AGIL-4B y BDD-4B, sin tocarlos:
+
+```powershell
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php --curso-mcs
+```
+
+Imprime `MCS-4B · id 4 · 16 actividades · 12 estudiantes · calificadas 140 (nota 0: 1) · pendientes 5 · sin entrega 47`.
+- Si el id no es 4, avisa: EduMonitor espera 4 (`SembradorDatos.MoodleIdMcs`).
+- No hace falta ningún paso en EduMonitor. Al arrancar, la API agrega MCS-4B y se lo asigna a doc01 si no existe. El docente lo ve en «Mis cursos» y lo sincroniza con el botón.
+
+> En el Moodle de laboratorio actual, el curso con id 3 se llama `BDD-5B`; EduMonitor lo muestra como BDD-4B porque lo identifica por el id 3. Por eso, en ese Moodle **usa `--curso-mcs`**: sin la opción, el script no encuentra «BDD-4B» por nombre corto y crearía un BDD-4B duplicado con el id 4.
 
 Casos de prueba en AGIL-4B (uno por regla de alerta):
 
@@ -158,6 +191,6 @@ docker exec aula-virtual-moodle-1 php admin/cli/restore_backup.php --file=/tmp/c
 docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 ```
 
-Atajo: si se omiten los pasos 2 y 3, el paso 4 crea las categorías y los dos cursos con la misma estructura y los mismos ids.
+Atajo: si se omiten los pasos 2 y 3, el paso 4 crea las categorías y los tres cursos con la misma estructura: AGIL-4B con id 2, BDD-4B con id 3 y MCS-4B con id 4.
 
 Comprobación: `dotnet test backend/EduMonitor.sln --filter "FullyQualifiedName~MoodleClientIntegracion"` lee 4 unidades, 16 tareas, 32 estudiantes y el libro 40/30/30 de AGIL-4B.

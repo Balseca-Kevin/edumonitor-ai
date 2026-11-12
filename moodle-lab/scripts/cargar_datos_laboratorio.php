@@ -15,10 +15,15 @@
 // Los nombres son ficticios y los correos usan el dominio reservado edumonitor.test. Las contraseñas son aleatorias:
 // nadie entra con estos usuarios, solo existen como datos.
 //
+// Curso adicional (12 nov 2026): MCS-4B «Manejo y Configuración del Software (lab)», al final, con doc01 como profesor y
+// est01 a est12 como estudiantes; misma estructura (4 unidades, libro 40/30/30, 16 tareas) y su propia semilla fija.
+// No cambia AGIL-4B ni BDD-4B: van primero, con las mismas matrículas, el mismo orden y las mismas semillas (2026 y 2027).
+//
 // Uso (desde la raíz del repo):
-//   docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
-//   docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+//   docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+//   docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 // Con --categorias solo crea UTA › FISEI › Software (si faltan) e imprime el id de Software.
+// Con --curso-mcs solo carga MCS-4B (en un Moodle que ya tiene AGIL-4B y BDD-4B, no los toca).
 
 define('CLI_SCRIPT', true);
 require('/var/www/html/config.php');
@@ -36,6 +41,14 @@ const CURSOS = [
     ['BDD-4B', 'Bases de Datos (lab)', 'doc02'],
 ];
 const ESTUDIANTES = 32;
+
+// Curso adicional del 12 nov 2026. Índice 2: semilla 2028. Las semillas de AGIL-4B (2026) y BDD-4B (2027) no cambian.
+const CURSO_MCS = ['MCS-4B', 'Manejo y Configuración del Software (lab)', 'doc01'];
+const ESTUDIANTES_MCS = 12;
+// Id de Moodle que espera EduMonitor (SembradorDatos.MoodleIdMcs): el siguiente después de AGIL-4B (2) y BDD (3).
+const MOODLE_ID_MCS = 4;
+// Fecha de corte fija para MCS-4B: unidades 1 a 3 vencidas y la 4 abierta, como en AGIL-4B, sin depender del día de la carga.
+const CORTE_MCS = '2026-11-01 00:00:00';
 
 // Categoría del libro => peso en el total del curso.
 const CATEGORIAS = ['Exámenes' => 40, 'Tareas' => 30, 'APE' => 30];
@@ -79,7 +92,12 @@ for ($n = 1; $n <= ESTUDIANTES; $n++) {
     $estudiantes[$n] = asegurar_usuario($generador, $usuario, NOMBRES[$n - 1], APELLIDOS[$n - 1]);
 }
 
-foreach (CURSOS as $indice => [$corto, $nombre, $docente]) {
+// AGIL-4B y BDD-4B primero, sin cambios; MCS-4B al final. Con --curso-mcs, solo MCS-4B.
+$cursos = in_array('--curso-mcs', $argv, true) ? [2 => CURSO_MCS] : CURSOS + [2 => CURSO_MCS];
+foreach ($cursos as $indice => [$corto, $nombre, $docente]) {
+    // MCS-4B lleva est01 a est12; AGIL-4B y BDD-4B, los 32 en el mismo orden de siempre.
+    $matriculados = $indice === 2 ? array_slice($estudiantes, 0, ESTUDIANTES_MCS, true) : $estudiantes;
+    $corte = $indice === 2 ? strtotime(CORTE_MCS) : time();
     // TA-01.2 · Curso con 4 secciones: el restaurado del respaldo base, o uno nuevo si falta.
     $id = $DB->get_field('course', 'id', ['shortname' => $corto]);
     if (!$id) {
@@ -150,13 +168,13 @@ foreach (CURSOS as $indice => [$corto, $nombre, $docente]) {
                 'assignsubmission_onlinetext_enabled' => 1,
                 'completion' => COMPLETION_TRACKING_MANUAL,
             ]);
-            $tareas[] = ['unidad' => $unidad, 'nombre' => $actividad, 'cmid' => $modulo->cmid, 'vencida' => strtotime("$fecha 23:59:00") < time()];
+            $tareas[] = ['unidad' => $unidad, 'nombre' => $actividad, 'cmid' => $modulo->cmid, 'vencida' => strtotime("$fecha 23:59:00") < $corte];
         }
     }
 
     // TA-01.4 · Matrículas.
     $generador->enrol_user($docentes[$docente]->id, $curso->id, 'editingteacher');
-    foreach ($estudiantes as $estudiante) {
+    foreach ($matriculados as $estudiante) {
         $generador->enrol_user($estudiante->id, $curso->id, 'student');
     }
 
@@ -167,7 +185,7 @@ foreach (CURSOS as $indice => [$corto, $nombre, $docente]) {
     foreach ($tareas as $tarea) {
         $cm = get_coursemodule_from_id('assign', $tarea['cmid'], $curso->id, false, MUST_EXIST);
         $assign = new assign(context_module::instance($cm->id), $cm, $curso);
-        foreach ($estudiantes as $n => $estudiante) {
+        foreach ($matriculados as $n => $estudiante) {
             $caso = caso_estudiante($n, $tarea, $indice);
             if ($caso === 'SIN_ENTREGA') {
                 $contador['SIN_ENTREGA']++;
@@ -207,8 +225,11 @@ foreach (CURSOS as $indice => [$corto, $nombre, $docente]) {
     grade_regrade_final_grades($curso->id);
 
     echo sprintf('%s · id %d · %d actividades · %d estudiantes · calificadas %d (nota 0: %d) · pendientes %d · sin entrega %d',
-        $corto, $curso->id, count($tareas), count($estudiantes),
+        $corto, $curso->id, count($tareas), count($matriculados),
         $contador['CALIFICADO'], $contador['NOTA_CERO'], $contador['PENDIENTE'], $contador['SIN_ENTREGA']) . PHP_EOL;
+    if ($indice === 2 && (int) $curso->id !== MOODLE_ID_MCS) {
+        echo "AVISO: MCS-4B quedó con id {$curso->id}; EduMonitor espera " . MOODLE_ID_MCS . ' (SembradorDatos.MoodleIdMcs).' . PHP_EOL;
+    }
 }
 
 echo 'Categorías UTA › FISEI › Software, docentes doc01 y doc02, estudiantes est01 a est' . ESTUDIANTES . '.' . PHP_EOL;
@@ -253,6 +274,7 @@ function asegurar_usuario(testing_data_generator $generador, string $usuario, st
 /**
  * Qué tiene el estudiante n en una tarea: una nota (float), 'PENDIENTE' (entregó y falta calificar) o 'SIN_ENTREGA'.
  * Los casos fijos están en AGIL-4B (índice 0), que es el curso de la demostración; BDD-4B solo lleva variación aleatoria.
+ * MCS-4B (índice 2) lleva cinco casos propios para que su panel y sus alertas tengan algo que mostrar.
  */
 function caso_estudiante(int $n, array $tarea, int $curso): float|string {
     $unidad = $tarea['unidad'];
@@ -283,6 +305,21 @@ function caso_estudiante(int $n, array $tarea, int $curso): float|string {
                 return in_array($unidad, [2, 3], true) && $tarea['nombre'] !== 'Examen Parcial 1' ? 'SIN_ENTREGA' : $nota;
             case 17: // R5 · temática crítica: bajo en todas las actividades de la unidad 3.
                 return $unidad === 3 ? round(4.0 + mt_rand(0, 15) / 10, 2) : $nota;
+        }
+    }
+
+    if ($curso === 2) {
+        switch ($n) {
+            case 2:  // Descenso reciente: alto en las unidades 1 y 2, bajo en la 3.
+                return $unidad <= 2 ? round(8.6 + mt_rand(0, 10) / 10, 2) : round(4.0 + mt_rand(0, 10) / 10, 2);
+            case 4:  // Atrasos: dos actividades vencidas sin entrega.
+                return in_array($tarea['nombre'], ['Tarea 5', 'APE 3'], true) ? 'SIN_ENTREGA' : $nota;
+            case 6:  // Nota cero calificada.
+                return $tarea['nombre'] === 'Tarea 4' ? 0.0 : $nota;
+            case 8:  // Entregó y está pendiente de calificar.
+                return $tarea['nombre'] === 'Tarea 6' ? 'PENDIENTE' : $nota;
+            case 10: // Promedio bajo (< 7,0).
+                return round(5.0 + mt_rand(0, 10) / 10, 2);
         }
     }
 
