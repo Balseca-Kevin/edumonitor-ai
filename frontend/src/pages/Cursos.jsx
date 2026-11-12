@@ -1,772 +1,397 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   obtenerCursos,
   sincronizarCurso,
   obtenerHistorialSincronizaciones,
-} from "../services/cursos";
-import { cerrarSesion } from "../services/auth";
+} from '../services/cursos'
+import MarcoS2 from '../components/s2/MarcoS2'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import Table from '../components/ui/Table'
+import StatusBadge from '../components/ui/StatusBadge'
+import Alert from '../components/ui/Alert'
+import './Cursos.css'
 
 function formatearFecha(fecha) {
-  if (!fecha) return "No disponible";
-
-  const fechaValida = new Date(fecha);
-
-  if (Number.isNaN(fechaValida.getTime())) {
-    return fecha;
-  }
-
-  return fechaValida.toLocaleString("es-EC", {
-    dateStyle: "short",
-    timeStyle: "short",
-  });
+  if (!fecha) return 'No disponible'
+  const valor = new Date(fecha)
+  return Number.isNaN(valor.getTime())
+    ? fecha
+    : valor.toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' })
 }
 
 function etiquetaEstado(estado) {
-  if (!estado) return "PENDIENTE";
-
-  return String(estado).toUpperCase();
+  return String(estado || 'PENDIENTE').toUpperCase()
 }
 
-function claseDeEstado(estado) {
-  if (estado === "COMPLETADA") return "synced";
-  if (estado === "PARCIAL") return "partial";
-  if (estado === "FALLIDA") return "failed";
-  return "pending";
-}
-
-function esAdmin() {
-  try {
-    return JSON.parse(sessionStorage.getItem("edumonitor_usuario") || "null")?.rol === "ADMIN";
-  } catch {
-    return false;
-  }
-}
-
-function leerDocente() {
-  try {
-    return JSON.parse(sessionStorage.getItem("edumonitor_usuario") || "null")?.nombre || "";
-  } catch {
-    return "";
-  }
-}
-
-function prefiereMovimiento() {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
-// Solo visual: cuenta desde 0 hasta el valor que devolvió la API, en unos 800 ms.
-function Contador({ valor }) {
-  const numero = Number(valor);
-  const animar = Number.isFinite(numero) && numero > 0 && prefiereMovimiento();
-  const [mostrado, setMostrado] = useState(animar ? 0 : valor);
-
-  useEffect(() => {
-    if (!animar) return undefined;
-
-    let cuadro;
-    const inicio = performance.now();
-
-    function paso(ahora) {
-      const avance = Math.min((ahora - inicio) / 800, 1);
-      const suavizado = 1 - Math.pow(1 - avance, 3);
-      setMostrado(Math.round(numero * suavizado));
-      if (avance < 1) cuadro = requestAnimationFrame(paso);
-    }
-
-    cuadro = requestAnimationFrame(paso);
-    return () => cancelAnimationFrame(cuadro);
-  }, [animar, numero, valor]);
-
-  return (
-    <span className="registros-valor mono" aria-label={String(valor)}>
-      {animar ? mostrado : valor}
-    </span>
-  );
-}
-
-// Indicador visual mientras la API sincroniza; recorre las etapas en el orden en que el backend importa.
-const ETAPAS = ["Unidades", "Actividades", "Estudiantes", "Calificaciones"];
-
-function EtapasSincronizacion() {
-  const [actual, setActual] = useState(0);
-
-  useEffect(() => {
-    if (!prefiereMovimiento()) return undefined;
-    const intervalo = setInterval(
-      () => setActual((etapa) => Math.min(etapa + 1, ETAPAS.length - 1)),
-      900
-    );
-    return () => clearInterval(intervalo);
-  }, []);
-
-  return (
-    <span className="etapas" aria-hidden="true">
-      {ETAPAS.map((etapa, indice) => (
-        <span
-          key={etapa}
-          className={
-            indice < actual ? "etapa hecha" : indice === actual ? "etapa actual" : "etapa"
-          }
-        >
-          {etapa}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function obtenerMensajeError(error) {
-  const estadoHTTP = error?.response?.status;
-
-  if (estadoHTTP === 403) {
-    return "Este curso no está asignado a tu cuenta";
-  }
-
-  if (estadoHTTP === 502) {
-    return "Moodle no responde; intenta más tarde";
-  }
-
+function mensajeError(error) {
+  if (error?.response?.status === 403) return 'Este curso no está asignado a tu cuenta'
+  if (error?.response?.status === 502) return 'Moodle no responde; intenta más tarde'
   return (
     error?.response?.data?.detail ||
     error?.response?.data?.title ||
     (error?.response
-      ? "No se pudo completar la operación."
-      : "No se pudo conectar con el servidor. Intenta de nuevo.")
-  );
+      ? 'No se pudo completar la operación.'
+      : 'No se pudo conectar con el servidor. Intenta de nuevo.')
+  )
+}
+
+function usuarioActual() {
+  try {
+    return JSON.parse(sessionStorage.getItem('edumonitor_usuario') || 'null')
+  } catch {
+    return null
+  }
+}
+
+function ErroresSincronizacion({ errores }) {
+  if (!errores?.length) return null
+  return (
+    <ul className="hu19-cursos__errores">
+      {errores.map((item, indice) => (
+        <li key={`${item.funcion || 'sistema'}-${indice}`}>
+          <code>{item.funcion || 'Sistema'}:</code> {item.mensaje || 'Error sin descripción'}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function DetalleCurso({ curso, resultado, historial, historialAbierto, cargandoHistorial }) {
+  if (!resultado && !historialAbierto) return null
+
+  const columnasHistorial = [
+    {
+      key: 'fecha',
+      label: 'Fecha',
+      render: (_valor, item) => formatearFecha(item.fin || item.inicio || item.fecha),
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      render: (estado) => <StatusBadge status={estado} />,
+    },
+    {
+      key: 'registros',
+      label: 'Registros',
+      render: (registros) => Object.values(registros || {}).reduce(
+        (total, cantidad) => total + (Number(cantidad) || 0), 0,
+      ),
+    },
+    {
+      key: 'errores',
+      label: 'Errores',
+      render: (errores) => errores?.length
+        ? <ErroresSincronizacion errores={errores} />
+        : 'Sin errores',
+    },
+  ]
+
+  const historialOrdenado = [...(historial || [])].sort(
+    (a, b) => new Date(b.fin || b.inicio || b.fecha || 0) -
+      new Date(a.fin || a.inicio || a.fecha || 0),
+  )
+
+  return (
+    <section className="hu19-cursos__detalle" aria-label={`Detalle de ${curso.nombreCorto}`}>
+      {resultado && (
+        <section className="hu19-cursos__resultado" aria-label="Resultado de sincronización">
+          {['PARCIAL', 'FALLIDA'].includes(etiquetaEstado(resultado.estado)) && (
+            <Alert variant="warning" title="Sincronización incompleta">
+              <p>La sincronización no se completó correctamente. Revisa los errores reportados.</p>
+              <ErroresSincronizacion errores={resultado.errores} />
+            </Alert>
+          )}
+          <div className="hu19-cursos__titulo-detalle">
+            <h3>Resultado de sincronización</h3>
+            <StatusBadge status={resultado.estado} />
+          </div>
+          <div className="hu19-cursos__fechas">
+            {resultado.inicio && <span>Inicio: {formatearFecha(resultado.inicio)}</span>}
+            {resultado.fin && <span>Fin: {formatearFecha(resultado.fin)}</span>}
+          </div>
+          {resultado.registros && (
+            <dl className="hu19-cursos__registros">
+              {Object.entries(resultado.registros).map(([nombre, cantidad]) => (
+                <div key={nombre}>
+                  <dt>{nombre}</dt>
+                  <dd>{cantidad}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {resultado.errores?.length > 0 && (
+            <div>
+              <h4>Errores reportados</h4>
+              <ErroresSincronizacion errores={resultado.errores} />
+            </div>
+          )}
+        </section>
+      )}
+      {historialAbierto && (
+        <section className="hu19-cursos__historial">
+          <h3>Historial de sincronizaciones</h3>
+          {cargandoHistorial
+            ? <p role="status">Cargando historial...</p>
+            : historialOrdenado.length === 0
+              ? <p>No hay sincronizaciones registradas.</p>
+              : <Table caption={`Historial de sincronizaciones de ${curso.nombreCorto}`} columns={columnasHistorial} rows={historialOrdenado} />}
+        </section>
+      )}
+    </section>
+  )
 }
 
 export default function Cursos() {
-  const navigate = useNavigate();
-
-  const [cursos, setCursos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
-  const [busqueda, setBusqueda] = useState("");
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState("");
-
-  const [sincronizandoId, setSincronizandoId] = useState(null);
-  const [historialAbiertoId, setHistorialAbiertoId] = useState(null);
-  const [historialPorCurso, setHistorialPorCurso] = useState({});
-  const [cargandoHistorialId, setCargandoHistorialId] = useState(null);
-  const [errorOperacion, setErrorOperacion] = useState("");
-  const [resultadoPorCurso, setResultadoPorCurso] = useState({});
+  const navigate = useNavigate()
+  const usuario = usuarioActual()
+  const [cursos, setCursos] = useState([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [periodoSeleccionado, setPeriodoSeleccionado] = useState('')
+  const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
+  const [sincronizandoId, setSincronizandoId] = useState(null)
+  const [historialAbiertoId, setHistorialAbiertoId] = useState(null)
+  const [historialPorCurso, setHistorialPorCurso] = useState({})
+  const [cargandoHistorialId, setCargandoHistorialId] = useState(null)
+  const [errorOperacion, setErrorOperacion] = useState('')
+  const [resultadoPorCurso, setResultadoPorCurso] = useState({})
 
   useEffect(() => {
-    let activo = true;
+    let activo = true
+    obtenerCursos()
+      .then((datos) => {
+        if (activo) setCursos(Array.isArray(datos) ? datos : [])
+      })
+      .catch(() => {
+        if (activo) setError('No fue posible cargar los cursos')
+      })
+      .finally(() => {
+        if (activo) setCargando(false)
+      })
+    return () => { activo = false }
+  }, [])
 
-    async function cargarCursos() {
-      setCargando(true);
-      setError("");
-
-      try {
-        const datos = await obtenerCursos();
-
-        if (activo) {
-          setCursos(Array.isArray(datos) ? datos : []);
-        }
-      } catch {
-        if (activo) {
-          setError(
-            "No fue posible cargar los cursos"
-          );
-        }
-      } finally {
-        if (activo) {
-          setCargando(false);
-        }
-      }
-    }
-
-    cargarCursos();
-
-    return () => {
-      activo = false;
-    };
-  }, []);
-
-  const periodos = useMemo(() => {
-    return [
-      ...new Set(
-        cursos
-          .map((curso) => curso.periodo)
-          .filter(Boolean)
-      ),
-    ];
-  }, [cursos]);
+  const periodos = useMemo(
+    () => [...new Set(cursos.map((curso) => curso.periodo).filter(Boolean))],
+    [cursos],
+  )
 
   const cursosFiltrados = useMemo(() => {
-    const texto = busqueda.trim().toLowerCase();
-
+    const texto = busqueda.trim().toLowerCase()
     return cursos.filter((curso) => {
-      const coincideBusqueda =
-        !texto ||
-        [
-          curso.nombre,
-          curso.nombreCorto,
-        ]
-          .filter(Boolean)
-          .some((valor) =>
-            String(valor).toLowerCase().includes(texto)
-          );
-
-      const coincidePeriodo =
-        !periodoSeleccionado ||
-        curso.periodo === periodoSeleccionado;
-
-      // Solo COMPLETADA cuenta como sincronizado: PARCIAL tiene datos no disponibles (RNF-03).
-      const estaSincronizado = obtenerEstadoCurso(curso) === "COMPLETADA";
-
-      const coincideEstado =
-        !estadoSeleccionado ||
-        (estadoSeleccionado === "sincronizado" &&
-          estaSincronizado) ||
-        (estadoSeleccionado === "pendiente" &&
-          !estaSincronizado);
-
-      return (
-        coincideBusqueda &&
-        coincidePeriodo &&
-        coincideEstado
-      );
-    });
-  }, [
-    cursos,
-    busqueda,
-    periodoSeleccionado,
-    estadoSeleccionado,
-  ]);
+      const coincideBusqueda = !texto || [curso.nombre, curso.nombreCorto]
+        .filter(Boolean)
+        .some((valor) => String(valor).toLowerCase().includes(texto))
+      const coincidePeriodo = !periodoSeleccionado || curso.periodo === periodoSeleccionado
+      const completa = etiquetaEstado(curso.ultimaSincronizacion?.estado) === 'COMPLETADA'
+      const coincideEstado = !estadoSeleccionado ||
+        (estadoSeleccionado === 'sincronizado' && completa) ||
+        (estadoSeleccionado === 'pendiente' && !completa)
+      return coincideBusqueda && coincidePeriodo && coincideEstado
+    })
+  }, [cursos, busqueda, periodoSeleccionado, estadoSeleccionado])
 
   function limpiarFiltros() {
-    setBusqueda("");
-    setPeriodoSeleccionado("");
-    setEstadoSeleccionado("");
+    setBusqueda('')
+    setPeriodoSeleccionado('')
+    setEstadoSeleccionado('')
   }
 
   async function manejarSincronizacion(curso) {
-    setSincronizandoId(curso.id);
-    setErrorOperacion("");
-
+    if (sincronizandoId !== null) return
+    setSincronizandoId(curso.id)
+    setErrorOperacion('')
     try {
-      const resultado = await sincronizarCurso(curso.id);
-
-      setResultadoPorCurso((anterior) => ({
-        ...anterior,
-        [curso.id]: resultado,
-      }));
-
-      setCursos((anteriores) =>
-        anteriores.map((item) =>
-          item.id === curso.id
-            ? {
-                ...item,
-                ultimaSincronizacion: {
-                  id: resultado?.id,
-                  fecha:
-                    resultado?.fin ||
-                    resultado?.fecha ||
-                    new Date().toISOString(),
-                  estado:
-                    resultado?.estado || "COMPLETADA",
-                },
-              }
-            : item
-        )
-      );
-
+      const resultado = await sincronizarCurso(curso.id)
+      setResultadoPorCurso((anterior) => ({ ...anterior, [curso.id]: resultado }))
+      setCursos((anteriores) => anteriores.map((item) => item.id === curso.id
+        ? {
+            ...item,
+            ultimaSincronizacion: {
+              id: resultado?.id,
+              fecha: resultado?.fin || resultado?.fecha || new Date().toISOString(),
+              estado: resultado?.estado || 'PENDIENTE',
+            },
+          }
+        : item))
       try {
-        const historial =
-          await obtenerHistorialSincronizaciones(curso.id);
-
+        const historial = await obtenerHistorialSincronizaciones(curso.id)
         setHistorialPorCurso((anterior) => ({
           ...anterior,
-          [curso.id]: Array.isArray(historial)
-            ? historial
-            : [],
-        }));
+          [curso.id]: Array.isArray(historial) ? historial : [],
+        }))
       } catch {
-        // El resultado de la sincronización sigue disponible
-        // aunque no se pueda actualizar el historial.
+        // El resultado de sincronización queda visible aunque falle la consulta del historial.
       }
     } catch (err) {
-      setErrorOperacion(
-        `No se pudo sincronizar "${curso.nombre || curso.nombreCorto || "el curso"}": ${obtenerMensajeError(err)}`
-      );
+      setErrorOperacion(`No se pudo sincronizar "${curso.nombre || curso.nombreCorto || 'el curso'}": ${mensajeError(err)}`)
     } finally {
-      setSincronizandoId(null);
+      setSincronizandoId(null)
     }
   }
 
   async function manejarHistorial(curso) {
     if (historialAbiertoId === curso.id) {
-      setHistorialAbiertoId(null);
-      return;
+      setHistorialAbiertoId(null)
+      return
     }
-
-    setHistorialAbiertoId(curso.id);
-    setErrorOperacion("");
-
-    if (historialPorCurso[curso.id]) {
-      return;
-    }
-
-    setCargandoHistorialId(curso.id);
-
+    setHistorialAbiertoId(curso.id)
+    setErrorOperacion('')
+    if (historialPorCurso[curso.id]) return
+    setCargandoHistorialId(curso.id)
     try {
-      const historial =
-        await obtenerHistorialSincronizaciones(curso.id);
-
+      const historial = await obtenerHistorialSincronizaciones(curso.id)
       setHistorialPorCurso((anterior) => ({
         ...anterior,
-        [curso.id]: Array.isArray(historial)
-          ? historial
-          : [],
-      }));
+        [curso.id]: Array.isArray(historial) ? historial : [],
+      }))
     } catch (err) {
-      setErrorOperacion(
-        `No se pudo cargar el historial: ${obtenerMensajeError(err)}`
-      );
-
-      setHistorialPorCurso((anterior) => ({
-        ...anterior,
-        [curso.id]: [],
-      }));
+      setErrorOperacion(`No se pudo cargar el historial: ${mensajeError(err)}`)
+      setHistorialPorCurso((anterior) => ({ ...anterior, [curso.id]: [] }))
     } finally {
-      setCargandoHistorialId(null);
+      setCargandoHistorialId(null)
     }
   }
 
-  async function manejarCierreSesion() {
-    try {
-      await cerrarSesion();
-    } finally {
-      navigate("/login");
-    }
-  }
-
-  function obtenerEstadoCurso(curso) {
-    // Contrato GET /api/cursos: ultimaSincronizacion es null si el curso nunca se sincronizó.
-    return etiquetaEstado(curso.ultimaSincronizacion?.estado);
-  }
-
-  const docente = leerDocente();
+  const columnas = [
+    { key: 'nombreCorto', label: 'Código' },
+    { key: 'nombre', label: 'Curso', render: (valor, curso) => valor || curso.nombreCorto || 'Curso sin nombre' },
+    { key: 'periodo', label: 'Período', render: (valor) => valor || '—' },
+    {
+      key: 'ultimaSincronizacion',
+      label: 'Última sincronización',
+      render: (ultima) => ultima ? formatearFecha(ultima.fecha) : 'Sin registro',
+    },
+    {
+      key: 'estado',
+      label: 'Estado',
+      render: (_valor, curso) => <StatusBadge status={curso.ultimaSincronizacion?.estado} />,
+    },
+    {
+      key: 'acciones',
+      label: 'Acciones',
+      render: (_valor, curso) => (
+        <div className="hu19-cursos__acciones">
+          <Button variant="secondary" size="small" onClick={() => navigate(`/cursos/${curso.id}/panel`)}>
+            Abrir
+          </Button>
+          <Button
+            size="small"
+            disabled={sincronizandoId !== null}
+            aria-busy={sincronizandoId === curso.id}
+            onClick={() => manejarSincronizacion(curso)}
+          >
+            {sincronizandoId === curso.id ? 'Sincronizando...' : 'Sincronizar curso'}
+          </Button>
+          <Button
+            variant="secondary"
+            size="small"
+            disabled={cargandoHistorialId === curso.id}
+            aria-expanded={historialAbiertoId === curso.id}
+            onClick={() => manejarHistorial(curso)}
+          >
+            {cargandoHistorialId === curso.id
+              ? 'Cargando historial...'
+              : historialAbiertoId === curso.id
+                ? 'Ocultar historial'
+                : 'Ver historial'}
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
-    <main className="courses-page">
-      <header className="courses-header">
-        <div>
-          <p className="courses-eyebrow">
-            {docente ? `Hola, ${docente}` : "Bienvenido"}
-            {periodos.length > 0 && (
+    <MarcoS2>
+      <div className="hu19-cursos">
+        <header className="hu19-cursos__cabecera">
+          <div>
+            <p className="hu19-cursos__sobretitulo">
+              {usuario?.nombre ? `Hola, ${usuario.nombre}` : 'Bienvenido'}
+              {periodos.length > 0 && ` · Período ${periodos.join(', ')}`}
+            </p>
+            <h1>Mis cursos</h1>
+            <p className="hu19-cursos__subtitulo">
+              <strong>{cursosFiltrados.length === 1 ? '1 curso' : `${cursosFiltrados.length} cursos`}</strong> en el registro
+            </p>
+          </div>
+          <div className="hu19-cursos__cabecera-acciones">
+            {usuario?.rol === 'ADMIN' && (
               <>
-                {" · Período "}
-                <span className="mono">{periodos.join(", ")}</span>
+                <Button variant="secondary" onClick={() => navigate('/admin/moodle')}>Configuración de Moodle</Button>
+                <Button variant="secondary" onClick={() => navigate('/admin/estado')}>Estado del sistema</Button>
               </>
             )}
-          </p>
-          <h1>Mis cursos</h1>
-          <p className="courses-count">
-            <span className="courses-count-valor">
-              {cursosFiltrados.length === 1
-                ? "1 curso"
-                : `${cursosFiltrados.length} cursos`}
-            </span>
-            {" "}en el registro
-          </p>
-        </div>
+          </div>
+        </header>
 
-        <div className="courses-user">
-          {esAdmin() && (
-            <>
-              <button className="boton-secundario" type="button" onClick={() => navigate("/admin/moodle")}>
-                Configuración de Moodle
-              </button>
-              <button className="boton-secundario" type="button" onClick={() => navigate("/admin/estado")}>
-                Estado del sistema
-              </button>
-            </>
-          )}
-          <button
-            className="logout-button"
-            type="button"
-            onClick={manejarCierreSesion}
+        <section className="hu19-cursos__filtros" aria-label="Búsqueda y filtros">
+          <Input
+            aria-label="Buscar cursos"
+            type="search"
+            placeholder="Buscar por nombre o código"
+            value={busqueda}
+            onChange={(event) => setBusqueda(event.target.value)}
+          />
+          <select
+            aria-label="Filtrar por período"
+            value={periodoSeleccionado}
+            onChange={(event) => setPeriodoSeleccionado(event.target.value)}
           >
-            Cerrar sesión
-          </button>
-        </div>
-      </header>
-
-      <section className="course-filters" aria-label="Búsqueda y filtros">
-        <input
-          aria-label="Buscar cursos"
-          className="course-search"
-          placeholder="Buscar por nombre del curso..."
-          type="search"
-          value={busqueda}
-          onChange={(event) =>
-            setBusqueda(event.target.value)
-          }
-        />
-
-        <select
-          aria-label="Filtrar por período"
-          className="course-filter"
-          value={periodoSeleccionado}
-          onChange={(event) =>
-            setPeriodoSeleccionado(event.target.value)
-          }
-        >
-          <option value="">Todos los períodos</option>
-
-          {periodos.map((periodo) => (
-            <option key={periodo} value={periodo}>
-              {periodo}
-            </option>
-          ))}
-        </select>
-
-        <select
-          aria-label="Filtrar por sincronización"
-          className="course-filter"
-          value={estadoSeleccionado}
-          onChange={(event) =>
-            setEstadoSeleccionado(event.target.value)
-          }
-        >
-          <option value="">Todos los estados</option>
-          <option value="sincronizado">Sincronización completa</option>
-          <option value="pendiente">Incompleta o sin sincronizar</option>
-        </select>
-
-        <button
-          className="clear-filters-button"
-          type="button"
-          onClick={limpiarFiltros}
-        >
-          Limpiar filtros
-        </button>
-      </section>
-
-      {error && (
-        <section className="courses-error" role="alert">
-          <p>{error}</p>
-
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
+            <option value="">Todos los períodos</option>
+            {periodos.map((periodo) => <option key={periodo} value={periodo}>{periodo}</option>)}
+          </select>
+          <select
+            aria-label="Filtrar por sincronización"
+            value={estadoSeleccionado}
+            onChange={(event) => setEstadoSeleccionado(event.target.value)}
           >
-            Reintentar
-          </button>
+            <option value="">Todos los estados</option>
+            <option value="sincronizado">Sincronización completa</option>
+            <option value="pendiente">Incompleta o sin sincronizar</option>
+          </select>
+          <Button variant="secondary" onClick={limpiarFiltros}>Limpiar filtros</Button>
         </section>
-      )}
 
-      {errorOperacion && (
-        <section className="courses-error" role="alert">
-          <p>{errorOperacion}</p>
-          <button
-            type="button"
-            onClick={() => setErrorOperacion("")}
-          >
-            Cerrar
-          </button>
-        </section>
-      )}
+        {error && (
+          <Alert variant="error">
+            <p>{error}</p>
+            <Button variant="secondary" onClick={() => window.location.reload()}>Reintentar</Button>
+          </Alert>
+        )}
+        {errorOperacion && (
+          <Alert variant="error">
+            <p>{errorOperacion}</p>
+            <Button variant="secondary" onClick={() => setErrorOperacion('')}>Cerrar</Button>
+          </Alert>
+        )}
 
-      {cargando ? (
-        <p className="courses-loading" role="status">Cargando cursos...</p>
-      ) : cursosFiltrados.length === 0 ? (
-        <div className="empty-courses">
-          <h2>No hay cursos disponibles</h2>
-          <p>Aún no tienes cursos</p>
-        </div>
-      ) : (
-        <section className="courses-grid">
-          {cursosFiltrados.map((curso) => {
-            const estado = obtenerEstadoCurso(curso);
-            const claseEstado = claseDeEstado(estado);
-
-            const resultado = resultadoPorCurso[curso.id];
-            const historial = historialPorCurso[curso.id];
-            const sincronizando = sincronizandoId === curso.id;
-
-            return (
-              <article
-                className="course-card"
+        {cargando ? (
+          <p role="status">Cargando cursos...</p>
+        ) : cursosFiltrados.length === 0 ? (
+          <div className="hu19-cursos__vacio">
+            <h2>No hay cursos disponibles</h2>
+            <p>Aún no tienes cursos</p>
+          </div>
+        ) : (
+          <>
+            <Table caption="Catálogo de cursos" columns={columnas} rows={cursosFiltrados} />
+            {cursosFiltrados.map((curso) => (
+              <DetalleCurso
                 key={curso.id}
-              >
-                <div className="course-card-header">
-                  <div>
-                    {curso.nombreCorto && (
-                      <p className="course-short-name mono">
-                        {curso.nombreCorto}
-                      </p>
-                    )}
-                    <h2>
-                      {curso.nombre ||
-                        curso.nombreCorto ||
-                        "Curso sin nombre"}
-                    </h2>
-                  </div>
-
-                  <div className={`sello ${claseEstado}`}>
-                    <span className="sync-status">{estado}</span>
-                    <span className="sello-fecha mono">
-                      {curso.ultimaSincronizacion
-                        ? formatearFecha(curso.ultimaSincronizacion.fecha)
-                        : "Sin registro"}
-                    </span>
-                  </div>
-                </div>
-
-                <dl className="course-meta">
-                  {docente && (
-                    <div>
-                      <dt>Docente</dt>
-                      <dd>{docente}</dd>
-                    </div>
-                  )}
-                  {curso.periodo && (
-                    <div>
-                      <dt>Período</dt>
-                      <dd className="mono">{curso.periodo}</dd>
-                    </div>
-                  )}
-                  {curso.ultimaSincronizacion && (
-                    <div>
-                      <dt>Última sincronización</dt>
-                      <dd className="mono">
-                        {formatearFecha(curso.ultimaSincronizacion.fecha)}
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-
-                <div className="course-actions">
-                  <button
-                    type="button"
-                    className="boton-secundario"
-                    onClick={() => navigate(`/cursos/${curso.id}/panel`)}
-                  >
-                    Abrir
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`boton-primario ${sincronizando ? "en-curso" : ""}`}
-                    onClick={() =>
-                      manejarSincronizacion(curso)
-                    }
-                    disabled={sincronizando}
-                    aria-busy={sincronizando}
-                  >
-                    {sincronizando
-                      ? "Sincronizando..."
-                      : "Sincronizar curso"}
-                    {sincronizando && <EtapasSincronizacion />}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="boton-secundario"
-                    onClick={() => manejarHistorial(curso)}
-                    disabled={
-                      cargandoHistorialId === curso.id
-                    }
-                    aria-expanded={historialAbiertoId === curso.id}
-                  >
-                    {cargandoHistorialId === curso.id
-                      ? "Cargando historial..."
-                      : historialAbiertoId === curso.id
-                        ? "Ocultar historial"
-                        : "Ver historial"}
-                  </button>
-                </div>
-
-                {resultado &&
-                  ["PARCIAL", "FALLIDA"].includes(
-                    String(resultado.estado).toUpperCase()
-                  ) && (
-                    <div
-                      className={`sync-warning ${claseDeEstado(etiquetaEstado(resultado.estado))}`}
-                      role="alert"
-                    >
-                      <strong>Sincronización incompleta</strong>
-
-                      <p>
-                        La sincronización no se completó correctamente.
-                        Revisa los errores reportados.
-                      </p>
-
-                      {resultado.errores?.length > 0 && (
-                        <ul>
-                          {resultado.errores.map((error, indice) => (
-                            <li key={indice}>
-                              <code>{error.funcion || "Sistema"}</code>{" "}
-                              {error.mensaje || "Error sin descripción"}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-
-                {resultado && (
-                  <section className="sync-result">
-                    <div className="sync-result-header">
-                      <h3>Resultado de sincronización</h3>
-                      <span className={`sello sello-compacto ${claseDeEstado(etiquetaEstado(resultado.estado))}`}>
-                        {etiquetaEstado(resultado.estado)}
-                      </span>
-                    </div>
-
-                    {resultado.registros && (
-                      <div>
-                        <h4 className="sr-only">Registros procesados</h4>
-                        <ul className="registros">
-                          {Object.entries(
-                            resultado.registros
-                          ).map(([nombre, cantidad]) => (
-                            <li key={nombre}>
-                              <Contador valor={cantidad} />
-                              <span className="registros-nombre">{nombre}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    <p className="sync-result-tiempos mono">
-                      {resultado.inicio && (
-                        <span>
-                          Inicio: {formatearFecha(resultado.inicio)}
-                        </span>
-                      )}
-                      {resultado.fin && (
-                        <span>
-                          Fin: {formatearFecha(resultado.fin)}
-                        </span>
-                      )}
-                    </p>
-
-                    {resultado.errores?.length > 0 && (
-                      <div className="sync-result-errores">
-                        <h4>Errores reportados</h4>
-                        <ul>
-                          {resultado.errores.map(
-                            (item, indice) => (
-                              <li key={indice}>
-                                {item.funcion && (
-                                  <code>
-                                    {item.funcion}:{" "}
-                                  </code>
-                                )}
-                                {item.mensaje ||
-                                  "Error sin descripción"}
-                              </li>
-                            )
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  </section>
-                )}
-
-                {historialAbiertoId === curso.id && (
-                  <section className="sync-history">
-                    <h3>Historial de sincronizaciones</h3>
-
-                    {cargandoHistorialId === curso.id ? (
-                      <p role="status">Cargando historial...</p>
-                    ) : !historial?.length ? (
-                      <p>No hay sincronizaciones registradas.</p>
-                    ) : (
-                      <div className="table-scroll">
-                        <table className="sync-history-table">
-                          <thead>
-                            <tr>
-                              <th>Fecha</th>
-                              <th>Estado</th>
-                              <th>Registros</th>
-                              <th>Errores</th>
-                            </tr>
-                          </thead>
-
-                          <tbody>
-                            {[...historial]
-                              .sort(
-                                (a, b) =>
-                                  new Date(b.fin || b.inicio || b.fecha || 0) -
-                                  new Date(a.fin || a.inicio || a.fecha || 0)
-                              )
-                              .map((item, indice) => {
-                                const totalRegistros = Object.values(
-                                  item.registros || {}
-                                ).reduce(
-                                  (total, cantidad) =>
-                                    total + (Number(cantidad) || 0),
-                                  0
-                                );
-
-                                return (
-                                  <tr
-                                    key={
-                                      item.id ??
-                                      `${curso.id}-${indice}`
-                                    }
-                                    className={claseDeEstado(etiquetaEstado(item.estado))}
-                                  >
-                                    <td className="mono">
-                                      {formatearFecha(
-                                        item.fin || item.inicio || item.fecha
-                                      )}
-                                    </td>
-
-                                    <td>
-                                      <span className="historial-estado">
-                                        {etiquetaEstado(item.estado)}
-                                      </span>
-                                    </td>
-
-                                    <td className="mono">{totalRegistros}</td>
-
-                                    <td>
-                                      {item.errores?.length > 0 ? (
-                                        <ul>
-                                          {item.errores.map(
-                                            (error, errorIndice) => (
-                                              <li key={errorIndice}>
-                                                <code>
-                                                  {error.funcion || "Sistema"}:
-                                                </code>{" "}
-                                                {error.mensaje ||
-                                                  "Error sin descripción"}
-                                              </li>
-                                            )
-                                          )}
-                                        </ul>
-                                      ) : (
-                                        "Sin errores"
-                                      )}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </section>
-                )}
-              </article>
-            );
-          })}
-        </section>
-      )}
-    </main>
-  );
+                curso={curso}
+                resultado={resultadoPorCurso[curso.id]}
+                historial={historialPorCurso[curso.id]}
+                historialAbierto={historialAbiertoId === curso.id}
+                cargandoHistorial={cargandoHistorialId === curso.id}
+              />
+            ))}
+          </>
+        )}
+      </div>
+    </MarcoS2>
+  )
 }

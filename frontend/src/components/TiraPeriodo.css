@@ -1,0 +1,100 @@
+
+/* HU-19 · TA-19.2 · Tira del período */
+
+.hu19-periodo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--e-32);
+  padding: var(--e-24) 0;
+  border-top: var(--grosor-regla) solid var(--tinta);
+  border-bottom: var(--grosor-linea) solid var(--linea);
+  font-family: var(--fuente);
+}
+
+.hu19-periodo__parciales {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--e-32);
+}
+
+.hu19-periodo__parcial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-16);
+}
+
+.hu19-periodo__parcial h2 {
+  margin: 0;
+  font-size: var(--fs-12);
+  font-weight: var(--peso-etiqueta);
+  text-transform: uppercase;
+  letter-spacing: var(--letras-encabezado);
+  color: var(--tinta-2);
+}
+
+.hu19-periodo__unidades {
+  display: flex;
+  gap: var(--e-8);
+}
+
+.hu19-unidad {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--e-8);
+  min-width: var(--e-64);
+  padding: var(--e-16);
+  border: var(--grosor-linea) solid var(--tinta);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  color: var(--tinta);
+}
+
+.hu19-unidad strong {
+  font-size: var(--fs-16);
+  font-weight: var(--peso-titulo);
+}
+
+.hu19-unidad__avance {
+  font-size: var(--fs-12);
+  font-variant-numeric: tabular-nums;
+}
+
+.hu19-unidad--completa {
+  background: var(--tinta);
+  color: var(--fondo);
+}
+
+.hu19-unidad--pendiente {
+  border-color: var(--tinta);
+}
+
+.hu19-unidad--sin-datos {
+  border-color: var(--linea);
+  color: var(--neutro);
+}
+
+.hu19-periodo__sincronizacion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--e-8);
+  min-width: var(--ancho-lateral);
+}
+
+.hu19-periodo__sincronizacion > span:first-child {
+  font-size: var(--fs-12);
+  font-weight: var(--peso-etiqueta);
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+
+.hu19-periodo__fecha {
+  font-size: var(--fs-12);
+  color: var(--tinta-2);
+  font-variant-numeric: tabular-nums;
+}

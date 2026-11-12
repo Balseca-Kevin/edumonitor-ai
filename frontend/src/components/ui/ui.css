@@ -1,0 +1,274 @@
+
+/* HU-19 · Componentes base del sistema de diseño */
+
+.ui-button,
+.ui-input {
+  font-family: var(--fuente);
+  font-size: var(--fs-16);
+  font-weight: var(--peso-etiqueta);
+  border-radius: var(--radio);
+  transition:
+    background-color var(--duracion),
+    border-color var(--duracion),
+    color var(--duracion);
+}
+
+/* Botones */
+
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-8);
+  min-height: var(--e-48);
+  padding: var(--e-8) var(--e-24);
+  border: var(--grosor-linea) solid var(--tinta);
+  cursor: pointer;
+}
+
+.ui-button--primary {
+  background: var(--tinta);
+  color: var(--fondo);
+}
+
+.ui-button--primary:hover:not(:disabled) {
+  background: var(--acento);
+  border-color: var(--acento);
+}
+
+.ui-button--secondary {
+  background: var(--fondo);
+  color: var(--tinta);
+  border-color: var(--linea);
+}
+
+.ui-button--secondary:hover:not(:disabled) {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+
+.ui-button--danger {
+  background: var(--error);
+  color: var(--fondo);
+  border-color: var(--error);
+}
+
+.ui-button--small {
+  min-height: var(--e-32);
+  padding: var(--e-4) var(--e-16);
+  font-size: var(--fs-14);
+}
+
+.ui-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ui-button:focus-visible,
+.ui-input:focus-visible {
+  outline: var(--grosor-regla) solid var(--acento);
+  outline-offset: var(--grosor-regla);
+  box-shadow: none;
+}
+
+/* Campos */
+
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-8);
+  width: 100%;
+}
+
+.ui-field__label {
+  margin: 0;
+  color: var(--tinta);
+  font-size: var(--fs-14);
+  font-weight: var(--peso-etiqueta);
+}
+
+.ui-input {
+  width: 100%;
+  min-height: var(--e-48);
+  padding: var(--e-8) var(--e-16);
+  background: var(--fondo);
+  border: var(--grosor-linea) solid var(--linea);
+  color: var(--tinta);
+}
+
+.ui-input:hover:not(:disabled) {
+  border-color: var(--acento);
+}
+
+.ui-input--error {
+  border-color: var(--error);
+}
+
+.ui-field__helper,
+.ui-field__error {
+  margin: 0;
+  font-size: var(--fs-12);
+  line-height: var(--interlineado);
+}
+
+.ui-field__helper {
+  color: var(--tinta-2);
+}
+
+.ui-field__error {
+  color: var(--error);
+}
+
+
+/* HU-19 · Tarjetas */
+
+.ui-card {
+  border: var(--grosor-linea) solid var(--linea);
+  border-radius: var(--radio);
+  padding: var(--e-24);
+  background: var(--fondo);
+  color: var(--tinta);
+}
+
+.ui-card__title {
+  margin: 0 0 var(--e-16);
+  padding-top: var(--e-8);
+  border-top: var(--grosor-regla) solid var(--tinta);
+  font-family: var(--fuente);
+  font-size: var(--fs-20);
+  font-weight: var(--peso-titulo);
+  color: var(--tinta);
+}
+
+.ui-card__content {
+  font-size: var(--fs-16);
+  line-height: var(--interlineado);
+}
+
+/* HU-19 · Insignias de estado */
+
+.ui-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-8);
+  font-family: var(--fuente);
+  font-size: var(--fs-12);
+  font-weight: var(--peso-etiqueta);
+}
+
+.ui-status__dot {
+  width: var(--e-8);
+  height: var(--e-8);
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ui-status--success {
+  color: var(--ok);
+}
+
+.ui-status--warning {
+  color: var(--atencion);
+}
+
+.ui-status--error {
+  color: var(--error);
+}
+
+.ui-status--neutral {
+  color: var(--neutro);
+}
+
+/* HU-19 · Avisos */
+
+.ui-alert {
+  padding: var(--e-16);
+  border: var(--grosor-linea) solid var(--linea);
+  border-left: var(--grosor-regla) solid currentColor;
+  background: var(--fondo);
+  font-family: var(--fuente);
+  font-size: var(--fs-14);
+  line-height: var(--interlineado);
+}
+
+.ui-alert--info {
+  color: var(--tinta-2);
+}
+
+.ui-alert--success {
+  color: var(--ok);
+}
+
+.ui-alert--warning {
+  color: var(--atencion);
+}
+
+.ui-alert--error {
+  color: var(--error);
+}
+
+.ui-alert__title {
+  display: block;
+  margin-bottom: var(--e-8);
+  font-weight: var(--peso-titulo);
+}
+
+.ui-alert__content {
+  color: var(--tinta);
+}
+
+/* HU-19 · Tablas */
+
+.ui-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border: var(--grosor-linea) solid var(--linea);
+}
+
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--fuente);
+  font-size: var(--fs-14);
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.ui-table caption {
+  padding: var(--e-16);
+  text-align: left;
+  font-weight: var(--peso-titulo);
+}
+
+.ui-table th {
+  padding: var(--e-16);
+  border-bottom: var(--grosor-regla) solid var(--tinta);
+  color: var(--tinta-2);
+  font-size: var(--fs-12);
+  font-weight: var(--peso-etiqueta);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ui-table td {
+  padding: var(--e-16);
+  border-bottom: var(--grosor-linea) solid var(--linea);
+  vertical-align: middle;
+}
+
+.ui-table tbody tr:nth-child(even) {
+  background: var(--fondo-2);
+}
+
+.ui-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ui-table__empty {
+  padding: var(--e-32);
+  text-align: center;
+  color: var(--tinta-2);
+}

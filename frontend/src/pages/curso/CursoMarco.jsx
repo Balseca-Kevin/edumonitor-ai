@@ -1,69 +1,117 @@
+
 import { useEffect, useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 import MarcoS2 from '../../components/s2/MarcoS2'
 import PaginaError from '../../components/s2/PaginaError'
-import Estado from '../../components/s2/Estado'
-import { formatearFecha } from '../../components/s2/formato'
+import TiraPeriodo from '../../components/TiraPeriodo'
 import { obtenerCurso } from '../../services/cursos'
 import { describirError } from '../../services/errores'
 
 /**
- * Marco de las pantallas de un curso (/cursos/:id/*): cabecera con nombre corto, nombre y última sincronización.
- * Un curso ajeno (403) o una sesión vencida (401) se muestran en pantalla completa, sin barra lateral.
+ * HU-19 / TA-19.2
+ *
+ * Estructura de las pantallas de un curso:
+ * - Navegación lateral del Sprint 2.
+ * - Cabecera con código y nombre del curso.
+ * - Tira del período con U1, U2, U3 y U4.
+ * - Última sincronización y su estado.
+ * - Manejo de errores 401, 403 y 404.
  */
 export default function CursoMarco() {
   const { id } = useParams()
-  const [cargado, setCargado] = useState({ id: null, curso: null, error: null })
+
+  const [cargado, setCargado] = useState({
+    id: null,
+    curso: null,
+    error: null,
+  })
 
   useEffect(() => {
     let vigente = true
+
     obtenerCurso(id)
-      .then((datos) => vigente && setCargado({ id, curso: datos, error: null }))
-      .catch((e) => vigente && setCargado({ id, curso: null, error: describirError(e) }))
+      .then((datos) => {
+        if (vigente) {
+          setCargado({
+            id,
+            curso: datos,
+            error: null,
+          })
+        }
+      })
+      .catch((error) => {
+        if (vigente) {
+          setCargado({
+            id,
+            curso: null,
+            error: describirError(error),
+          })
+        }
+      })
+
     return () => {
       vigente = false
     }
   }, [id])
 
-  // Al cambiar de curso, lo cargado del curso anterior no se muestra.
-  const { curso, error } = cargado.id === id ? cargado : { curso: null, error: null }
+  // Evita mostrar información del curso anterior
+  // mientras se carga uno nuevo.
+  const { curso, error } =
+    cargado.id === id
+      ? cargado
+      : { curso: null, error: null }
 
-  if (error && ['sesion', 'acceso', 'no-existe'].includes(error.tipo)) {
+  // Errores de autorización y recursos inexistentes:
+  // pantalla completa, sin barra lateral.
+  if (
+    error &&
+    ['sesion', 'acceso', 'no-existe'].includes(error.tipo)
+  ) {
     return <PaginaError error={error} />
   }
-
-  const ultima = curso?.ultimaSincronizacion
 
   return (
     <MarcoS2 curso={curso ?? { id }}>
       {error && (
-        <div className="s2-aviso s2-aviso--error" role="alert">
+        <div
+          className="s2-aviso s2-aviso--error"
+          role="alert"
+        >
           <strong>{error.titulo}</strong>
           {error.detalle}
         </div>
       )}
 
-      {!curso && !error && <p className="s2-ayuda">Cargando el curso…</p>}
+      {!curso && !error && (
+        <p className="s2-ayuda">
+          Cargando el curso…
+        </p>
+      )}
 
       {curso && (
         <>
+          {/* Cabecera del curso */}
           <header className="s2-cabecera">
             <div>
-              <p className="s2-sobretitulo">{curso.nombreCorto}</p>
-              <h1 className="s2-titulo">{curso.nombre}</h1>
-            </div>
-            <div className="s2-cabecera-dato">
-              {ultima ? (
-                <>
-                  <span className="s2-num">Última sincronización: {formatearFecha(ultima.fecha)}</span>
-                  <br />
-                  <Estado estado={ultima.estado} />
-                </>
-              ) : (
-                <Estado estado="SIN_SINCRONIZAR" texto="Sin sincronizar" />
-              )}
+              <p className="s2-sobretitulo">
+                {curso.nombreCorto}
+              </p>
+
+              <h1 className="s2-titulo">
+                {curso.nombre}
+              </h1>
             </div>
           </header>
+
+          {/* Progreso de unidades y sincronización */}
+          <TiraPeriodo
+            cursoId={curso.id}
+            ultimaSincronizacion={
+              curso.ultimaSincronizacion
+            }
+          />
+
+          {/* Panel, Alertas o Asistente */}
           <Outlet context={{ curso }} />
         </>
       )}

@@ -1,38 +1,16 @@
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login, guardarSesion } from '../services/auth'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import Alert from '../components/ui/Alert'
+import './Login.css'
 
-// Ponderación UTA que dibuja la animación del panel institucional.
-const PONDERACION = [
-  { nombre: 'Exámenes', peso: 40 },
-  { nombre: 'Tareas', peso: 30 },
-  { nombre: 'APE', peso: 30 },
-]
-
-function LibroCalificaciones() {
-  return (
-    <div className="libro" aria-hidden="true">
-      <div className="libro-celdas">
-        {Array.from({ length: 24 }, (_, i) => (
-          <span key={i} style={{ '--i': i }} />
-        ))}
-      </div>
-
-      <div className="libro-barras">
-        {PONDERACION.map((categoria, i) => (
-          <div className="libro-barra" key={categoria.nombre} style={{ '--i': i, '--peso': categoria.peso }}>
-            <span className="libro-barra-nombre">{categoria.nombre}</span>
-            <span className="libro-barra-pista">
-              <span className="libro-barra-valor" />
-            </span>
-            <span className="libro-barra-peso mono">{categoria.peso} %</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
+/**
+ * HU-19 / TA-19.3
+ * Inicio de sesión con el sistema de diseño suizo.
+ */
 export default function Login() {
   const [usuario, setUsuario] = useState('')
   const [contrasena, setContrasena] = useState('')
@@ -44,6 +22,8 @@ export default function Login() {
   async function handleSubmit(event) {
     event.preventDefault()
 
+    if (cargando) return
+
     setError('')
     setCargando(true)
 
@@ -51,8 +31,13 @@ export default function Login() {
       const sesion = await login(usuario.trim(), contrasena)
 
       guardarSesion(sesion)
-      // El administrador entra a la configuración de Moodle; el docente, a sus cursos.
-      navigate(sesion.usuario?.rol === 'ADMIN' ? '/admin/moodle' : '/cursos')
+
+      navigate(
+        sesion.usuario?.rol === 'ADMIN'
+          ? '/admin/moodle'
+          : '/cursos',
+        { replace: true },
+      )
     } catch (err) {
       setError(
         err.response?.data?.title ||
@@ -66,66 +51,83 @@ export default function Login() {
   }
 
   return (
-    <main className="login-page">
-      <section className="login-panel">
-        <p className="login-panel-sello">UTA · FISEI · Software</p>
-        <p className="login-panel-marca">EduMonitor AI</p>
-        <p className="login-panel-valor">
-          Seguimiento académico con datos reales de tu aula virtual
-        </p>
-        <LibroCalificaciones />
-      </section>
-
-      <section className="login-form-area">
-        <div className="login-card">
-          <h1>Iniciar sesión</h1>
-
-          <p className="login-description">
-            Ingresa con tu usuario para consultar tus cursos.
+    <main className="hu19-login">
+      <section
+        className="hu19-login__identidad"
+        aria-label="Presentación de EduMonitor"
+      >
+        <div className="hu19-login__marca">
+          <p className="hu19-login__nombre">
+            EduMonitor
           </p>
 
-          <form onSubmit={handleSubmit}>
-            <label htmlFor="usuario">Usuario</label>
+          <p className="hu19-login__descripcion">
+            Seguimiento académico con datos reales
+            de tu aula virtual.
+          </p>
+        </div>
 
-            <input
+        <p className="hu19-login__institucion">
+          UTA · FISEI · Software
+        </p>
+      </section>
+
+      <section className="hu19-login__acceso">
+        <div className="hu19-login__formulario">
+          <div className="hu19-login__encabezado">
+            <h1>Iniciar sesión</h1>
+
+            <p>
+              Ingresa tus credenciales para consultar
+              tus cursos.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="hu19-login__campos"
+          >
+            <Input
               id="usuario"
               name="usuario"
+              label="Usuario"
               type="text"
               autoComplete="username"
               placeholder="Ingresa tu usuario"
               value={usuario}
               onChange={(event) => setUsuario(event.target.value)}
+              disabled={cargando}
               required
             />
 
-            <label htmlFor="contrasena">Contraseña</label>
-
-            <input
+            <Input
               id="contrasena"
               name="contrasena"
+              label="Contraseña"
               type="password"
               autoComplete="current-password"
               placeholder="Ingresa tu contraseña"
               value={contrasena}
               onChange={(event) => setContrasena(event.target.value)}
+              disabled={cargando}
               required
             />
 
             {error && (
-              <p className="form-error" role="alert">
+              <Alert variant="error">
                 {error}
-              </p>
+              </Alert>
             )}
 
-            <button type="submit" className="boton-primario" disabled={cargando} aria-busy={cargando}>
-              {cargando && <span className="boton-indicador" aria-hidden="true" />}
-              {cargando ? 'Iniciando sesión...' : 'Iniciar sesión'}
-            </button>
+            <Button
+              type="submit"
+              loading={cargando}
+              disabled={!usuario.trim() || !contrasena}
+              className="hu19-login__boton"
+            >
+              Iniciar sesión
+            </Button>
           </form>
-
-          <p className="login-footer">
-            EduMonitor AI · Monitoreo académico · Metodologías Ágiles 2026
-          </p>
         </div>
       </section>
     </main>
