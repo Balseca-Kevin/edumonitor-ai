@@ -28,13 +28,14 @@ export function formatearPorcentaje(valor) {
   return `${formatearNumero(Number(valor) * 100, 0)} %`
 }
 
-/** Tono del punto de color de cada estado (diseno.md): OK y COMPLETADA en verde, PARCIAL en ámbar, FALLIDA y ERROR en rojo. */
+/** Tono del punto de color de cada estado (diseno.md): OK y COMPLETADA en verde, PARCIAL y ACTIVA («Requiere atención») en ámbar, FALLIDA y ERROR en rojo. */
 export function tonoDeEstado(estado) {
   switch (String(estado ?? '').toUpperCase()) {
     case 'OK':
     case 'COMPLETADA':
       return 'ok'
     case 'PARCIAL':
+    case 'ACTIVA':
       return 'atencion'
     case 'FALLIDA':
     case 'ERROR':

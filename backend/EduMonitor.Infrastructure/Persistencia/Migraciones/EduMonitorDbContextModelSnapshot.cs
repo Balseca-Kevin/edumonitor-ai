@@ -117,8 +117,14 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTimeOffset>("Generada")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<int>("ReglaId")
                         .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("Revisada")
+                        .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
 
