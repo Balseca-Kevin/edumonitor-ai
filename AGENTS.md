@@ -18,4 +18,4 @@ Reglas que no se negocian:
 - Secretos solo en variables de entorno. Nunca leer, crear ni modificar `.env`.
 - Cada cambio de comportamiento con pruebas (xUnit, Vitest o pytest).
 - Commits: Conventional Commits en español, `tipo(ámbito): descripción`, pie `Refs: SCRUM-n`.
-- Sprint activo: 2. No construir todavía HU-08 (mapeo temático), HU-10 (ficha del estudiante), HU-11 (desempeño por tema), HU-15 (tareas de refuerzo), HU-16 (informe), HU-17 (auditoría) ni HU-18 (cierre).
+- Sprint activo: 2, hasta la Review del jueves 12 nov 2026; el siguiente es el 3. No construir todavía HU-08 (mapeo temático), HU-10 (ficha del estudiante), HU-11 (desempeño por tema), HU-15 (tareas de refuerzo), HU-16 (informe), HU-17 (auditoría) ni HU-18 (cierre).

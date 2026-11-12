@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Literal
 from datetime import datetime
 
@@ -25,6 +25,15 @@ class ParametrosAlertas(BaseModel):
 
 class ParametrosCalificaciones(ParametrosAlertas):
     estudianteId: Optional[int] = Field(default=None, gt=0, strict=True)
+    nombre: Optional[str] = Field(default=None, min_length=2, max_length=80, strict=True)
+
+    @field_validator("nombre", mode="before")
+    @classmethod
+    def vacio_es_ninguno(cls, valor):
+        """El modelo manda nombre="" en las preguntas de todo el curso: se trata como si no viniera."""
+        if isinstance(valor, str) and not valor.strip():
+            return None
+        return valor.strip() if isinstance(valor, str) else valor
 
 class ChatPeticion(BaseModel):
     mensaje: str = Field(min_length=1)
