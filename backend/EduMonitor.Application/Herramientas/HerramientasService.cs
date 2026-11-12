@@ -18,7 +18,7 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
     /// Null si el curso no existe; <see cref="ResultadoCalificaciones.EstudianteNoMatriculado"/> si se pidió un estudiante que no está en el curso.
     /// Un curso sin sincronizar responde con la lista vacía y <c>ultimaSincronizacion</c> en null.
     /// </summary>
-    public async Task<ResultadoCalificaciones?> CalificacionesAsync(int cursoId, int? estudianteId, CancellationToken ct = default)
+    public async Task<ResultadoCalificaciones?> CalificacionesAsync(int cursoId, int? estudianteId, string? nombre = null, CancellationToken ct = default)
     {
         var curso = await db.Cursos.AsNoTracking().SingleOrDefaultAsync(c => c.Id == cursoId, ct);
         if (curso is null)
@@ -35,11 +35,24 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
         }
 
         var calculados = CalculadoraIndicadores.Calcular(datos).Estudiantes.ToDictionary(e => e.Id);
-        if (estudianteId is null)
+
+        // Qué estudiantes entran: uno por id, los que coinciden con el nombre, o todo el curso.
+        var buscaPorNombre = estudianteId is null && !string.IsNullOrWhiteSpace(nombre);
+        var estudiantes = estudianteId is not null
+            ? datos.Estudiantes.Where(e => e.Id == estudianteId).ToList()
+            : buscaPorNombre
+                ? datos.Estudiantes.Where(e => CoincideNombre(nombre!, e.Nombre, e.Apellido)).ToList()
+                : datos.Estudiantes.ToList();
+        if (estudiantes.Count == 0 && (estudianteId is not null || buscaPorNombre))
         {
-            // De menor a mayor promedio (sin promedio al final): los que están bajo un umbral quedan juntos al principio y el
-            // modelo no tiene que buscarlos entre todas las filas.
-            var resumen = datos.Estudiantes
+            return new ResultadoCalificaciones(null, EstudianteNoMatriculado: true);
+        }
+
+        // Todo el curso, o varias coincidencias de nombre: el resumen, de menor a mayor promedio (sin promedio al final), para que
+        // los que están bajo un umbral queden juntos al principio y el modelo no tenga que buscarlos entre todas las filas.
+        if (estudianteId is null && (!buscaPorNombre || estudiantes.Count > 1))
+        {
+            var resumen = estudiantes
                 .Where(e => calculados.ContainsKey(e.Id))
                 .Select(e => calculados[e.Id])
                 .OrderBy(e => e.PromedioPonderado is null)
@@ -47,13 +60,7 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
                 .ThenBy(e => e.Apellido)
                 .Select(e => (object)new EstudianteResumenCalificacionesDto(e.Id, e.Nombre, e.Apellido, e.PromedioPonderado, e.Parcial, e.Notas))
                 .ToList();
-            return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, resumen));
-        }
-
-        var estudiantes = datos.Estudiantes.Where(e => e.Id == estudianteId).ToList();
-        if (estudiantes.Count == 0)
-        {
-            return new ResultadoCalificaciones(null, EstudianteNoMatriculado: true);
+            return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, resumen), Coincidencias: estudiantes.Count);
         }
 
         var promedios = calculados.ToDictionary(e => e.Key, e => e.Value.PromedioPonderado);
@@ -78,11 +85,24 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
                     .ToList()))
             .ToList();
 
-        return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, respuesta));
+        return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, respuesta), Coincidencias: 1);
+    }
+
+    /// <summary>
+    /// Busca por nombre o apellido sin distinguir tildes ni mayúsculas: cada palabra de la búsqueda tiene que ser el inicio de alguna
+    /// palabra del nombre completo («ana» encuentra a Ana Acosta pero no a Adriana; «espinoza» y «elena espi» encuentran a Elena Espinoza).
+    /// </summary>
+    public static bool CoincideNombre(string busqueda, string nombre, string apellido)
+    {
+        var palabrasBuscadas = (CalculadoraIndicadores.ClaveCategoria(busqueda) ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var palabrasDelNombre = (CalculadoraIndicadores.ClaveCategoria($"{nombre} {apellido}") ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return palabrasBuscadas.Length > 0
+            && palabrasBuscadas.All(buscada => palabrasDelNombre.Any(palabra => palabra.StartsWith(buscada, StringComparison.Ordinal)));
     }
 }
 
-public sealed record ResultadoCalificaciones(RespuestaCalificacionesHerramienta? Respuesta, bool EstudianteNoMatriculado = false);
+/// <summary><see cref="Coincidencias"/>: estudiantes que entraron en la respuesta (1 cuando va el detalle de uno solo).</summary>
+public sealed record ResultadoCalificaciones(RespuestaCalificacionesHerramienta? Respuesta, bool EstudianteNoMatriculado = false, int Coincidencias = 0);
 
 /// <summary>
 /// Respuesta de <c>GET /api/tools/calificaciones</c> (herramienta <c>obtener_calificaciones</c>). Cada elemento de
