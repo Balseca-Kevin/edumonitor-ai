@@ -1,4 +1,5 @@
 using EduMonitor.Application.Abstractions;
+using EduMonitor.Application.Alertas;
 using EduMonitor.Application.Indicadores;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,9 +9,61 @@ namespace EduMonitor.Application.Herramientas;
 /// Datos de las herramientas del agente (HU-13). Lee lo guardado en EduMonitorDB; nunca llama a Moodle.
 /// La autorización por curso ya la resolvió la política CursoAutorizado.
 /// </summary>
-public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorService indicadores, TimeProvider reloj)
+public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorService indicadores, AlertasService alertas, TimeProvider reloj)
 {
     public const string HerramientaCalificaciones = "obtener_calificaciones";
+    public const string HerramientaAlertas = "identificar_alertas";
+
+    /// <summary>
+    /// TA-13.2 · Alertas ACTIVAS del curso, ya calculadas por el backend (HU-12), con el mismo objeto de
+    /// GET /api/cursos/{id}/alertas. Null si el curso no existe. El agente solo las lee: nunca calcula alertas.
+    /// </summary>
+    public async Task<RespuestaAlertasHerramienta?> AlertasAsync(int cursoId, CancellationToken ct = default)
+    {
+        var curso = await db.Cursos.AsNoTracking().SingleOrDefaultAsync(c => c.Id == cursoId, ct);
+        if (curso is null)
+        {
+            return null;
+        }
+
+        var consulta = await alertas.ObtenerAlertasAsync(cursoId, EstadosAlerta.Activa, ct);
+        // Forma corta para el contexto del modelo: sin titulo, estado, generada ni revisada, que son iguales en todas; con el
+        // nombre de la regla para que la respuesta diga «Promedio bajo» y no un código.
+        var lista = consulta.Alertas
+            .Select(a => new AlertaHerramientaDto(a.Id, a.Regla, DefinicionesRegla.PorCodigo(a.Regla)?.Nombre ?? a.Regla, a.Estudiante, EvidenciaCorta(a.Regla, a.Evidencia)))
+            .ToList();
+        return new RespuestaAlertasHerramienta(HerramientaAlertas, reloj.GetLocalNow(), new CursoAlertasHerramientaDto(curso.Id, curso.NombreCorto), lista);
+    }
+
+    /// <summary>
+    /// Evidencia corta para el agente (la pantalla «Alertas» sigue con la completa): atrasos sin fechas límite, descenso sin la
+    /// lista de notas anteriores. Promedio bajo queda igual. Así 16 alertas caben en el contexto y el modelo responde a tiempo.
+    /// </summary>
+    public static System.Text.Json.JsonElement EvidenciaCorta(string regla, System.Text.Json.JsonElement evidencia)
+    {
+        static System.Text.Json.JsonElement? Campo(System.Text.Json.JsonElement e, string nombre) =>
+            e.ValueKind == System.Text.Json.JsonValueKind.Object && e.TryGetProperty(nombre, out var valor) ? valor : null;
+
+        object? corta = regla.ToUpperInvariant() switch
+        {
+            DefinicionesRegla.CodigoR2 when Campo(evidencia, "actividades") is { ValueKind: System.Text.Json.JsonValueKind.Array } actividades => new
+            {
+                actividades = actividades.EnumerateArray()
+                    .Select(a => Campo(a, "nombre")?.GetString())
+                    .Where(n => n is not null)
+                    .ToList(),
+                umbral = Campo(evidencia, "umbral"),
+            },
+            DefinicionesRegla.CodigoR1 => new
+            {
+                ultimas = Campo(evidencia, "ultimas"),
+                diferencia = Campo(evidencia, "diferencia"),
+                umbral = Campo(evidencia, "umbral"),
+            },
+            _ => null,
+        };
+        return corta is null ? evidencia : System.Text.Json.JsonSerializer.SerializeToElement(corta);
+    }
 
     /// <summary>
     /// TA-13.1 · Sin <paramref name="estudianteId"/>: resumen por estudiante (promedio ponderado, parcial y conteos de notas), que cabe
@@ -116,6 +169,14 @@ public sealed record RespuestaCalificacionesHerramienta(
     IReadOnlyList<object> Estudiantes);
 
 public sealed record CursoHerramientaDto(int Id, string NombreCorto, DateTimeOffset? UltimaSincronizacion);
+
+/// <summary>Respuesta de <c>GET /api/tools/alertas</c> (herramienta <c>identificar_alertas</c>, docs/contratos-api.md).</summary>
+public sealed record RespuestaAlertasHerramienta(string Herramienta, DateTimeOffset Generado, CursoAlertasHerramientaDto Curso, IReadOnlyList<AlertaHerramientaDto> Alertas);
+
+/// <summary>Alerta activa para el agente: la de GET /api/cursos/{id}/alertas sin los campos que son iguales en todas.</summary>
+public sealed record AlertaHerramientaDto(int Id, string Regla, string NombreRegla, EstudianteAlertaDto Estudiante, System.Text.Json.JsonElement Evidencia);
+
+public sealed record CursoAlertasHerramientaDto(int Id, string NombreCorto);
 
 /// <summary>Resumen de un estudiante: los mismos promedio, marca de parcial y conteos que el panel de indicadores.</summary>
 public sealed record EstudianteResumenCalificacionesDto(

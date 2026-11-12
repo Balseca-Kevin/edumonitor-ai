@@ -91,6 +91,48 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
         }
     }
 
+    /// <summary>
+    /// TA-13.2 · Alertas activas del curso para la herramienta identificar_alertas. 400 sin <c>cursoId</c>; 403 si el curso no es
+    /// del docente; 404 si no existe.
+    /// </summary>
+    [HttpGet("alertas")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<RespuestaAlertasHerramienta>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Alertas([FromQuery] int? cursoId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
+        }
+
+        try
+        {
+            var respuesta = await herramientas.AlertasAsync(cursoId.Value, ct);
+            if (respuesta is null)
+            {
+                Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El curso {cursoId} no existe.");
+            }
+
+            Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "OK", respuesta.Alertas.Count);
+            return Ok(respuesta);
+        }
+        catch (Exception)
+        {
+            Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "ERROR", 0);
+            throw;
+        }
+    }
+
     // Traza de cada llamada en el log de la API, sin el token. Las trazas que ve el docente se guardan con el chat (TRAZA_HERRAMIENTA, HU-14).
     private void Registrar(string herramienta, int docenteId, int? cursoId, string resultado, int cantidad) =>
         logger.LogInformation(
