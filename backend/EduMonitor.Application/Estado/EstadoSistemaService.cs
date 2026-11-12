@@ -95,7 +95,7 @@ public sealed class EstadoSistemaService(IEduMonitorDbContext db, IMoodleClient 
     private static string Version() =>
         (Assembly.GetEntryAssembly() ?? typeof(EstadoSistemaService).Assembly)
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
-        ?? "0.2.0";
+        ?? "0.2.1";
 }
 
 /// <summary>Respuesta de <c>GET /api/admin/estado</c> (docs/contratos-api.md, HU-20).</summary>
