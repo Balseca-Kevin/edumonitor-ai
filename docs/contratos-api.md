@@ -425,6 +425,35 @@ La conversación se guarda igual, para que aparezca en el historial.
 
 Requiere migración: `Conversacion` agrega `Pregunta`, `Respuesta`, `Modelo` y `DuracionMs`; `TrazaHerramienta` agrega `Estado`, `DuracionMs` y `Fecha`.
 
+## Historial del asistente (HU-19, 12 nov 2026)
+
+La barra lateral del asistente muestra las conversaciones guardadas en la base. Cada docente ve solo las suyas; un ADMIN también ve solo las suyas en la lista, pero puede abrir cualquiera.
+
+### GET /api/agente/conversaciones?cursoId=1 · DOCENTE
+
+De la más reciente a la más antigua. 400 sin `cursoId`; 403 si el curso es ajeno; 404 si no existe.
+
+```json
+[
+  { "id": 44, "fecha": "2026-11-11T21:45:00-05:00", "pregunta": "¿Quiénes tienen promedio bajo 7?", "modelo": "qwen2.5:7b", "duracionMs": 15400, "herramientas": 1 }
+]
+```
+`herramientas` es cuántas se usaron. `modelo` es `"ninguno"` cuando la API respondió sola (otro curso en la pregunta).
+
+### GET /api/agente/conversaciones/{id} · DOCENTE
+
+La misma forma de `POST /api/agente/chat` más `cursoId`, `fecha` y `pregunta`. 403 si el curso es ajeno o la conversación es de otro docente; 404 si no existe.
+
+```json
+{
+  "id": 44, "cursoId": 1, "fecha": "2026-11-11T21:45:00-05:00",
+  "pregunta": "¿Quiénes tienen promedio bajo 7?",
+  "respuesta": "Los estudiantes con promedio bajo 7 son: …",
+  "modelo": "qwen2.5:7b", "duracionMs": 15400,
+  "herramientas": [ { "nombre": "obtener_calificaciones", "parametros": { "cursoId": 1 }, "estado": "OK", "duracionMs": 99 } ]
+}
+```
+
 ## Servicio de agente (HU-13, HU-14)
 
 Solo lo llama la API, por la red interna de Docker (`http://agent:8000`). No se publica puerto.
