@@ -1,72 +1,67 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useParams } from 'react-router-dom'
-import MarcoS2 from '../../components/s2/MarcoS2'
-import PaginaError from '../../components/s2/PaginaError'
-import Estado from '../../components/s2/Estado'
-import { formatearFecha } from '../../components/s2/formato'
+import { Outlet, useLocation, useParams } from 'react-router-dom'
+import Marco from '../../components/Marco'
+import PaginaError from '../../components/PaginaError'
+import TiraPeriodo from '../../components/TiraPeriodo'
 import { obtenerCurso } from '../../services/cursos'
 import { describirError } from '../../services/errores'
 
+function CabeceraCurso({ curso }) {
+  return (
+    <header className="cabecera-curso">
+      <div className="entra" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--e-6)' }}>
+        <span className="mono">
+          {curso.nombreCorto}
+          {curso.periodo ? ` · ${curso.periodo}` : ''}
+        </span>
+        <h1>{curso.nombre}</h1>
+      </div>
+      <TiraPeriodo cursoId={curso.id} ultimaSincronizacion={curso.ultimaSincronizacion} />
+    </header>
+  )
+}
+
 /**
- * Marco de las pantallas de un curso (/cursos/:id/*): cabecera con nombre corto, nombre y última sincronización.
- * Un curso ajeno (403) o una sesión vencida (401) se muestran en pantalla completa, sin barra lateral.
+ * HU-19 · TA-19.2 · Estructura de las pantallas de un curso (diseño D): cabecera oscura con el código, el nombre y la tira del
+ * período; debajo, la barra lateral con Panel, Alertas y Asistente. El Asistente es un chat de página completa con su propia
+ * barra (mockup MK-14). 401, 403 y 404 se ven en pantalla completa, sin barra lateral.
  */
 export default function CursoMarco() {
   const { id } = useParams()
+  const { pathname } = useLocation()
   const [cargado, setCargado] = useState({ id: null, curso: null, error: null })
 
   useEffect(() => {
     let vigente = true
     obtenerCurso(id)
       .then((datos) => vigente && setCargado({ id, curso: datos, error: null }))
-      .catch((e) => vigente && setCargado({ id, curso: null, error: describirError(e) }))
+      .catch((error) => vigente && setCargado({ id, curso: null, error: describirError(error) }))
     return () => {
       vigente = false
     }
   }, [id])
 
-  // Al cambiar de curso, lo cargado del curso anterior no se muestra.
+  // Lo que llegó de otro curso no se muestra mientras carga el nuevo.
   const { curso, error } = cargado.id === id ? cargado : { curso: null, error: null }
 
   if (error && ['sesion', 'acceso', 'no-existe'].includes(error.tipo)) {
     return <PaginaError error={error} />
   }
 
-  const ultima = curso?.ultimaSincronizacion
+  if (curso && pathname.endsWith('/asistente')) {
+    return <Outlet context={{ curso }} />
+  }
 
   return (
-    <MarcoS2 curso={curso ?? { id }}>
+    <Marco curso={curso ?? { id }} cabecera={curso ? <CabeceraCurso curso={curso} /> : null}>
       {error && (
-        <div className="s2-aviso s2-aviso--error" role="alert">
+        <div className="aviso aviso--error" role="alert">
           <strong>{error.titulo}</strong>
           {error.detalle}
         </div>
       )}
-
-      {!curso && !error && <p className="s2-ayuda">Cargando el curso…</p>}
-
-      {curso && (
-        <>
-          <header className="s2-cabecera">
-            <div>
-              <p className="s2-sobretitulo">{curso.nombreCorto}</p>
-              <h1 className="s2-titulo">{curso.nombre}</h1>
-            </div>
-            <div className="s2-cabecera-dato">
-              {ultima ? (
-                <>
-                  <span className="s2-num">Última sincronización: {formatearFecha(ultima.fecha)}</span>
-                  <br />
-                  <Estado estado={ultima.estado} />
-                </>
-              ) : (
-                <Estado estado="SIN_SINCRONIZAR" texto="Sin sincronizar" />
-              )}
-            </div>
-          </header>
-          <Outlet context={{ curso }} />
-        </>
-      )}
-    </MarcoS2>
+      {!curso && !error && <p className="ayuda">Cargando el curso…</p>}
+      {curso && <Outlet context={{ curso }} />}
+    </Marco>
   )
 }

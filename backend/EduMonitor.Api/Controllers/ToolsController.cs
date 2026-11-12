@@ -40,8 +40,9 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
     }
 
     /// <summary>
-    /// TA-13.1 · Notas y estados por actividad de un curso, o de un estudiante con <c>estudianteId</c>.
-    /// 400 sin <c>cursoId</c>; 403 si el curso no es del docente; 404 si el curso no existe o el estudiante no está matriculado.
+    /// TA-13.1 · Resumen por estudiante de un curso; detalle por actividad de un estudiante con <c>estudianteId</c> o con <c>nombre</c>
+    /// (nombre o apellido, sin tildes ni mayúsculas). Varias coincidencias de nombre devuelven la lista corta para elegir.
+    /// 400 sin <c>cursoId</c>; 403 si el curso no es del docente; 404 si el curso no existe o ningún estudiante coincide.
     /// </summary>
     [HttpGet("calificaciones")]
     [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
@@ -49,7 +50,7 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Calificaciones([FromQuery] int? cursoId, [FromQuery] int? estudianteId, CancellationToken ct)
+    public async Task<IActionResult> Calificaciones([FromQuery] int? cursoId, [FromQuery] int? estudianteId, [FromQuery] string? nombre, CancellationToken ct)
     {
         var usuario = await User.ResolverUsuarioAsync(cursos, ct);
         if (usuario is null)
@@ -64,7 +65,7 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
 
         try
         {
-            var resultado = await herramientas.CalificacionesAsync(cursoId.Value, estudianteId, ct);
+            var resultado = await herramientas.CalificacionesAsync(cursoId.Value, estudianteId, nombre, ct);
             if (resultado is null)
             {
                 Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
@@ -74,7 +75,10 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
             if (resultado.EstudianteNoMatriculado)
             {
                 Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
-                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El estudiante {estudianteId} no está matriculado en el curso {cursoId}.");
+                var detalle = estudianteId is not null
+                    ? $"El estudiante {estudianteId} no está matriculado en el curso {cursoId}."
+                    : $"Ningún estudiante del curso {cursoId} se llama «{nombre?.Trim()}».";
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: detalle);
             }
 
             Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "OK", resultado.Respuesta!.Estudiantes.Count);
@@ -83,6 +87,48 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
         catch (Exception)
         {
             Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "ERROR", 0);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// TA-13.2 · Alertas activas del curso para la herramienta identificar_alertas. 400 sin <c>cursoId</c>; 403 si el curso no es
+    /// del docente; 404 si no existe.
+    /// </summary>
+    [HttpGet("alertas")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<RespuestaAlertasHerramienta>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Alertas([FromQuery] int? cursoId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
+        }
+
+        try
+        {
+            var respuesta = await herramientas.AlertasAsync(cursoId.Value, ct);
+            if (respuesta is null)
+            {
+                Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El curso {cursoId} no existe.");
+            }
+
+            Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "OK", respuesta.Alertas.Count);
+            return Ok(respuesta);
+        }
+        catch (Exception)
+        {
+            Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "ERROR", 0);
             throw;
         }
     }

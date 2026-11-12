@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { cerrarSesion } from '../services/auth'
+import Marco from '../components/Marco'
+import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import Card from '../components/ui/Card'
+import Table from '../components/ui/Table'
+import StatusBadge from '../components/ui/StatusBadge'
+import Alert from '../components/ui/Alert'
 import {
   guardarConfiguracion,
   obtenerConfiguracion,
@@ -16,17 +22,33 @@ function formatearFecha(fecha) {
 }
 
 function mensajeDeError(err) {
-  if (err.response?.status === 403) return 'Solo un administrador puede configurar Moodle.'
+  if (err?.response?.status === 403) {
+    return 'Solo un administrador puede configurar Moodle.'
+  }
   return (
-    err.response?.data?.detail ||
-    err.response?.data?.title ||
-    (err.response
+    err?.response?.data?.detail ||
+    err?.response?.data?.title ||
+    (err?.response
       ? 'No se pudo completar la operación.'
       : 'No se pudo conectar con el servidor. Intenta de nuevo.')
   )
 }
 
-/** HU-02 · Configuración y prueba de la conexión con Moodle (MK-02). Solo ADMIN. */
+const columnasFunciones = [
+  { key: 'nombre', label: 'Función del servicio web', render: (nombre) => <code>{nombre}</code> },
+  {
+    key: 'disponible',
+    label: 'Disponibilidad',
+    render: (disponible) => (
+      <StatusBadge
+        status={disponible ? 'OK' : 'NO_DISPONIBLE'}
+        label={disponible ? 'Disponible' : 'No disponible'}
+      />
+    ),
+  },
+]
+
+/** HU-02 + HU-19 / TA-19.4: interfaz de configuración Moodle para ADMIN. */
 export default function ConfiguracionMoodle() {
   const navigate = useNavigate()
   const [configuracion, setConfiguracion] = useState(null)
@@ -40,33 +62,31 @@ export default function ConfiguracionMoodle() {
 
   useEffect(() => {
     let activo = true
-
     obtenerConfiguracion()
       .then((datos) => {
-        if (activo) {
-          setConfiguracion(datos)
-          setUrl(datos.url || '')
-        }
+        if (!activo) return
+        setConfiguracion(datos)
+        setUrl(datos?.url || '')
       })
       .catch((err) => {
         if (activo) setError(mensajeDeError(err))
       })
-
-    return () => {
-      activo = false
-    }
+    return () => { activo = false }
   }, [])
 
   async function manejarGuardar(event) {
     event.preventDefault()
+    if (guardando || probando) return
     setError('')
     setAviso('')
     setGuardando(true)
-
     try {
       await guardarConfiguracion(url.trim(), token.trim())
       setToken('')
-      setConfiguracion(await obtenerConfiguracion())
+      const actualizada = await obtenerConfiguracion()
+      setConfiguracion(actualizada)
+      setUrl(actualizada?.url || url.trim())
+      setPrueba(null) // El resultado anterior ya no valida una configuración modificada.
       setAviso('Configuración guardada.')
     } catch (err) {
       setError(mensajeDeError(err))
@@ -76,9 +96,11 @@ export default function ConfiguracionMoodle() {
   }
 
   async function manejarProbar() {
+    if (probando || guardando) return
     setError('')
+    setAviso('')
+    setPrueba(null)
     setProbando(true)
-
     try {
       setPrueba(await probarConexion())
     } catch (err) {
@@ -88,142 +110,121 @@ export default function ConfiguracionMoodle() {
     }
   }
 
-  function manejarCierreSesion() {
-    cerrarSesion()
-    navigate('/login', { replace: true })
-  }
-
-  const noDisponibles = prueba?.funciones?.filter((f) => !f.disponible) ?? []
+  const funciones = Array.isArray(prueba?.funciones) ? prueba.funciones : []
+  const disponibles = funciones.filter((funcion) => funcion.disponible).length
+  const noDisponibles = funciones.filter((funcion) => !funcion.disponible)
 
   return (
-    <main className="config-page">
-      <header className="courses-header">
-        <div>
-          <p className="courses-eyebrow">Administración · Aula virtual</p>
-          <h1>Configuración de la conexión con Moodle</h1>
-          <p>Última actualización: {formatearFecha(configuracion?.actualizado)}</p>
-        </div>
-        <div className="courses-user">
-          <button className="boton-secundario" type="button" onClick={() => navigate('/admin/estado')}>
+    <Marco>
+      <div className="hu19-config">
+        <header className="hu19-config__cabecera">
+          <div>
+            <p className="hu19-config__sobretitulo">Administración · Aula virtual</p>
+            <h1>Configuración de la conexión con Moodle</h1>
+            <p className="hu19-config__meta">
+              Última actualización: {formatearFecha(configuracion?.actualizado)}
+            </p>
+          </div>
+          <Button variant="secondary" onClick={() => navigate('/admin/estado')}>
             Estado del sistema
-          </button>
-          <button className="logout-button" type="button" onClick={manejarCierreSesion}>
-            Cerrar sesión
-          </button>
-        </div>
-      </header>
+          </Button>
+        </header>
 
-      {error && (
-        <p className="form-error" role="alert">
-          {error}
-        </p>
-      )}
+        {error && <Alert variant="error">{error}</Alert>}
+        {aviso && <Alert variant="success">{aviso}</Alert>}
 
-      <div className="config-grid">
-        <section className="config-card" aria-labelledby="datos-conexion">
-          <h2 id="datos-conexion">Datos de conexión</h2>
+        <div className="hu19-config__columnas">
+          <Card title="Datos de conexión" className="hu19-config__tarjeta">
+            <form className="hu19-config__formulario" onSubmit={manejarGuardar}>
+              <Input
+                id="url-moodle"
+                label="URL del sitio Moodle"
+                type="url"
+                value={url}
+                onChange={(event) => setUrl(event.target.value)}
+                placeholder="http://localhost:8080"
+                disabled={guardando || probando}
+                required
+              />
+              <Input
+                id="token-moodle"
+                label="Token del servicio web"
+                type="password"
+                autoComplete="off"
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+                placeholder={configuracion?.tokenEnmascarado || 'Sin token configurado'}
+                disabled={guardando || probando}
+                helperText="Deja el campo vacío para conservar el token actual. No se muestra el valor completo."
+              />
+              <p className="hu19-config__token">
+                Clave actual: <code>{configuracion?.tokenEnmascarado || 'Sin token configurado'}</code>
+              </p>
+              <Input
+                id="servicio-moodle"
+                label="Servicio externo"
+                type="text"
+                value={configuracion ? `${configuracion.servicio} (solo lectura)` : ''}
+                readOnly
+              />
+              <div className="hu19-config__acciones">
+                <Button
+                  type="button"
+                  onClick={manejarProbar}
+                  loading={probando}
+                  disabled={guardando}
+                >
+                  {probando ? 'Probando...' : 'Probar conexión'}
+                </Button>
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  loading={guardando}
+                  disabled={probando}
+                >
+                  {guardando ? 'Guardando...' : 'Guardar'}
+                </Button>
+              </div>
+            </form>
+          </Card>
 
-          <form onSubmit={manejarGuardar}>
-            <label htmlFor="url-moodle">URL del sitio Moodle</label>
-            <input
-              id="url-moodle"
-              type="url"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder="http://localhost:8080"
-              required
-            />
-
-            <label htmlFor="token-moodle">Token del servicio web</label>
-            <input
-              id="token-moodle"
-              type="password"
-              autoComplete="off"
-              value={token}
-              onChange={(event) => setToken(event.target.value)}
-              placeholder={configuracion?.tokenEnmascarado || 'Sin token configurado'}
-            />
-            <p className="config-clave">
-              Clave actual: <span className="mono">{configuracion?.tokenEnmascarado || 'Sin token configurado'}</span>
-            </p>
-            <p className="config-hint">
-              El token se guarda solo en el servidor y nunca se muestra completo. Déjalo vacío para conservar el actual.
-            </p>
-
-            <label htmlFor="servicio-moodle">Servicio externo</label>
-            <input
-              id="servicio-moodle"
-              type="text"
-              value={configuracion ? `${configuracion.servicio} (solo lectura)` : ''}
-              readOnly
-            />
-
-            <div className="config-actions">
-              <button type="button" className="boton-primario" onClick={manejarProbar} disabled={probando} aria-busy={probando}>
-                {probando && <span className="boton-indicador" aria-hidden="true" />}
-                {probando ? 'Probando...' : 'Probar conexión'}
-              </button>
-              <button type="submit" className="secondary-button" disabled={guardando}>
-                {guardando ? 'Guardando...' : 'Guardar'}
-              </button>
-            </div>
-
-            {aviso && (
-              <p className="config-success" role="status">
-                {aviso}
+          <Card title="Resultado de la prueba" className="hu19-config__tarjeta">
+            {!prueba && (
+              <p className="hu19-config__ayuda">
+                Pulsa «Probar conexión» para verificar Moodle.
               </p>
             )}
-          </form>
-        </section>
-
-        <section className="config-card" aria-labelledby="resultado-prueba">
-          <h2 id="resultado-prueba">Resultado de la prueba</h2>
-
-          {!prueba && <p>Pulsa «Probar conexión» para verificar Moodle.</p>}
-
-          {prueba && !prueba.conectado && (
-            <p className="sync-warning" role="alert">
-              No se pudo conectar con Moodle: {prueba.error}
-            </p>
-          )}
-
-          {prueba?.conectado && (
-            <>
-              <p className="config-success">
-                Conexión correcta · {prueba.sitio} · Moodle {prueba.version} · Usuario técnico: {prueba.usuarioTecnico}
-              </p>
-
-              <h3 className="checklist-titulo">
-                Funciones del servicio web{' '}
-                <span className="mono">
-                  {prueba.funciones.filter((f) => f.disponible).length}/{prueba.funciones.length}
-                </span>
-              </h3>
-              <ul className="checklist">
-                {prueba.funciones.map((funcion, indice) => (
-                  <li
-                    key={funcion.nombre}
-                    className={funcion.disponible ? 'disponible' : 'no-disponible'}
-                    style={{ '--i': indice }}
-                  >
-                    <span className="checklist-marca" aria-hidden="true" />
-                    <code>{funcion.nombre}</code>
-                    <span className={funcion.disponible ? 'estado-disponible' : 'estado-no-disponible'}>
-                      {funcion.disponible ? 'Disponible' : 'No disponible'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {noDisponibles.length > 0 && (
-                <p className="sync-warning">
-                  Hay funciones no disponibles. No bloquean la sincronización: los datos que dependen de ellas se mostrarán como dato no disponible.
-                </p>
-              )}
-            </>
-          )}
-        </section>
+            {prueba && !prueba.conectado && (
+              <Alert variant="error">
+                No se pudo conectar con Moodle: {prueba.error || 'Error desconocido'}
+              </Alert>
+            )}
+            {prueba?.conectado && (
+              <div className="hu19-config__resultado">
+                <Alert variant="success">
+                  Conexión correcta · {prueba.sitio} · Moodle {prueba.version} · Usuario técnico: {prueba.usuarioTecnico}
+                </Alert>
+                <div className="hu19-config__subtitulo">
+                  <h3>Funciones del servicio web</h3>
+                  <span>{disponibles}/{funciones.length}</span>
+                </div>
+                <Table
+                  caption="Disponibilidad de funciones del servicio web"
+                  columns={columnasFunciones}
+                  rows={funciones}
+                  rowKey="nombre"
+                  emptyMessage="El servicio no informó funciones."
+                />
+                {noDisponibles.length > 0 && (
+                  <Alert variant="warning">
+                    Hay funciones no disponibles. No bloquean la sincronización: los datos que dependen de ellas se mostrarán como dato no disponible.
+                  </Alert>
+                )}
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
-    </main>
+    </Marco>
   )
 }

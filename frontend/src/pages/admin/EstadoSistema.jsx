@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import MarcoS2 from '../../components/s2/MarcoS2'
-import PaginaError from '../../components/s2/PaginaError'
-import Estado from '../../components/s2/Estado'
-import { formatearFecha } from '../../components/s2/formato'
+import Marco from '../../components/Marco'
+import PaginaError from '../../components/PaginaError'
+import Estado from '../../components/Estado'
+import { formatearFecha } from '../../components/formato'
 import { obtenerEstadoSistema } from '../../services/estado'
 import { describirError } from '../../services/errores'
 
@@ -49,33 +49,34 @@ export default function EstadoSistema() {
   }
 
   return (
-    <MarcoS2>
-      <header className="s2-cabecera">
+    <Marco>
+      <header className="cabecera">
         <div>
-          <p className="s2-sobretitulo">Administración</p>
-          <h1 className="s2-titulo">Estado del sistema</h1>
+          <p className="sobretitulo">Administración</p>
+          <h1 className="titulo">Estado del sistema</h1>
         </div>
-        <button type="button" className="s2-boton" onClick={consultar} disabled={consultando}>
+        <button type="button" className="boton" onClick={consultar} disabled={consultando}>
           {consultando ? 'Consultando…' : 'Actualizar'}
         </button>
       </header>
 
       {error && (
-        <div className="s2-aviso s2-aviso--error" role="alert">
+        <div className="aviso aviso--error" role="alert">
           <strong>{error.titulo}</strong>
           {error.detalle}
         </div>
       )}
 
-      {!estado && !error && <p className="s2-ayuda">Consultando los servicios…</p>}
+      {!estado && !error && <p className="ayuda">Consultando los servicios…</p>}
 
       {estado && (
-        <section className="s2-seccion" aria-labelledby="titulo-servicios">
-          <h2 id="titulo-servicios" className="s2-seccion-titulo">
+        <section className="seccion" aria-labelledby="titulo-servicios">
+          <div className="regla" />
+          <h2 id="titulo-servicios" className="seccion-titulo">
             Servicios
           </h2>
-          <div className="s2-tabla-envoltura">
-            <table className="s2-tabla" aria-label="Servicios">
+          <div className="tabla-envoltura">
+            <table className="tabla" aria-label="Servicios">
               <thead>
                 <tr>
                   <th>Servicio</th>
@@ -86,26 +87,26 @@ export default function EstadoSistema() {
               </thead>
               <tbody>
                 {estado.servicios.map((s) => (
-                  <tr key={s.nombre}>
+                  <tr key={s.nombre} className="entra">
                     <td>
-                      {NOMBRES[s.nombre] ?? s.nombre} <span className="s2-ayuda">({s.nombre})</span>
+                      {NOMBRES[s.nombre] ?? s.nombre}
                     </td>
                     <td>
                       <Estado estado={s.estado === 'OK' ? 'OK' : 'ERROR'} texto={TEXTO_ESTADO[s.estado] ?? s.estado} />
                     </td>
                     <td>{s.detalle}</td>
-                    <td className="s2-num">{formatearFecha(estado.generado)}</td>
+                    <td className="num">{formatearFecha(estado.generado)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="s2-ayuda s2-intro">
+          <p className="ayuda">
             Cada servicio se consulta con un máximo de 3 segundos; uno caído no detiene a los demás. El aula virtual corre aparte,
             en su propio entorno.
           </p>
         </section>
       )}
-    </MarcoS2>
+    </Marco>
   )
 }

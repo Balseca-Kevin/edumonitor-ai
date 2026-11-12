@@ -4,7 +4,7 @@
 @docs/contratos-api.md
 @docs/sprint-2/PLAN.md
 
-Sprint activo: Sprint 2 hasta la Review del jueves 12 de noviembre de 2026; el siguiente es el Sprint 3. Integración abierta hasta el cierre de esta sesión, antes del ensayo del jueves 12 (decisión de Kevin del 11 nov, 21:05).
+Sprint activo: Sprint 2 hasta la Review del jueves 12 de noviembre de 2026; el siguiente es el Sprint 3. Sprint 2 cerrado con las 6 HU hechas (v0.2.1, 12 nov 2026).
 
 ## Documentos fuente
 

@@ -29,6 +29,8 @@ internal sealed class AlertaConfiguracion : IEntityTypeConfiguration<Alerta>
         builder.HasOne(a => a.Estudiante).WithMany().HasForeignKey(a => a.EstudianteId).OnDelete(DeleteBehavior.NoAction);
         builder.Property(a => a.Evidencia).IsRequired();
         builder.Property(a => a.Estado).HasMaxLength(20).IsRequired();
+        builder.Property(a => a.Generada).IsRequired();
+        builder.Property(a => a.Revisada);
     }
 }
 

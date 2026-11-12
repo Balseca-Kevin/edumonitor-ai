@@ -141,4 +141,96 @@ public class AgenteApiTests
         Assert.Equal(HttpStatusCode.NotFound, inexistente.StatusCode);
         Assert.Empty(factory.Agente.Peticiones);
     }
+
+    // --- HU-14 · Un código de otro curso en la pregunta se responde sin llamar al agente ---
+
+    [Fact]
+    public async Task Pregunta_por_otro_curso_del_docente_responde_que_abra_ese_curso_y_no_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var admin = await factory.ClienteConSesionAsync("admin");
+        var agil = factory.IdCurso("AGIL-4B");
+
+        var respuesta = await admin.PostAsJsonAsync("/api/agente/chat", new { cursoId = agil, mensaje = "¿Qué estudiantes de bdd-4b tienen promedio bajo 7?" });
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        var cuerpo = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Esta conversación es de AGIL-4B. Abre BDD-4B para preguntar sobre ese curso.", cuerpo.GetProperty("respuesta").GetString());
+        Assert.Empty(cuerpo.GetProperty("herramientas").EnumerateArray());
+        Assert.Equal(AgenteService.ModeloSinAgente, cuerpo.GetProperty("modelo").GetString());
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Pregunta_por_un_curso_ajeno_responde_sin_acceso_y_no_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = "¿Cómo va BDD-4B?" });
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        var cuerpo = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("No tienes acceso a BDD-4B.", cuerpo.GetProperty("respuesta").GetString());
+        Assert.Empty(factory.Agente.Peticiones);
+    }
+
+    [Fact]
+    public async Task Nombrar_el_curso_abierto_si_llama_al_agente()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+
+        var respuesta = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = factory.IdCurso("AGIL-4B"), mensaje = "¿Cómo va AGIL-4B?" });
+
+        Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
+        Assert.Single(factory.Agente.Peticiones);
+    }
+
+    // --- HU-19 · Historial de conversaciones para la barra lateral del asistente ---
+
+    [Fact]
+    public async Task El_historial_lista_las_conversaciones_del_docente_de_la_mas_reciente_a_la_mas_antigua_y_el_detalle_trae_las_herramientas()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var curso = factory.IdCurso("AGIL-4B");
+        (await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = curso, mensaje = "Primera pregunta" })).EnsureSuccessStatusCode();
+        (await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = curso, mensaje = "Segunda pregunta" })).EnsureSuccessStatusCode();
+
+        var lista = await doc01.GetFromJsonAsync<JsonElement>($"/api/agente/conversaciones?cursoId={curso}");
+
+        var filas = lista.EnumerateArray().ToList();
+        Assert.Equal(2, filas.Count);
+        Assert.Equal("Segunda pregunta", filas[0].GetProperty("pregunta").GetString());
+        Assert.Equal("Primera pregunta", filas[1].GetProperty("pregunta").GetString());
+        Assert.Equal(1, filas[0].GetProperty("herramientas").GetInt32());
+        Assert.Equal("qwen2.5:7b", filas[0].GetProperty("modelo").GetString());
+
+        var detalle = await doc01.GetFromJsonAsync<JsonElement>($"/api/agente/conversaciones/{filas[0].GetProperty("id").GetInt32()}");
+        Assert.Equal("Segunda pregunta", detalle.GetProperty("pregunta").GetString());
+        Assert.StartsWith("Hechos:", detalle.GetProperty("respuesta").GetString());
+        Assert.Equal(curso, detalle.GetProperty("cursoId").GetInt32());
+        var herramienta = detalle.GetProperty("herramientas").EnumerateArray().Single();
+        Assert.Equal("obtener_calificaciones", herramienta.GetProperty("nombre").GetString());
+        Assert.Equal(curso, herramienta.GetProperty("parametros").GetProperty("cursoId").GetInt32());
+        Assert.Equal("OK", herramienta.GetProperty("estado").GetString());
+    }
+
+    [Fact]
+    public async Task El_historial_responde_403_en_curso_ajeno_400_sin_cursoId_y_404_si_la_conversacion_no_existe()
+    {
+        await using var factory = new ApiConAgenteFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var doc02 = await factory.ClienteConSesionAsync("doc02");
+        var agil = factory.IdCurso("AGIL-4B");
+        var creada = await (await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = agil, mensaje = "Hola" })).Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await doc01.GetAsync($"/api/agente/conversaciones?cursoId={factory.IdCurso("BDD-4B")}")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await doc01.GetAsync("/api/agente/conversaciones")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await doc01.GetAsync("/api/agente/conversaciones?cursoId=9999")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await doc01.GetAsync("/api/agente/conversaciones/9999")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await doc02.GetAsync($"/api/agente/conversaciones/{creada.GetProperty("conversacionId").GetInt32()}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync($"/api/agente/conversaciones?cursoId={agil}")).StatusCode);
+    }
 }

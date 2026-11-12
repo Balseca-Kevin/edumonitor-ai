@@ -340,9 +340,9 @@ Todas responden 401 sin token y 403 si el curso no es del docente. El backend re
 
 Sin cambios.
 
-### GET /api/tools/calificaciones?cursoId=1&estudianteId=5
+### GET /api/tools/calificaciones?cursoId=1&estudianteId=5&nombre=elena
 
-`estudianteId` es opcional. Cambio del 11 nov 2026 (aprobado por Kevin): el curso completo con todas sus notas ocupaba unos 49 KB y no cabía en el contexto del modelo, así que la consulta del asistente se cortaba a los 60 s.
+`estudianteId` y `nombre` son opcionales. Cambio del 11 nov 2026 (aprobado por Kevin): el curso completo con todas sus notas ocupaba unos 49 KB y no cabía en el contexto del modelo, así que la consulta del asistente se cortaba a los 60 s.
 
 Sin `estudianteId`: un resumen por estudiante, con los mismos números que el panel (`GET /api/cursos/{id}/indicadores`), de menor a mayor `promedioPonderado` (los que no tienen promedio van al final).
 
@@ -359,6 +359,8 @@ Sin `estudianteId`: un resumen por estudiante, con los mismos números que el pa
   ]
 }
 ```
+
+Con `nombre` (desde el 12 nov 2026; nombre o apellido, sin distinguir tildes ni mayúsculas; cada palabra tiene que ser el inicio de una palabra del nombre completo): con una sola coincidencia, el detalle de ese estudiante como con `estudianteId`; con varias, la lista corta en el formato del resumen para que el docente elija; sin ninguna, 404 «Ningún estudiante del curso 1 se llama «…»». El agente lo usa cuando el docente escribe un nombre, para no adivinar ids.
 
 Con `estudianteId`: las notas y estados de ese estudiante por actividad (escala 0 a 10). 404 si no está matriculado en el curso.
 
@@ -388,9 +390,16 @@ En los dos casos, un curso sin sincronizar responde con `estudiantes` vacío y `
   "herramienta": "identificar_alertas",
   "generado": "2026-11-10T09:30:00-05:00",
   "curso": { "id": 1, "nombreCorto": "AGIL-4B" },
-  "alertas": [ "mismo objeto que GET /api/cursos/{id}/alertas, solo ACTIVA" ]
+  "alertas": [
+    {
+      "id": 31, "regla": "R4", "nombreRegla": "Promedio bajo",
+      "estudiante": { "id": 5, "nombre": "Ana", "apellido": "Pérez" },
+      "evidencia": { "promedio": 6.1, "notas": 12, "umbral": 7.0 }
+    }
+  ]
 }
 ```
+Solo las ACTIVAS. Desde el 12 nov 2026 (TA-13.2) cada alerta es la de `GET /api/cursos/{id}/alertas` sin `titulo`, `estado`, `generada` ni `revisada`, que son iguales en todas, y con `nombreRegla`; la `evidencia` va corta: R2 solo con los nombres de las actividades (`{ "actividades": ["Tarea 5"], "umbral": 2 }`), R1 sin `anteriores` y R4 igual. Las 16 alertas de AGIL-4B en la forma completa llenaban el contexto de 4096 tokens del modelo y la respuesta se acercaba a los 60 s. La pantalla «Alertas» usa la forma completa de `GET /api/cursos/{id}/alertas`. 400 sin `cursoId`, 403 en curso ajeno, 404 si el curso no existe.
 
 ## Chat del asistente (HU-14)
 
@@ -416,7 +425,41 @@ Respuesta 200:
 ```
 403 si el curso es ajeno (el agente no se llama). 503 con `ProblemDetails` («Asistente no disponible») si el agente no responde en 60 s. 400 si `mensaje` está vacío o pasa de 500 caracteres.
 
+Desde el 12 nov 2026: si el mensaje nombra el código de otro curso de la base (por ejemplo `BDD-4B` desde AGIL-4B), la API responde 200 sin llamar al agente, con `herramientas` vacío y `modelo: "ninguno"`:
+- curso del docente: `"Esta conversación es de AGIL-4B. Abre BDD-4B para preguntar sobre ese curso."`;
+- curso ajeno: `"No tienes acceso a BDD-4B."`.
+La conversación se guarda igual, para que aparezca en el historial.
+
 Requiere migración: `Conversacion` agrega `Pregunta`, `Respuesta`, `Modelo` y `DuracionMs`; `TrazaHerramienta` agrega `Estado`, `DuracionMs` y `Fecha`.
+
+## Historial del asistente (HU-19, 12 nov 2026)
+
+La barra lateral del asistente muestra las conversaciones guardadas en la base. Cada docente ve solo las suyas; un ADMIN también ve solo las suyas en la lista, pero puede abrir cualquiera.
+
+### GET /api/agente/conversaciones?cursoId=1 · DOCENTE
+
+De la más reciente a la más antigua. 400 sin `cursoId`; 403 si el curso es ajeno; 404 si no existe.
+
+```json
+[
+  { "id": 44, "fecha": "2026-11-11T21:45:00-05:00", "pregunta": "¿Quiénes tienen promedio bajo 7?", "modelo": "qwen2.5:7b", "duracionMs": 15400, "herramientas": 1 }
+]
+```
+`herramientas` es cuántas se usaron. `modelo` es `"ninguno"` cuando la API respondió sola (otro curso en la pregunta).
+
+### GET /api/agente/conversaciones/{id} · DOCENTE
+
+La misma forma de `POST /api/agente/chat` más `cursoId`, `fecha` y `pregunta`. 403 si el curso es ajeno o la conversación es de otro docente; 404 si no existe.
+
+```json
+{
+  "id": 44, "cursoId": 1, "fecha": "2026-11-11T21:45:00-05:00",
+  "pregunta": "¿Quiénes tienen promedio bajo 7?",
+  "respuesta": "Los estudiantes con promedio bajo 7 son: …",
+  "modelo": "qwen2.5:7b", "duracionMs": 15400,
+  "herramientas": [ { "nombre": "obtener_calificaciones", "parametros": { "cursoId": 1 }, "estado": "OK", "duracionMs": 99 } ]
+}
+```
 
 ## Servicio de agente (HU-13, HU-14)
 

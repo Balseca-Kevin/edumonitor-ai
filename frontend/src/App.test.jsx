@@ -63,7 +63,7 @@ describe('TA-06.5 - Navegación de EduMonitor AI', () => {
 
     expect(
       await screen.findByRole('button', {
-        name: 'Iniciar sesión',
+        name: /ingresar/i,
       }),
     ).toBeInTheDocument()
 
@@ -110,7 +110,7 @@ describe('TA-06.5 - Navegación de EduMonitor AI', () => {
 
     fireEvent.click(
       screen.getByRole('button', {
-        name: 'Iniciar sesión',
+        name: /ingresar/i,
       }),
     )
 
