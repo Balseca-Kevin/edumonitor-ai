@@ -418,6 +418,11 @@ Respuesta 200:
 ```
 403 si el curso es ajeno (el agente no se llama). 503 con `ProblemDetails` («Asistente no disponible») si el agente no responde en 60 s. 400 si `mensaje` está vacío o pasa de 500 caracteres.
 
+Desde el 12 nov 2026: si el mensaje nombra el código de otro curso de la base (por ejemplo `BDD-4B` desde AGIL-4B), la API responde 200 sin llamar al agente, con `herramientas` vacío y `modelo: "ninguno"`:
+- curso del docente: `"Esta conversación es de AGIL-4B. Abre BDD-4B para preguntar sobre ese curso."`;
+- curso ajeno: `"No tienes acceso a BDD-4B."`.
+La conversación se guarda igual, para que aparezca en el historial.
+
 Requiere migración: `Conversacion` agrega `Pregunta`, `Respuesta`, `Modelo` y `DuracionMs`; `TrazaHerramienta` agrega `Estado`, `DuracionMs` y `Fecha`.
 
 ## Servicio de agente (HU-13, HU-14)
