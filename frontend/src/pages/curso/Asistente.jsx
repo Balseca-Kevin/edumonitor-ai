@@ -144,9 +144,9 @@ function Historial({ conversaciones, activa, abrir }) {
   const grupos = ['Hoy', 'Esta semana', 'Antes']
     .map((nombre) => ({ nombre, items: conversaciones.filter((c) => grupoDeFecha(c.fecha) === nombre) }))
     .filter((g) => g.items.length)
-  if (!grupos.length) return <p className="chat-grupo">Todavía no hay preguntas en este curso.</p>
+  if (!grupos.length) return <p className="chat-grupo chat-historial">Todavía no hay preguntas en este curso.</p>
   return (
-    <nav aria-label="Historial de preguntas">
+    <nav className="chat-historial" aria-label="Historial de preguntas">
       {grupos.map((g) => (
         <div key={g.nombre}>
           <span className="chat-grupo">{g.nombre}</span>
@@ -182,7 +182,7 @@ export default function Asistente() {
   const [activa, setActiva] = useState(null)
   const [historial, setHistorial] = useState([])
   const [estudiantes, setEstudiantes] = useState([])
-  const final = useRef(null)
+  const cuerpo = useRef(null)
   const consultando = turnos.some((t) => t.cargando)
 
   useEffect(() => {
@@ -199,7 +199,9 @@ export default function Asistente() {
   }, [id])
 
   useEffect(() => {
-    final.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' })
+    // Solo la columna de mensajes se desplaza: baja sola al último mensaje sin mover la página.
+    const caja = cuerpo.current
+    if (caja && typeof caja.scrollTo === 'function') caja.scrollTo({ top: caja.scrollHeight, behavior: 'smooth' })
   }, [turnos])
 
   async function enviar(texto) {
@@ -281,7 +283,7 @@ export default function Asistente() {
           <span className="chat-pildora">Solo lectura · modelo local</span>
         </header>
 
-        <div className="chat-cuerpo">
+        <div className="chat-cuerpo" ref={cuerpo}>
           <div className="chat-hilo" aria-live="polite">
             {turnos.length === 0 && (
               <div className="chat-bienvenida">
@@ -307,7 +309,6 @@ export default function Asistente() {
                 sincronizacion={curso?.ultimaSincronizacion}
               />
             ))}
-            <div ref={final} />
           </div>
         </div>
 

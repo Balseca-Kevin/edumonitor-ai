@@ -239,8 +239,12 @@
 }
 
 /* ---------- Asistente: chat ---------- */
-.chat { min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--fondo); color: var(--tinta); }
-.chat-lateral { flex: 1 1 260px; max-width: var(--ancho-lateral-chat); background: var(--fondo-2); border-right: var(--grosor-linea) solid var(--linea); padding: var(--e-20) var(--e-14); display: flex; flex-direction: column; gap: var(--e-6); }
+/* La pantalla del Asistente mide el alto de la ventana y la página no tiene scroll: solo el historial y los mensajes se desplazan,
+   y el cuadro de la pregunta queda siempre abajo, aunque el historial tenga cientos de conversaciones. */
+.chat { height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-wrap: wrap; background: var(--fondo); color: var(--tinta); }
+.chat-lateral { flex: 1 1 260px; max-width: var(--ancho-lateral-chat); background: var(--fondo-2); border-right: var(--grosor-linea) solid var(--linea); padding: var(--e-20) var(--e-14); display: flex; flex-direction: column; gap: var(--e-6); height: 100%; min-height: 0; overflow: hidden; }
+.chat-lateral > * { flex-shrink: 0; }
+.chat-historial { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .chat-lateral a, .chat-hist { display: block; width: 100%; padding: var(--e-8) var(--e-10); border-radius: var(--radio-8); color: var(--tinta); text-decoration: none; font-size: var(--fs-14); border: 0; background: transparent; text-align: left; font-family: var(--fuente); cursor: pointer; transition: background-color var(--t-rapido) ease; }
 .chat-lateral a.suave { color: var(--tinta-2); }
 .chat-lateral a.activo { background: var(--fondo-3); font-weight: 600; }
@@ -251,12 +255,12 @@
 .chat-nueva { margin: 18px 0 var(--e-8); height: 40px; border-radius: var(--radio-10); border: var(--grosor-linea) solid var(--linea-2); background: var(--fondo); font: 600 var(--fs-14) var(--fuente); color: var(--tinta); cursor: pointer; display: flex; align-items: center; gap: var(--e-8); padding: 0 var(--e-12); }
 .chat-nueva span { font-size: 18px; line-height: 1; }
 .chat-lateral-pie { margin-top: auto; padding: var(--e-14) var(--e-10) 0; border-top: var(--grosor-linea) solid var(--linea); font-size: var(--fs-13); color: var(--tinta-2); display: flex; flex-direction: column; gap: var(--e-8); }
-.chat-main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; min-height: 100vh; }
+.chat-main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .chat-cabecera { display: flex; justify-content: space-between; align-items: center; padding: var(--e-16) var(--e-32); border-bottom: var(--grosor-linea) solid var(--fondo-3); flex-wrap: wrap; gap: var(--e-12); }
 .chat-cabecera > div { display: flex; flex-direction: column; gap: 2px; }
 .chat-cabecera .titulo-chat { font-size: var(--fs-15); font-weight: 600; }
 .chat-pildora { padding: 6px var(--e-12); border-radius: var(--radio-pildora); background: var(--ok-fondo); color: var(--ok); font-size: var(--fs-12); font-weight: 600; }
-.chat-cuerpo { flex: 1; overflow-y: auto; padding: var(--e-32) var(--e-24) var(--e-24); display: flex; justify-content: center; }
+.chat-cuerpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--e-32) var(--e-24) var(--e-24); display: flex; justify-content: center; }
 .chat-hilo { width: 100%; max-width: var(--ancho-conversacion); display: flex; flex-direction: column; gap: var(--e-28); }
 .chat-bienvenida { display: flex; flex-direction: column; gap: 18px; padding-top: 60px; animation: aparecer var(--t-medio) var(--curva-salida) both; }
 .chat-bienvenida h1 { margin: 0; font-size: var(--fs-34); font-weight: 300; letter-spacing: -0.02em; }
@@ -293,7 +297,14 @@
 .barra-nota span { font-size: var(--fs-13); color: var(--tinta-2); }
 .chat-acciones { display: flex; flex-wrap: wrap; gap: var(--e-8); align-items: center; }
 .chat-datos { margin: 0; font-size: var(--fs-13); line-height: 1.6; color: var(--tinta-2); padding-left: var(--e-12); border-left: 2px solid var(--linea); list-style: none; display: flex; flex-direction: column; gap: 2px; }
-.chat-pie { padding: 0 var(--e-24) var(--e-24); display: flex; justify-content: center; }
+.chat-pie { flex-shrink: 0; padding: var(--e-12) var(--e-24) var(--e-24); display: flex; justify-content: center; border-top: var(--grosor-linea) solid var(--fondo-3); }
+/* En pantallas angostas la barra lateral pasa arriba del chat: ahí la página vuelve a desplazarse y el historial se acota. */
+@media (max-width: 860px) {
+  .chat { height: auto; overflow: visible; }
+  .chat-lateral, .chat-main { height: auto; }
+  .chat-main { min-height: 100dvh; }
+  .chat-historial { max-height: 40vh; }
+}
 .chat-pie > div { width: 100%; max-width: var(--ancho-conversacion); display: flex; flex-direction: column; gap: var(--e-10); }
 .chat-seguimiento { display: flex; flex-wrap: wrap; gap: var(--e-8); }
 .chat-form { display: flex; align-items: center; gap: var(--e-10); border: var(--grosor-linea) solid var(--linea-2); border-radius: var(--radio-24); padding: var(--e-8) var(--e-8) var(--e-8) 18px; background: var(--fondo); }
