@@ -42,7 +42,7 @@ No se cambia sin acuerdo del equipo.
 - Base de datos: SQL Server 2022 en Docker, base `EduMonitorDB`, migraciones de EF Core versionadas.
 - Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Tipografía Archivo.
 - Agente: Python 3.11, FastAPI, LangGraph, Pydantic, Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`), pytest.
-- Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. `moodle-puente` comparte la red de la API y lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
+- Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. La API usa la red de `moodle-puente`, que lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`; el puente es el dueño de esa red para que un reinicio de la API no lo rompa. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
 - Gestión: Git + GitHub con Git Flow, GitHub Actions, Jira (tablero: Por hacer, En curso, En revisión, Finalizada).
 
 ## Arquitectura
@@ -73,7 +73,7 @@ Monolito modular con un servicio de agente aparte. No hay microservicios.
 | EduMonitor (raíz) | sqlserver | 1433 | edumonitor_sqlserver-data |
 | EduMonitor (raíz) | agent | ninguno, solo red interna | ninguno |
 | EduMonitor (raíz) | ollama | ninguno, solo red interna | ollama-models |
-| EduMonitor (raíz) | moodle-puente | ninguno, comparte la red de api | ninguno |
+| EduMonitor (raíz) | moodle-puente | 5000 de la API (la API usa su red) | ninguno |
 | Aula virtual (`moodle-lab/`) | moodle | 8080 | edumonitor_moodledata |
 | Aula virtual (`moodle-lab/`) | moodle-db | ninguno | edumonitor_moodle-db-data |
 
