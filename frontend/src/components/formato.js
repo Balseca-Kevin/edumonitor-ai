@@ -6,6 +6,8 @@ const formatoFecha = new Intl.DateTimeFormat('es-EC', {
   year: 'numeric',
   hour: '2-digit',
   minute: '2-digit',
+  // Hora de Ecuador en cualquier equipo: la integración continua corre en UTC y una fecha límite de las 23:59 cambiaría de día.
+  timeZone: 'America/Guayaquil',
 })
 
 export function formatearFecha(valor) {
