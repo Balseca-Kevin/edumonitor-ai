@@ -1,6 +1,6 @@
 # Sprint 2 · plan de trabajo
 
-Re-planificación: domingo 8 nov 2026, después de la Review del Sprint 1. Review del Sprint 2: jueves 12 nov 2026. Integración abierta hasta el cierre de esta sesión, antes del ensayo del jueves 12 (decisión de Kevin del 11 nov, 21:05).
+Re-planificación: domingo 8 nov 2026, después de la Review del Sprint 1. Review del Sprint 2: jueves 12 nov 2026. Integración abierta hasta la Review del jueves 12 (decisión de Kevin del 12 nov; ver «Decisiones del 12 nov 2026» al final).
 
 ## Sprint Goal
 
@@ -13,7 +13,7 @@ El docente abre EduMonitor, ve el panel de indicadores de su curso y las alertas
 | HU | Historia | SP | Responsable | Rama |
 |---|---|---|---|---|
 | HU-20 | Entorno único de ejecución con Docker Compose | 5 | Kevin | `feature/HU-20-docker-unico` |
-| HU-19 | Identidad visual y pantallas de acceso | 5 | Santiago | `feature/HU-19-identidad-visual` |
+| HU-19 | Identidad visual y pantallas de acceso (diseño D desde el 12 nov) | 5 | Santiago | `feature/HU-19-identidad-visual` |
 | HU-09 | Panel de indicadores del curso | 8 | Kevin | `feature/HU-09-panel-indicadores` |
 | HU-12 | Alertas académicas con reglas configurables | 5 | Sebastián | `feature/HU-12-alertas` |
 | HU-13 | Herramientas del agente con trazas | 8 | Jeremy (TA-13.1 y TA-13.2: Kevin) | `feature/HU-13-herramientas-agente` |
@@ -149,62 +149,92 @@ Cada responsable guarda en `docs/evidencias/sprint-2/HU-xx/` las capturas de la 
 
 ## Estado al cierre del Sprint 2
 
-Revisado el 11 nov 2026 a las 22:15, con los Pull Request fusionados en `develop`. La hora de fusión es la de Ecuador (UTC−5). La integración quedó abierta hasta el cierre de la sesión por decisión de Kevin (11 nov, 21:05). «No iniciada» quiere decir que no hay rama ni Pull Request en GitHub.
+Revisado el jueves 12 nov 2026 a las 08:30, día de la Review, con los Pull Request fusionados en `develop`.
+- La hora de fusión es la de Ecuador (UTC−5).
+- La columna «Hizo» dice quién hizo de verdad cada tarea. Cuando Kevin completó o corrigió una tarea de otra persona, se dice qué hizo cada uno.
 
-| TA | Tarea | Responsable | Estado | PR | Fusión |
+### Decisiones del 12 nov 2026
+
+- **Integración abierta el día de la Review.** Kevin decidió el 12 nov integrar lo que llegara antes de la Review, sin hora de corte.
+  - Es un cambio frente a la decisión del 11 nov, 21:05.
+  - Así entraron HU-12 (#38), HU-19 (#35), TA-13.2 (#39) y TA-13.7 (#40).
+- **Cambio de diseño de HU-19, aplicado a las 08:14.**
+  - El estilo suizo con bento grid del 8 nov se reemplaza por el **diseño D**. Motivo: el Product Owner vio genérico el inicio de sesión y pidió una herramienta que hable como docente. El diseño D lleva las cifras a lenguaje de aula («La mitad del curso tiene más de», «Frente al curso», «Sin entregar»), quita los términos estadísticos y los códigos de regla de la pantalla, y hace del asistente un chat con historial.
+  - Se aplicó sobre el PR #35 de Santiago para que la HU siga a su nombre. Sus componentes base, su tira del período y su manejo de 401 y 403 se conservan.
+  - Detalle en `docs/sprint-2/diseno.md`.
+- **HU-12 de Sebastián.** Kevin la revisó y la corrigió antes de fusionarla (commit 4afe640):
+  - un curso sincronizado antes de HU-12 no tenía reglas y mostraba 0 alertas;
+  - una alerta marcada como revisada volvía a activas al recalcular.
+- **HU-13.** Kevin agregó la búsqueda por nombre en `GET /api/tools/calificaciones` y el parámetro `nombre` en el esquema del agente (#37), como parte del trabajo de Jeremy en #21.
+- **HU-14.** Una pregunta que nombra otro curso se responde sin llamar al agente (#36). El historial de conversaciones se guarda en la base y se ve en el chat (#35).
+
+### Tareas
+
+| TA | Tarea | Hizo | Estado | PR | Fusión |
 |---|---|---|---|---|---|
 | TA-20.1 | Dockerfile de la API y del frontend con nginx | Kevin | Hecha | #27 | 11 nov, 20:56 |
 | TA-20.2 | Dockerfile del agente y servicio `ollama` con GPU | Kevin | Hecha | #27 | 11 nov, 20:56 |
-| TA-20.3 | `docker-compose.yml` de EduMonitor y `moodle-lab/` aparte | Kevin | Hecha | #27; scripts `.bat` en #29 | 11 nov, 20:56; #29 a las 21:40 |
+| TA-20.3 | `docker-compose.yml` de EduMonitor y `moodle-lab/` aparte | Kevin | Hecha | #27; scripts en #29 | 11 nov, 20:56; #29 a las 21:40 |
 | TA-20.4 | `ConfiguracionMoodle` con Data Protection | Kevin | Hecha | #27 | 11 nov, 20:56 |
 | TA-20.5 | «Estado del sistema» y `GET /api/admin/estado` | Kevin | Hecha | #27 | 11 nov, 20:56 |
 | TA-20.6 | README de arranque y prueba de reinicio | Kevin | Hecha | #27 | 11 nov, 20:56 |
-| TA-19.1 | Tokens y componentes base | Santiago | No iniciada | — | — |
-| TA-19.2 | Barra lateral y tira del período | Santiago | No iniciada | — | — |
-| TA-19.3 | Rediseño de inicio de sesión | Santiago | No iniciada | — | — |
-| TA-19.4 | Rediseño de Mis cursos y configuración de Moodle | Santiago | No iniciada | — | — |
-| TA-19.5 | Pantallas «Acceso no permitido» y «Tu sesión venció» | Santiago | No iniciada | — | — |
-| TA-19.6 | Pruebas de interfaz actualizadas | Santiago | No iniciada | — | — |
+| TA-19.1 | Tokens y componentes base | Santiago: los seis componentes de `ui/`. Kevin: tokens globales del diseño D | Hecha | #35 | 12 nov, 08:19 |
+| TA-19.2 | Barra lateral y tira del período | Santiago: `TiraPeriodo` y estructura. Kevin: cabecera oscura y unidad «actual» | Hecha | #35 | 12 nov, 08:19 |
+| TA-19.3 | Rediseño de inicio de sesión | Santiago: primera versión. Kevin: inicio de sesión del diseño D | Hecha | #35 | 12 nov, 08:19 |
+| TA-19.4 | Rediseño de Mis cursos y configuración de Moodle | Santiago: estructura y lógica. Kevin: estilos del diseño D | Hecha | #35 | 12 nov, 08:19 |
+| TA-19.5 | Pantallas «Acceso no permitido» y «Tu sesión venció» | Santiago: interceptor y `Layout` con 401 y ADMIN. Kevin: páginas en el diseño D | Hecha | #35 | 12 nov, 08:19 |
+| TA-19.6 | Pruebas de interfaz actualizadas | Santiago: pruebas de `ui/`, tira, `Layout` e interceptor. Kevin: panel, alertas, asistente y unidad actual (71 en total) | Hecha | #35 | 12 nov, 08:19 |
 | TA-09.1 | `IndicadorService` | Kevin | Hecha | #23 | 11 nov, 16:13 |
 | TA-09.2 | Pruebas de indicadores con casos conocidos | Kevin | Hecha | #23 | 11 nov, 16:13 |
 | TA-09.3 | `GET /api/cursos/{id}/indicadores` | Kevin | Hecha | #23 | 11 nov, 16:13 |
-| TA-09.4 | Pantalla «Panel del curso» con Recharts | Kevin | Hecha | #26 | 11 nov, 18:40 |
-| TA-09.5 | Prueba de interfaz del panel | Kevin | Hecha | #26 | 11 nov, 18:40 |
-| TA-12.1 | Reglas R1, R2 y R4 | Sebastián | No iniciada | — | — |
-| TA-12.2 | `GET/PUT /api/cursos/{id}/reglas` | Sebastián | No iniciada | — | — |
-| TA-12.3 | Alertas, `PATCH`, recálculo y migración de `Alerta` | Sebastián | No iniciada | — | — |
-| TA-12.4 | Pantalla «Alertas» | Sebastián | No iniciada | — | — |
-| TA-12.5 | Pruebas de cada regla | Sebastián | No iniciada | — | — |
-| TA-13.1 | `GET /api/tools/calificaciones` | Kevin | Hecha | #24; resumen por estudiante en #28 | 11 nov, 16:43; #28 a las 21:37 |
-| TA-13.2 | `GET /api/tools/alertas` | Kevin | No iniciada: espera TA-12.3 | — | — |
-| TA-13.3 | Herramienta `obtener_calificaciones` con Pydantic | Jeremy | Hecha | #21 | 11 nov, 16:13 |
-| TA-13.4 | Herramienta `identificar_alertas` | Jeremy | Hecha en el agente; responde ERROR hasta TA-13.2 | #21 | 11 nov, 16:13 |
+| TA-09.4 | Pantalla «Panel del curso» con Recharts | Kevin | Hecha; lenguaje docente del diseño D en #35 | #26, #35 | 11 nov, 18:40; 12 nov, 08:19 |
+| TA-09.5 | Prueba de interfaz del panel | Kevin | Hecha | #26, #35 | 11 nov, 18:40; 12 nov, 08:19 |
+| TA-12.1 | Reglas R1, R2 y R4 | Sebastián | Hecha | #38 | 12 nov, 07:18 |
+| TA-12.2 | `GET/PUT /api/cursos/{id}/reglas` | Sebastián | Hecha | #38 | 12 nov, 07:18 |
+| TA-12.3 | Alertas, `PATCH`, recálculo y migración de `Alerta` | Sebastián; corrección de Kevin en la revisión (4afe640) | Hecha | #38 | 12 nov, 07:18 |
+| TA-12.4 | Pantalla «Alertas» | Sebastián; sin códigos de regla en el diseño D por Kevin (#35) | Hecha | #38, #35 | 12 nov, 07:18; 08:19 |
+| TA-12.5 | Pruebas de cada regla | Sebastián; Kevin sumó 2 pruebas de la corrección | Hecha | #38 | 12 nov, 07:18 |
+| TA-13.1 | `GET /api/tools/calificaciones` | Kevin | Hecha; resumen por estudiante en #28 y búsqueda por `nombre` en #37 | #24, #28, #37 | 11 nov, 16:43; 21:37; 23:54 |
+| TA-13.2 | `GET /api/tools/alertas` | Kevin | Hecha | #39 | 12 nov, 07:44 |
+| TA-13.3 | Herramienta `obtener_calificaciones` con Pydantic | Jeremy; `nombre` en el esquema por Kevin (#37) | Hecha | #21, #37 | 11 nov, 16:13; 23:54 |
+| TA-13.4 | Herramienta `identificar_alertas` | Jeremy | Hecha; responde con datos desde TA-13.2 | #21 | 11 nov, 16:13 |
 | TA-13.5 | Mensaje de sistema | Jeremy | Hecha | #21 | 11 nov, 16:13 |
 | TA-13.6 | Traza de cada llamada en la respuesta | Jeremy | Hecha | #21 | 11 nov, 16:13 |
-| TA-13.7 | Evaluación con 10 preguntas | Jeremy | A medias: la tabla está, los resultados siguen «Pendiente» | #21 | 11 nov, 16:13 |
+| TA-13.7 | Evaluación con 10 preguntas | Jeremy: tabla de preguntas. Kevin: ejecución y resultados | Hecha | #21, #40 | 11 nov, 16:13; 12 nov, 07:55 |
 | TA-13.8 | Pruebas de las herramientas con respx | Jeremy | Hecha | #21 | 11 nov, 16:13 |
-| TA-14.1 | `POST /api/agente/chat` y migración de `Conversacion` | Kevin | Hecha | #25 | 11 nov, 17:24 |
+| TA-14.1 | `POST /api/agente/chat` y migración de `Conversacion` | Kevin | Hecha; otro curso sin llamar al agente en #36 | #25, #36 | 11 nov, 17:24; 23:42 |
 | TA-14.2 | Token de servicio rol `AGENTE` | Kevin | Hecha | #25 | 11 nov, 17:24 |
-| TA-14.3 | Panel «Asistente» | Kevin | Hecha | #25 | 11 nov, 17:24 |
-| TA-14.4 | Pruebas del proxy: 401, 403 y 503 | Kevin | Hecha | #25 | 11 nov, 17:24 |
+| TA-14.3 | Panel «Asistente» | Kevin | Hecha; chat con historial del diseño D en #35 | #25, #35 | 11 nov, 17:24; 12 nov, 08:19 |
+| TA-14.4 | Pruebas del proxy: 401, 403 y 503 | Kevin | Hecha | #25, #36 | 11 nov, 17:24; 23:42 |
 
-Resumen: 34 TA, de ellas 21 hechas, 1 a medias y 12 no iniciadas.
+**Resumen: las 34 TA están hechas.**
 
-| HU | SP | Estado |
-|---|---|---|
-| HU-20 | 5 | Hecha |
-| HU-09 | 8 | Hecha |
-| HU-14 | 8 | Hecha |
-| HU-13 | 8 | A medias |
-| HU-12 | 5 | No iniciada |
-| HU-19 | 5 | No iniciada |
+| HU | SP | Estado | PR |
+|---|---|---|---|
+| HU-20 | 5 | Hecha | #27, #29 |
+| HU-19 | 5 | Hecha | #35 |
+| HU-09 | 8 | Hecha | #23, #26, #35 |
+| HU-12 | 5 | Hecha | #38 |
+| HU-13 | 8 | Hecha | #21, #24, #28, #37, #39, #40 |
+| HU-14 | 8 | Hecha | #25, #36, #35 |
 
-21 de los 39 SP comprometidos quedan hechos.
+**39 de los 39 SP comprometidos quedan hechos.** La tarjeta de cada HU en Jira se mueve a «Finalizada» en la Review.
 
-Otros PR del día:
-- #22: guías del Sprint 2, 16:12.
+Resultado de la evaluación de TA-13.7:
+- Herramienta correcta en 10 de 10.
+- 5 respuestas correctas, 2 parciales y 3 incorrectas.
+- Ningún dato inventado.
+
+Las fallas aparecen cuando el modelo filtra u ordena la lista del curso. Detalle en `docs/evidencias/sprint-2/HU-13/evaluacion.md`.
+
+Otros PR:
+- #22: guías del Sprint 2, 11 nov, 16:12.
 - #30: evidencias, 21:55.
-- #31: actualización de la documentación, 22:11.
+- #31: documentación, 22:11.
+- #33: CONTRIBUTING, 22:18.
+- #34: release v0.2.0 a `main`, 22:26.
 - #16 y #20 se cerraron sin fusionar porque los reemplazó #21.
 
-Vuelven al backlog: HU-12 y HU-19 completas, TA-13.2 (depende de HU-12) y la ejecución de TA-13.7.
+Propuestas para el Sprint 3, que salen de la evaluación y no se construyen en este sprint:
+- Filtro `promedioMenorA` y orden por `sinEntrega` en `GET /api/tools/calificaciones`, para que el backend filtre con código probado.
+- Repetir la evaluación de 10 preguntas.

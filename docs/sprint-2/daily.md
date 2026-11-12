@@ -25,3 +25,19 @@ Una entrada por persona y por día, antes de las 10:00. Formato fijo. Este archi
 - Bloqueo:
   - TA-13.2 espera HU-12 (Sebastián); HU-12 y HU-19 (Santiago) no tienen Pull Request.
   - Con `qwen2.5:7b`, la pregunta por las notas de un estudiante se responde con el resumen y no trae el detalle por actividad.
+
+### 2026-11-12 · Kevin Balseca
+
+- Hice:
+  - HU-14: una pregunta con otro código de curso se responde sin llamar al agente (#36).
+  - HU-13:
+    - búsqueda por nombre en la herramienta de calificaciones, como parte del trabajo de Jeremy (#37);
+    - TA-13.2, `GET /api/tools/alertas` en forma corta (#39);
+    - TA-13.7, evaluación con 10 preguntas al asistente real (#40).
+  - HU-12 de Sebastián: revisión, corrección de reglas por defecto y de alertas revisadas, y fusión (#38).
+  - HU-19 de Santiago: diseño D en toda la aplicación sobre su PR y fusión (#35). El PR también trae el historial del asistente en la API y en el chat.
+  - Cierre de la documentación y release v0.2.1.
+- Haré: Sprint Review con el guion de `docs/PRUEBAS.md`.
+- Bloqueo:
+  - Ninguno.
+  - Riesgo para la demo: si Ollama pierde la GPU responde lento; se reinicia el contenedor `ollama` antes de la Review y se cierra Brave para liberar memoria de video.
