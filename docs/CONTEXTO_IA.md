@@ -16,6 +16,8 @@ Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «
 | 2 | 2 nov – 12 nov 2026 (re-planificación: domingo 8 nov 2026) | jueves 12 nov 2026 |
 | 3 | 16 nov – 27 nov 2026 | por confirmar |
 
+Sprint activo: 2, hasta la Review del jueves 12 nov 2026. El siguiente es el 3.
+
 ## Lo que pidió el Product Owner en la Review del Sprint 1
 
 - «TODO debe estar en el Software, nada por consola o archivos». Toda HU se demuestra en una pantalla de la aplicación.
@@ -129,16 +131,18 @@ Solo estas. Ninguna otra.
 
 ## Alcance por sprint
 
-| HU | Historia | Sprint | Responsable |
-|---|---|---|---|
-| HU-01 a HU-07 | Moodle de laboratorio, conexión, modelo de datos, autenticación, sincronización, pantallas iniciales, spike del agente | 1 | varios |
-| HU-20 | Entorno único de ejecución con Docker Compose | 2 | Kevin |
-| HU-19 | Identidad visual y pantallas de acceso | 2 | Santiago |
-| HU-09 | Panel de indicadores del curso | 2 | Kevin |
-| HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián |
-| HU-13 | Herramientas del agente con trazas | 2 | Jeremy |
-| HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin |
-| HU-08, HU-10, HU-11, HU-15, HU-16, HU-17, HU-18 | Mapeo temático, ficha del estudiante, desempeño por tema, refuerzo, informe, auditoría, cierre | 3 | varios |
+Estado al cierre del Sprint 2 según los Pull Request fusionados en `develop` (11 nov 2026; detalle por tarea en `docs/sprint-2/PLAN.md`).
+
+| HU | Historia | Sprint | Responsable | Estado al cierre del Sprint 2 |
+|---|---|---|---|---|
+| HU-01 a HU-07 | Moodle de laboratorio, conexión, modelo de datos, autenticación, sincronización, pantallas iniciales, spike del agente | 1 | varios | Hechas en el Sprint 1 (#1 a #18) |
+| HU-20 | Entorno único de ejecución con Docker Compose | 2 | Kevin | Hecha (#27, #29) |
+| HU-19 | Identidad visual y pantallas de acceso | 2 | Santiago | No iniciada en `develop` (sin Pull Request) |
+| HU-09 | Panel de indicadores del curso | 2 | Kevin | Hecha (#23, #26) |
+| HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | No iniciada en `develop` (sin Pull Request) |
+| HU-13 | Herramientas del agente con trazas | 2 | Jeremy | A medias: TA-13.1 y TA-13.3 a 13.6 y 13.8 hechas (#21, #24, #28); TA-13.2 espera HU-12; la evaluación de TA-13.7 está sin ejecutar |
+| HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25) |
+| HU-08, HU-10, HU-11, HU-15, HU-16, HU-17, HU-18 | Mapeo temático, ficha del estudiante, desempeño por tema, refuerzo, informe, auditoría, cierre | 3 | varios | No iniciadas |
 
 No construir nada del Sprint 3 mientras el sprint activo sea el 2.
 
