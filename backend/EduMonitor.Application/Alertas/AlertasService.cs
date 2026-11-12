@@ -26,14 +26,12 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
             return null;
         }
 
-        var reglas = await ReglasDelCursoAsync(cursoId, ct);
-        if (reglas.Count == 0)
+        if (await AsegurarReglasAsync(cursoId, ct))
         {
-            reglas = ReglasConDefecto(cursoId);
-            db.ReglasAlerta.AddRange(reglas);
-            await db.SaveChangesAsync(ct);
+            await RecalcularAsync(cursoId, ct);
         }
 
+        var reglas = await ReglasDelCursoAsync(cursoId, ct);
         return reglas.OrderBy(r => Orden(r.Codigo)).Select(ADto).ToList();
     }
 
@@ -105,6 +103,13 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
                 "El estado debe ser ACTIVA o REVISADA.");
         }
 
+        // Un curso sincronizado antes de HU-12 no tiene reglas: nacen por defecto y se calculan sus alertas ahora,
+        // para que la pantalla y la tarjeta «Requiere atención» no muestren 0 con datos que sí las tienen.
+        if (await AsegurarReglasAsync(cursoId, ct))
+        {
+            await RecalcularAsync(cursoId, ct);
+        }
+
         var alertas = await db.Alertas.AsNoTracking()
             .Include(a => a.Regla)
             .Include(a => a.Estudiante)
@@ -146,12 +151,20 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
     /// </summary>
     public async Task RecalcularAsync(int cursoId, CancellationToken ct = default)
     {
+        await AsegurarReglasAsync(cursoId, ct);
         var reglas = await db.ReglasAlerta.AsNoTracking()
             .Where(r => r.CursoId == cursoId && r.Activa)
             .ToListAsync(ct);
         var activas = await db.Alertas
             .Where(a => a.Estado == EstadosAlerta.Activa && a.Regla.CursoId == cursoId)
             .ToListAsync(ct);
+        // Lo que el docente ya revisó no vuelve a activas mientras la evidencia sea la misma; si cambia, nace una alerta nueva.
+        var revisadas = (await db.Alertas.AsNoTracking()
+                .Where(a => a.Estado == EstadosAlerta.Revisada && a.Regla.CursoId == cursoId)
+                .Select(a => new { a.ReglaId, a.EstudianteId, a.Evidencia })
+                .ToListAsync(ct))
+            .Select(a => (a.ReglaId, a.EstudianteId, a.Evidencia))
+            .ToHashSet();
 
         var datos = await indicadores.CargarDatosAsync(cursoId, ct);
         if (datos is null)
@@ -199,6 +212,10 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
                     existente.Evidencia = detectada.EvidenciaJson;
                 }
             }
+            else if (revisadas.Contains((clave.ReglaId, clave.EstudianteId, detectada.EvidenciaJson)))
+            {
+                continue;
+            }
             else if (detectadasAhora.Add(clave))
             {
                 db.Alertas.Add(new Alerta
@@ -221,6 +238,19 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>Crea las tres reglas por defecto si el curso todavía no tiene ninguna. True si las creó.</summary>
+    private async Task<bool> AsegurarReglasAsync(int cursoId, CancellationToken ct)
+    {
+        if (await db.ReglasAlerta.AnyAsync(r => r.CursoId == cursoId, ct))
+        {
+            return false;
+        }
+
+        db.ReglasAlerta.AddRange(ReglasConDefecto(cursoId));
+        await db.SaveChangesAsync(ct);
+        return true;
     }
 
     private Task<List<ReglaAlerta>> ReglasDelCursoAsync(int cursoId, CancellationToken ct) =>

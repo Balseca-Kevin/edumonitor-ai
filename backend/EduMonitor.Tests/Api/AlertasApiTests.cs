@@ -175,4 +175,54 @@ public class AlertasApiTests
         Assert.Equal(HttpStatusCode.NotFound,
             (await doc01.PutAsJsonAsync("/api/cursos/9999/reglas", new object[] { R2ConUmbral1 })).StatusCode);
     }
+
+    [Fact]
+    public async Task Un_curso_sin_reglas_las_recibe_por_defecto_al_sincronizar_y_al_consultar_alertas()
+    {
+        await using var factory = new ApiConMoodleFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var curso = factory.IdCurso("AGIL-4B");
+
+        // Sincronizar sin haber abierto «Alertas»: el recálculo crea las tres reglas por defecto.
+        (await doc01.PostAsync($"/api/cursos/{curso}/sync", null)).EnsureSuccessStatusCode();
+        using (var alcance = factory.Services.CreateScope())
+        {
+            var db = alcance.ServiceProvider.GetRequiredService<IEduMonitorDbContext>();
+            Assert.Equal(3, db.ReglasAlerta.Count(r => r.CursoId == curso));
+
+            // Simula datos sincronizados antes de HU-12: el curso queda sin reglas.
+            db.ReglasAlerta.RemoveRange(db.ReglasAlerta.Where(r => r.CursoId == curso));
+            await ((Microsoft.EntityFrameworkCore.DbContext)db).SaveChangesAsync();
+        }
+
+        // La primera consulta de alertas las vuelve a crear y responde 200.
+        var alertas = await doc01.GetAsync($"/api/cursos/{curso}/alertas");
+        Assert.Equal(HttpStatusCode.OK, alertas.StatusCode);
+        using (var alcance = factory.Services.CreateScope())
+        {
+            var db = alcance.ServiceProvider.GetRequiredService<IEduMonitorDbContext>();
+            Assert.Equal(3, db.ReglasAlerta.Count(r => r.CursoId == curso));
+        }
+    }
+
+    [Fact]
+    public async Task Una_alerta_revisada_no_vuelve_a_activas_al_recalcular_si_la_evidencia_no_cambia()
+    {
+        await using var factory = new ApiConMoodleFalso();
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var curso = factory.IdCurso("AGIL-4B");
+        (await doc01.PutAsJsonAsync($"/api/cursos/{curso}/reglas", new object[] { R2ConUmbral1 })).EnsureSuccessStatusCode();
+        (await doc01.PostAsync($"/api/cursos/{curso}/sync", null)).EnsureSuccessStatusCode();
+        var alerta = Assert.Single((await doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{curso}/alertas")).EnumerateArray());
+        (await doc01.PatchAsJsonAsync($"/api/cursos/{curso}/alertas/{alerta.GetProperty("id").GetInt32()}", new { estado = "REVISADA" })).EnsureSuccessStatusCode();
+
+        // Otra sincronización con los mismos datos: la alerta sigue revisada y no aparece otra activa.
+        (await doc01.PostAsync($"/api/cursos/{curso}/sync", null)).EnsureSuccessStatusCode();
+        Assert.Empty((await doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{curso}/alertas?estado=ACTIVA")).EnumerateArray());
+
+        // Cambiar otra regla (R4) recalcula todo, pero la alerta de R2 conserva su evidencia y sigue revisada.
+        (await doc01.PutAsJsonAsync($"/api/cursos/{curso}/reglas", new object[] { new { codigo = "R2", umbral = 1.0, activa = true }, new { codigo = "R4", umbral = 7.0, activa = true } })).EnsureSuccessStatusCode();
+        Assert.Empty((await doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{curso}/alertas?estado=ACTIVA")).EnumerateArray());
+        Assert.Single((await doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{curso}/alertas?estado=REVISADA")).EnumerateArray());
+    }
 }
