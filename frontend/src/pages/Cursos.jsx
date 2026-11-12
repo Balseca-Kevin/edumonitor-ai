@@ -35,6 +35,14 @@ function claseDeEstado(estado) {
   return "pending";
 }
 
+function esAdmin() {
+  try {
+    return JSON.parse(sessionStorage.getItem("edumonitor_usuario") || "null")?.rol === "ADMIN";
+  } catch {
+    return false;
+  }
+}
+
 function leerDocente() {
   try {
     return JSON.parse(sessionStorage.getItem("edumonitor_usuario") || "null")?.nombre || "";
@@ -373,6 +381,16 @@ export default function Cursos() {
         </div>
 
         <div className="courses-user">
+          {esAdmin() && (
+            <>
+              <button className="boton-secundario" type="button" onClick={() => navigate("/admin/moodle")}>
+                Configuración de Moodle
+              </button>
+              <button className="boton-secundario" type="button" onClick={() => navigate("/admin/estado")}>
+                Estado del sistema
+              </button>
+            </>
+          )}
           <button
             className="logout-button"
             type="button"

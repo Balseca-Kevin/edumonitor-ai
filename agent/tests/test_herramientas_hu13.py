@@ -56,6 +56,7 @@ async def test_grafo_registra_cada_llamada_y_envia_el_token_fuera_del_modelo(mon
 @pytest.mark.parametrize("args", [
     {}, {"cursoId": 0}, {"cursoId": "1"}, {"cursoId": True},
     {"cursoId": 1, "estudianteId": -1}, {"cursoId": 1, "token": "secreto"},
+    {"cursoId": 1, "nombre": "a"}, {"cursoId": 1, "nombre": 12},
 ])
 @pytest.mark.asyncio
 @respx.mock
@@ -106,3 +107,33 @@ async def test_grafo_responde_al_fallo_sin_volver_a_invocar_el_modelo(monkeypatc
     assert modelo.invocaciones == 1
     assert fragmento in resultado["messages"][-1].content
     assert resultado["trazas"][0].estado == "ERROR"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_obtener_calificaciones_por_nombre_envia_el_nombre_al_backend(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/calificaciones", params={"cursoId": "1", "nombre": "Elena Espinoza"}).respond(
+        json={"estudiantes": [{"id": 5, "nombre": "Elena", "apellido": "Espinoza", "calificaciones": [{"actividad": "Tarea 3", "nota": 0}]}]}
+    )
+
+    resultado = await graph.tool_node(estado(llamada("obtener_calificaciones", {"cursoId": 1, "nombre": "Elena Espinoza"})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].parametros == {"cursoId": 1, "nombre": "Elena Espinoza"}
+    assert resultado["trazas"][0].estado == "OK"
+    assert "Tarea 3" in resultado["messages"][0].content
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_nombre_vacio_se_trata_como_consulta_de_todo_el_curso(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/calificaciones", params={"cursoId": "1"}).respond(json={"estudiantes": []})
+
+    resultado = await graph.tool_node(estado(llamada("obtener_calificaciones", {"cursoId": 1, "nombre": "  "})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].parametros == {"cursoId": 1}
+    assert resultado["trazas"][0].estado == "OK"
+

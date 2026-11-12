@@ -27,6 +27,9 @@ public class EduMonitorDbContext(DbContextOptions<EduMonitorDbContext> options) 
     public DbSet<TrazaHerramienta> TrazasHerramienta => Set<TrazaHerramienta>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
 
+    // HU-20 · Conexión con Moodle guardada por el ADMIN, con el token protegido.
+    public DbSet<ConfiguracionMoodle> ConfiguracionesMoodle => Set<ConfiguracionMoodle>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EduMonitorDbContext).Assembly);

@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EduMonitor.Application.Abstractions;
+using EduMonitor.Application.Herramientas;
+using EduMonitor.Application.Abstractions.Moodle;
 using EduMonitor.Tests.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,10 +18,12 @@ public class HerramientaCalificacionesApiTests
 {
     private sealed class ApiConMoodleFalso : ApiConDatosFactory
     {
+        public MoodleClientFalso Moodle { get; } = MoodleClientFalso.ConCursoDeEjemplo();
+
         protected override void ConfigurarServicios(IServiceCollection services)
         {
             services.RemoveAll<IMoodleClient>();
-            services.AddSingleton<IMoodleClient>(MoodleClientFalso.ConCursoDeEjemplo());
+            services.AddSingleton<IMoodleClient>(Moodle);
         }
     }
 
@@ -33,7 +37,7 @@ public class HerramientaCalificacionesApiTests
     }
 
     [Fact]
-    public async Task Devuelve_notas_y_estados_de_todo_el_curso_con_el_formato_del_contrato()
+    public async Task Sin_estudianteId_devuelve_un_resumen_por_estudiante_igual_al_del_panel_y_sin_notas_por_actividad()
     {
         var (factory, doc01, curso) = await CursoSincronizadoAsync();
         await using var _ = factory;
@@ -46,33 +50,56 @@ public class HerramientaCalificacionesApiTests
         Assert.Equal("AGIL-4B", cuerpo.GetProperty("curso").GetProperty("nombreCorto").GetString());
         Assert.NotEqual(JsonValueKind.Null, cuerpo.GetProperty("curso").GetProperty("ultimaSincronizacion").ValueKind);
 
-        var estudiantes = cuerpo.GetProperty("estudiantes").EnumerateArray().ToDictionary(e => e.GetProperty("nombre").GetString()!);
+        var lista = cuerpo.GetProperty("estudiantes").EnumerateArray().ToList();
+        var promedios = lista.Select(e => e.GetProperty("promedioPonderado").GetDecimal()).ToList();
+        Assert.Equal(promedios.Order(), promedios); // de menor a mayor promedio
+        var estudiantes = lista.ToDictionary(e => e.GetProperty("nombre").GetString()!);
         Assert.Equal(2, estudiantes.Count);
-        var ana = estudiantes["Ana"].GetProperty("calificaciones").EnumerateArray().ToDictionary(c => c.GetProperty("actividad").GetString()!);
-        Assert.Equal(0m, ana["Examen P1"].GetProperty("nota").GetDecimal());
-        Assert.Equal("CALIFICADO", ana["Examen P1"].GetProperty("estado").GetString());
-        Assert.Equal("Exámenes", ana["Examen P1"].GetProperty("categoria").GetString());
-        Assert.Equal(2, ana["Examen P1"].GetProperty("unidad").GetInt32());
-        var luis = estudiantes["Luis"].GetProperty("calificaciones").EnumerateArray().ToDictionary(c => c.GetProperty("actividad").GetString()!);
-        Assert.Equal(JsonValueKind.Null, luis["Tarea 1"].GetProperty("nota").ValueKind);
-        Assert.Equal("SIN_ENTREGA", luis["Tarea 1"].GetProperty("estado").GetString());
+        Assert.All(estudiantes.Values, e => Assert.False(e.TryGetProperty("calificaciones", out JsonElement _)));
+        Assert.Equal(1, estudiantes["Ana"].GetProperty("notas").GetProperty("ceros").GetInt32());
+        Assert.Equal(1, estudiantes["Luis"].GetProperty("notas").GetProperty("sinEntrega").GetInt32());
         Assert.Equal(7.00m, estudiantes["Luis"].GetProperty("promedioPonderado").GetDecimal());
+
+        // Mismos números que el panel del curso (GET /api/cursos/{id}/indicadores).
+        var panel = await doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{curso}/indicadores");
+        foreach (var delPanel in panel.GetProperty("estudiantes").EnumerateArray())
+        {
+            var resumen = estudiantes[delPanel.GetProperty("nombre").GetString()!];
+            Assert.Equal(delPanel.GetProperty("id").GetInt32(), resumen.GetProperty("id").GetInt32());
+            Assert.Equal(delPanel.GetProperty("apellido").GetString(), resumen.GetProperty("apellido").GetString());
+            Assert.Equal(delPanel.GetProperty("promedioPonderado").ToString(), resumen.GetProperty("promedioPonderado").ToString());
+            Assert.Equal(delPanel.GetProperty("parcial").GetBoolean(), resumen.GetProperty("parcial").GetBoolean());
+            Assert.Equal(delPanel.GetProperty("notas").ToString(), resumen.GetProperty("notas").ToString());
+        }
 
         Assert.Contains(factory.Logs.Mensajes, m => m.Contains("Herramienta obtener_calificaciones") && m.Contains("resultado OK"));
         Assert.DoesNotContain(factory.Logs.Mensajes, m => m.Contains("eyJ")); // ningún JWT en el log
     }
 
     [Fact]
-    public async Task Con_estudianteId_devuelve_solo_ese_estudiante_y_404_si_no_esta_matriculado()
+    public async Task Con_estudianteId_devuelve_las_notas_y_estados_de_ese_estudiante_y_404_si_no_esta_matriculado()
     {
         var (factory, doc01, curso) = await CursoSincronizadoAsync();
         await using var _ = factory;
-        var todos = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}");
-        var idAna = todos.GetProperty("estudiantes").EnumerateArray().First(e => e.GetProperty("nombre").GetString() == "Ana").GetProperty("id").GetInt32();
+        var resumen = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}");
+        int Id(string nombre) => resumen.GetProperty("estudiantes").EnumerateArray().First(e => e.GetProperty("nombre").GetString() == nombre).GetProperty("id").GetInt32();
 
-        var soloAna = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&estudianteId={idAna}");
+        var soloAna = (await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&estudianteId={Id("Ana")}"))
+            .GetProperty("estudiantes").EnumerateArray().Single();
+        Assert.Equal("Ana", soloAna.GetProperty("nombre").GetString());
+        var ana = soloAna.GetProperty("calificaciones").EnumerateArray().ToDictionary(c => c.GetProperty("actividad").GetString()!);
+        Assert.Equal(0m, ana["Examen P1"].GetProperty("nota").GetDecimal());
+        Assert.Equal("CALIFICADO", ana["Examen P1"].GetProperty("estado").GetString());
+        Assert.Equal("Exámenes", ana["Examen P1"].GetProperty("categoria").GetString());
+        Assert.Equal(2, ana["Examen P1"].GetProperty("unidad").GetInt32());
 
-        Assert.Equal("Ana", soloAna.GetProperty("estudiantes").EnumerateArray().Single().GetProperty("nombre").GetString());
+        var soloLuis = (await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&estudianteId={Id("Luis")}"))
+            .GetProperty("estudiantes").EnumerateArray().Single();
+        var luis = soloLuis.GetProperty("calificaciones").EnumerateArray().ToDictionary(c => c.GetProperty("actividad").GetString()!);
+        Assert.Equal(JsonValueKind.Null, luis["Tarea 1"].GetProperty("nota").ValueKind);
+        Assert.Equal("SIN_ENTREGA", luis["Tarea 1"].GetProperty("estado").GetString());
+        Assert.Equal(7.00m, soloLuis.GetProperty("promedioPonderado").GetDecimal());
+
         Assert.Equal(HttpStatusCode.NotFound, (await doc01.GetAsync($"/api/tools/calificaciones?cursoId={curso}&estudianteId=9999")).StatusCode);
     }
 
@@ -100,5 +127,63 @@ public class HerramientaCalificacionesApiTests
 
         Assert.Empty(cuerpo.GetProperty("estudiantes").EnumerateArray());
         Assert.Equal(JsonValueKind.Null, cuerpo.GetProperty("curso").GetProperty("ultimaSincronizacion").ValueKind);
+    }
+
+    // --- 12 nov · búsqueda por nombre, para que el modelo no tenga que adivinar ids ---
+
+    [Theory]
+    [InlineData("ana")]
+    [InlineData("PÉREZ")]
+    [InlineData("perez")]
+    [InlineData("Ana Pé")]
+    public async Task Con_nombre_y_una_sola_coincidencia_devuelve_el_detalle_sin_distinguir_tildes_ni_mayusculas(string nombre)
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var cuerpo = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&nombre={Uri.EscapeDataString(nombre)}");
+
+        var ana = cuerpo.GetProperty("estudiantes").EnumerateArray().Single();
+        Assert.Equal("Ana", ana.GetProperty("nombre").GetString());
+        Assert.Equal("Pérez", ana.GetProperty("apellido").GetString());
+        Assert.Equal(2, ana.GetProperty("calificaciones").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Con_nombre_y_varias_coincidencias_devuelve_la_lista_corta_para_elegir()
+    {
+        var factory = new ApiConMoodleFalso();
+        await using var _ = factory;
+        var doc01 = await factory.ClienteConSesionAsync("doc01");
+        var curso = factory.IdCurso("AGIL-4B");
+        factory.Moodle.Matriculados.Add(new MatriculadoMoodle(103, "Ana Lucía", "Mora", new[] { "student" }));
+        factory.Moodle.Calificaciones.Add(new CalificacionesUsuarioMoodle(103, new[]
+        {
+            new ItemCalificacionMoodle(10, "Exámenes", "category", null, 20, 1, 0.4m, null, 10m),
+            new ItemCalificacionMoodle(31, "Examen P1", "mod", "quiz", 3, 20, 1m, 9m, 10m),
+        }));
+        (await doc01.PostAsync($"/api/cursos/{curso}/sync", null)).EnsureSuccessStatusCode();
+
+        var cuerpo = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&nombre=ana");
+
+        var lista = cuerpo.GetProperty("estudiantes").EnumerateArray().ToList();
+        Assert.Equal(2, lista.Count);
+        Assert.All(lista, e => Assert.False(e.TryGetProperty("calificaciones", out JsonElement _)));
+        Assert.All(lista, e => Assert.StartsWith("Ana", e.GetProperty("nombre").GetString()));
+        Assert.All(lista, e => Assert.True(e.GetProperty("id").GetInt32() > 0));
+    }
+
+    [Fact]
+    public async Task Con_nombre_sin_coincidencias_responde_404_y_adriana_no_coincide_con_ana()
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var respuesta = await doc01.GetAsync($"/api/tools/calificaciones?cursoId={curso}&nombre=zoila");
+
+        Assert.Equal(HttpStatusCode.NotFound, respuesta.StatusCode);
+        Assert.Contains("se llama «zoila»", (await respuesta.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("detail").GetString());
+        Assert.False(HerramientasService.CoincideNombre("ana", "Adriana", "Toapanta"));
+        Assert.True(HerramientasService.CoincideNombre("elena espi", "Elena", "Espinoza"));
     }
 }

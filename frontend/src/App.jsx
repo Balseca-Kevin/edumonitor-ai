@@ -8,6 +8,7 @@ import CursoMarco from './pages/curso/CursoMarco'
 import Asistente from './pages/curso/Asistente'
 import Alertas from './pages/curso/Alertas'
 import Panel from './pages/curso/Panel'
+import EstadoSistema from './pages/admin/EstadoSistema'
 import './App.css'
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/cursos" element={<Cursos />} />
           <Route path="/admin/moodle" element={<ConfiguracionMoodle />} />
+          <Route path="/admin/estado" element={<EstadoSistema />} />
           <Route path="/cursos/:id" element={<CursoMarco />}>
             <Route index element={<Navigate to="panel" replace />} />
             <Route path="panel" element={<Panel />} />

@@ -203,6 +203,31 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("Calificacion", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ConfiguracionMoodle", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("Actualizado")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TokenProtegido")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ConfiguracionMoodle", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.ContenidoMinimo", b =>
                 {
                     b.Property<int>("Id")

@@ -16,6 +16,8 @@ Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «
 | 2 | 2 nov – 12 nov 2026 (re-planificación: domingo 8 nov 2026) | jueves 12 nov 2026 |
 | 3 | 16 nov – 27 nov 2026 | por confirmar |
 
+Sprint activo: 2, hasta la Review del jueves 12 nov 2026. El siguiente es el 3.
+
 ## Lo que pidió el Product Owner en la Review del Sprint 1
 
 - «TODO debe estar en el Software, nada por consola o archivos». Toda HU se demuestra en una pantalla de la aplicación.
@@ -42,7 +44,7 @@ No se cambia sin acuerdo del equipo.
 - Base de datos: SQL Server 2022 en Docker, base `EduMonitorDB`, migraciones de EF Core versionadas.
 - Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Tipografía Archivo.
 - Agente: Python 3.11, FastAPI, LangGraph, Pydantic, Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`), pytest.
-- Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
+- Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. La API usa la red de `moodle-puente`, que lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`; el puente es el dueño de esa red para que un reinicio de la API no lo rompa. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
 - Gestión: Git + GitHub con Git Flow, GitHub Actions, Jira (tablero: Por hacer, En curso, En revisión, Finalizada).
 
 ## Arquitectura
@@ -60,7 +62,7 @@ Monolito modular con un servicio de agente aparte. No hay microservicios.
  └───────────────────────────────────────────────┬────────────────────────────────────────────┘
                                                  │ REST solo lectura con token
                                                  ▼  http://host.docker.internal:8080
- Aula virtual de laboratorio · docker compose -f moodle-lab/docker-compose.yml up -d
+ Aula virtual de laboratorio · docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
  ┌──────────────────────────────┐
  │ moodle (4.5) ──► moodle-db    │
  └──────────────────────────────┘
@@ -73,13 +75,14 @@ Monolito modular con un servicio de agente aparte. No hay microservicios.
 | EduMonitor (raíz) | sqlserver | 1433 | edumonitor_sqlserver-data |
 | EduMonitor (raíz) | agent | ninguno, solo red interna | ninguno |
 | EduMonitor (raíz) | ollama | ninguno, solo red interna | ollama-models |
+| EduMonitor (raíz) | moodle-puente | 5000 de la API (la API usa su red) | ninguno |
 | Aula virtual (`moodle-lab/`) | moodle | 8080 | edumonitor_moodledata |
 | Aula virtual (`moodle-lab/`) | moodle-db | ninguno | edumonitor_moodle-db-data |
 
 - El docente usa una sola dirección, `http://localhost:5173`. El asistente es una pantalla de la app (`/cursos/:id/asistente`); el navegador nunca habla con el agente.
 - El navegador solo habla con `web`; `web` pasa `/api` a `api`.
 - El agente solo habla con `api` (`/api/tools/*`) y con `ollama`. Nunca lee la base ni conoce el token de Moodle.
-- Solo `api` habla con Moodle y con SQL Server. Moodle está en otro entorno: la API lo llama por `Moodle__Url` (`http://host.docker.internal:8080` desde Docker), como llamaría al Moodle institucional.
+- Solo `api` habla con Moodle y con SQL Server. Moodle está en otro entorno: la API lo llama por `Moodle__Url` (`http://localhost:8080`, que dentro de Docker lleva `moodle-puente` a `host.docker.internal:8080`), como llamaría al Moodle institucional.
 - Desde el Sprint 2 el docente pregunta en `POST /api/agente/chat`. La API valida el curso, emite un token de servicio corto para el agente y llama a `agent`. El agente ya no recibe el JWT del docente.
 - Promedios, desviaciones y alertas se calculan en el backend con código probado. El modelo de lenguaje solo explica resultados y recomienda.
 
@@ -128,16 +131,18 @@ Solo estas. Ninguna otra.
 
 ## Alcance por sprint
 
-| HU | Historia | Sprint | Responsable |
-|---|---|---|---|
-| HU-01 a HU-07 | Moodle de laboratorio, conexión, modelo de datos, autenticación, sincronización, pantallas iniciales, spike del agente | 1 | varios |
-| HU-20 | Entorno único de ejecución con Docker Compose | 2 | Kevin |
-| HU-19 | Identidad visual y pantallas de acceso | 2 | Santiago |
-| HU-09 | Panel de indicadores del curso | 2 | Kevin |
-| HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián |
-| HU-13 | Herramientas del agente con trazas | 2 | Jeremy |
-| HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin |
-| HU-08, HU-10, HU-11, HU-15, HU-16, HU-17, HU-18 | Mapeo temático, ficha del estudiante, desempeño por tema, refuerzo, informe, auditoría, cierre | 3 | varios |
+Estado al cierre del Sprint 2 según los Pull Request fusionados en `develop` (11 nov 2026; detalle por tarea en `docs/sprint-2/PLAN.md`).
+
+| HU | Historia | Sprint | Responsable | Estado al cierre del Sprint 2 |
+|---|---|---|---|---|
+| HU-01 a HU-07 | Moodle de laboratorio, conexión, modelo de datos, autenticación, sincronización, pantallas iniciales, spike del agente | 1 | varios | Hechas en el Sprint 1 (#1 a #18) |
+| HU-20 | Entorno único de ejecución con Docker Compose | 2 | Kevin | Hecha (#27, #29) |
+| HU-19 | Identidad visual y pantallas de acceso | 2 | Santiago | No iniciada en `develop` (sin Pull Request) |
+| HU-09 | Panel de indicadores del curso | 2 | Kevin | Hecha (#23, #26) |
+| HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | No iniciada en `develop` (sin Pull Request) |
+| HU-13 | Herramientas del agente con trazas | 2 | Jeremy | A medias: TA-13.1 y TA-13.3 a 13.6 y 13.8 hechas (#21, #24, #28); TA-13.2 espera HU-12; la evaluación de TA-13.7 está sin ejecutar |
+| HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25) |
+| HU-08, HU-10, HU-11, HU-15, HU-16, HU-17, HU-18 | Mapeo temático, ficha del estudiante, desempeño por tema, refuerzo, informe, auditoría, cierre | 3 | varios | No iniciadas |
 
 No construir nada del Sprint 3 mientras el sprint activo sea el 2.
 

@@ -3,9 +3,14 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Configuracion;
+using EduMonitor.Infrastructure.Moodle;
+using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Tests.Infraestructura;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace EduMonitor.Tests.Api;
 
@@ -142,5 +147,37 @@ public class ConfiguracionMoodleApiTests
         var cuerpo = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
         Assert.False(cuerpo.GetProperty("conectado").GetBoolean());
         Assert.False(string.IsNullOrWhiteSpace(cuerpo.GetProperty("error").GetString()));
+    }
+
+    /// <summary>
+    /// TA-20.4 · DADO un ADMIN que guarda la conexión, CUANDO la API se reinicia, ENTONCES la conexión sigue (se lee de la tabla
+    /// ConfiguracionMoodle) y el token nunca queda en texto plano en la base.
+    /// </summary>
+    [Fact]
+    public async Task Put_guarda_la_conexion_en_la_base_con_el_token_protegido_y_sobrevive_al_reinicio()
+    {
+        const string tokenNuevo = "token-persistente-de-pruebas-2222dddd";
+        await using var api = new ApiConMoodleFalso();
+        var admin = await api.ClienteConSesionAsync("admin");
+
+        var respuesta = await admin.PutAsJsonAsync("/api/admin/moodle-config", new { url = "http://host.docker.internal:8080", token = tokenNuevo });
+
+        Assert.Equal(HttpStatusCode.NoContent, respuesta.StatusCode);
+        using var alcance = api.Services.CreateScope();
+        var fila = alcance.ServiceProvider.GetRequiredService<EduMonitorDbContext>().ConfiguracionesMoodle.Single();
+        Assert.Equal("http://host.docker.internal:8080", fila.Url);
+        Assert.DoesNotContain(tokenNuevo, fila.TokenProtegido);
+        Assert.DoesNotContain("2222dddd", fila.TokenProtegido);
+
+        // Reinicio: una configuración nueva, con otros valores en el entorno, toma la fila guardada.
+        var reiniciada = new ConfiguracionMoodleEnBase(
+            Options.Create(new MoodleOptions { Url = "http://localhost:8080", Token = TokenInicial }),
+            api.Services.GetRequiredService<IServiceScopeFactory>(),
+            api.Services.GetRequiredService<IDataProtectionProvider>(),
+            TimeProvider.System,
+            NullLogger<ConfiguracionMoodleEnBase>.Instance);
+        Assert.Equal("http://host.docker.internal:8080", reiniciada.Actual.Url);
+        Assert.Equal(tokenNuevo, reiniciada.Actual.Token);
+        Assert.Equal("••••dddd", reiniciada.Actual.TokenEnmascarado);
     }
 }

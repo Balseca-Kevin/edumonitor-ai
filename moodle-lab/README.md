@@ -1,30 +1,29 @@
 # Moodle de laboratorio
 
-Moodle 4.x con datos ficticios que replica el modelo académico de la UTA. Lo levanta `docker-compose.yml` de esta carpeta (TA-01.1, Kevin).
+Moodle 4.x con datos ficticios que replica el modelo académico de la UTA. Lo levanta `docker-compose.yml` de esta carpeta (TA-01.1, Kevin) como el entorno `aula-virtual`, aparte de EduMonitor (HU-20): ocupa el lugar del Moodle institucional y EduMonitor solo lo conoce por su URL y su token.
 
 ## Qué levanta
 
 | Servicio | Imagen | Puerto en el host | Datos persistentes |
 |---|---|---|---|
-| `sqlserver` | `mcr.microsoft.com/mssql/server:2022-latest` | 1433 | volumen `edumonitor_sqlserver-data` |
 | `moodle-db` | `postgres:16-alpine` | ninguno (solo red interna) | volumen `edumonitor_moodle-db-data` |
 | `moodle` | `erseco/alpine-moodle:v4.5.15` (Moodle 4.5 LTS, PHP 8.3) | `${MOODLE_PORT}` (8080) | volumen `edumonitor_moodledata` |
 
-`sqlserver` es la base de EduMonitor (`EduMonitorDB`), no la de Moodle. Moodle usa su propia PostgreSQL.
+La base de EduMonitor (`sqlserver`, `EduMonitorDB`) ya no está aquí: corre en el entorno de EduMonitor, con el `docker-compose.yml` de la raíz. Moodle usa su propia PostgreSQL.
 
-Los datos van en volúmenes con nombre de Docker y no en carpetas del repo, porque así se evitan los problemas de permisos de PostgreSQL y SQL Server con el disco de Windows. El prefijo `edumonitor_` sale de `COMPOSE_PROJECT_NAME`. Para verlos: `docker volume ls --filter name=edumonitor_`.
+Los datos van en volúmenes con nombre de Docker y no en carpetas del repo, porque así se evitan los problemas de permisos de PostgreSQL y SQL Server con el disco de Windows. Los volúmenes conservan el nombre `edumonitor_…` del Sprint 1, declarado completo en el compose, para reutilizar los datos. Para verlos: `docker volume ls --filter name=edumonitor_`.
 
 ## Requisitos
 
 - Docker Desktop con Docker Compose v2 (`docker compose version`).
-- Un `.env` en la raíz del repo, copiado de `.env.example`, con contraseñas propias. La de SQL Server necesita mayúscula, minúscula, número, símbolo y al menos 8 caracteres.
+- Un `.env` en la raíz del repo, copiado de `.env.example`, con contraseñas propias.
 
 Todos los comandos se ejecutan **desde la raíz del repositorio**.
 
 ## Levantar
 
 ```powershell
-docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
+docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d --wait
 docker compose -f moodle-lab/docker-compose.yml --env-file .env ps
 ```
 
@@ -34,7 +33,7 @@ La primera vez Moodle se instala solo y tarda unos minutos. Para seguir el avanc
 docker compose -f moodle-lab/docker-compose.yml --env-file .env logs -f moodle
 ```
 
-`sqlserver` y `moodle-db` deben aparecer como `healthy` en `ps`.
+`moodle-db` y `moodle` deben aparecer como `healthy` en `ps`.
 
 ## Entrar a Moodle
 
@@ -46,6 +45,8 @@ Las credenciales del administrador solo se aplican en la primera instalación. S
 
 ## Conectar SSMS a SQL Server
 
+SQL Server corre en el entorno de EduMonitor (`docker compose up -d` en la raíz) y publica el 1433.
+
 | Campo | Valor |
 |---|---|
 | Server name | `localhost,1433` |
@@ -56,7 +57,7 @@ Las credenciales del administrador solo se aplican en la primera instalación. S
 
 Desde la terminal, con `sqlcmd`: `sqlcmd -S localhost,1433 -U sa -C -Q "SELECT @@VERSION"` (pide la contraseña).
 
-La base `EduMonitorDB` no existe hasta que el backend aplique las migraciones (HU-03).
+La API crea `EduMonitorDB` y aplica las migraciones al arrancar.
 
 ## Detener
 
@@ -65,22 +66,21 @@ La base `EduMonitorDB` no existe hasta que el backend aplique las migraciones (H
 docker compose -f moodle-lab/docker-compose.yml --env-file .env down
 ```
 
-Al volver a levantar, Moodle conserva cursos, usuarios y configuración, y SQL Server conserva sus bases.
+Al volver a levantar, Moodle conserva cursos, usuarios y configuración.
 
 ## Borrar todo para empezar de cero
 
-Esto elimina Moodle (sitio, cursos, archivos) **y** las bases de SQL Server, incluida `EduMonitorDB`.
+Esto elimina Moodle (sitio, cursos, archivos) y su base. `EduMonitorDB` no se toca, porque está en el otro entorno. Después hay que repetir «Restaurar desde cero» y guardar el token nuevo en EduMonitor.
 
 ```powershell
-# -v borra también los tres volúmenes
+# -v borra también los dos volúmenes de Moodle
 docker compose -f moodle-lab/docker-compose.yml --env-file .env down -v
 docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 ```
 
 ## Problemas conocidos
 
-- **Puerto ocupado** (`port is already allocated`): cambia `MOODLE_PORT` en `.env`, o detén el SQL Server local de Windows si ocupa el 1433.
-- **`sqlserver` no pasa a `healthy`**: casi siempre la contraseña no cumple la política. Revisa `docker compose -f moodle-lab/docker-compose.yml --env-file .env logs sqlserver`.
+- **Puerto ocupado** (`port is already allocated`): cambia `MOODLE_PORT` en `.env`.
 - **La instalación de Moodle falla o el sitio queda con un nombre cortado**: `MOODLE_SITE_NAME` no debe llevar espacios (usa `Moodle-Lab-UTA`), porque el instalador del contenedor no los maneja bien. Después de instalar, el nombre visible se puede cambiar dentro de Moodle.
 - **Cambié una contraseña en `.env` y ya no conecta**: PostgreSQL y el administrador de Moodle solo toman sus contraseñas en la primera creación del volumen. Usa «Borrar todo» o cambia la contraseña dentro del servicio.
 
@@ -102,8 +102,8 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 Después de restaurar los cursos base (ver «Restaurar desde cero») y configurar los servicios web (TA-02.1), desde la raíz del repo:
 
 ```powershell
-docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 ```
 
 Tarda alrededor de un minuto y medio. Sobre los cursos base agrega el libro 40/30/30, las 16 tareas por curso, doc01, doc02, est01 a est32 y las notas (TA-01.3 a TA-01.5). Un curso que ya tiene tareas no se vuelve a cargar, y las categorías y los usuarios se reutilizan si ya existen. Si los cursos base no están, el script los crea con la misma estructura: AGIL-4B con id 2 y BDD-4B con id 3, que son los ids que esperan las semillas del backend.
@@ -139,23 +139,23 @@ Con el Moodle recién instalado («Levantar» o «Borrar todo»), desde la raíz
 
 ```powershell
 # 1. Servicios web, usuario técnico y token (TA-02.1). Copia el TOKEN_NUEVO a Moodle__Token en .env
-docker exec edumonitor-moodle-1 php admin/cli/cfg.php --name=enablewebservices --set=1
-docker exec edumonitor-moodle-1 php admin/cli/cfg.php --name=webserviceprotocols --set=rest
-docker cp moodle-lab/scripts/configurar_servicios_web.php edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php /tmp/configurar_servicios_web.php
+docker exec aula-virtual-moodle-1 php admin/cli/cfg.php --name=enablewebservices --set=1
+docker exec aula-virtual-moodle-1 php admin/cli/cfg.php --name=webserviceprotocols --set=rest
+docker cp moodle-lab/scripts/configurar_servicios_web.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/configurar_servicios_web.php
 
 # 2. Categorías UTA › FISEI › Software; imprime «Software=<id>»
-docker cp moodle-lab/scripts/cargar_datos_laboratorio.php edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php --categorias
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php --categorias
 
 # 3. Cursos base de Sebastián en Software. Primero AGIL-4B y después BDD-4B, para que queden con los ids 2 y 3.
-docker cp moodle-lab/backups/cursos_base_AGIL-4B.mbz edumonitor-moodle-1:/tmp/
-docker cp moodle-lab/backups/cursos_base_BDD-4B.mbz edumonitor-moodle-1:/tmp/
-docker exec edumonitor-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_AGIL-4B.mbz --categoryid=<id de Software>
-docker exec edumonitor-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_BDD-4B.mbz --categoryid=<id de Software>
+docker cp moodle-lab/backups/cursos_base_AGIL-4B.mbz aula-virtual-moodle-1:/tmp/
+docker cp moodle-lab/backups/cursos_base_BDD-4B.mbz aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_AGIL-4B.mbz --categoryid=<id de Software>
+docker exec aula-virtual-moodle-1 php admin/cli/restore_backup.php --file=/tmp/cursos_base_BDD-4B.mbz --categoryid=<id de Software>
 
 # 4. Libro, actividades, usuarios y notas
-docker exec edumonitor-moodle-1 php /tmp/cargar_datos_laboratorio.php
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 ```
 
 Atajo: si se omiten los pasos 2 y 3, el paso 4 crea las categorías y los dos cursos con la misma estructura y los mismos ids.

@@ -1,8 +1,8 @@
 # Diccionario de datos · EduMonitorDB
 
-TA-03.5. Base SQL Server `EduMonitorDB`, creada por las migraciones de EF Core en `backend/EduMonitor.Infrastructure/Persistencia/Migraciones/`. Sigue el Diagrama 5 de la planificación. Actualizado el 29 oct 2026 (migración `Modelo_Completo`).
+TA-03.5. Base SQL Server `EduMonitorDB`, creada por las migraciones de EF Core en `backend/EduMonitor.Infrastructure/Persistencia/Migraciones/`. Sigue el Diagrama 5 de la planificación. Actualizado el 11 nov 2026 con las migraciones del Sprint 2 `Conversacion_Chat` (HU-14) y `ConfiguracionMoodle_Persistente` (HU-20).
 
-Convenciones: `PK` llave primaria, `FK` llave foránea, `UQ` índice único. Las fechas son `datetimeoffset` (ISO 8601 con zona). Los estados se guardan como texto. Ninguna tabla guarda tokens, contraseñas en claro ni datos de contacto de estudiantes.
+Convenciones: `PK` llave primaria, `FK` llave foránea, `UQ` índice único. Las fechas son `datetimeoffset` (ISO 8601 con zona). Los estados se guardan como texto. Ninguna tabla guarda tokens ni contraseñas en claro (desde el Sprint 2, `ConfiguracionMoodle` guarda el token de Moodle protegido con Data Protection) ni datos de contacto de estudiantes.
 
 ## Datos importados de Moodle
 
@@ -158,6 +158,10 @@ Se muestra como «Requiere atención», nunca como «reprobará» ni «en riesgo
 | UsuarioId | int | No | FK → Usuario (docente) |
 | CursoId | int | No | FK → Curso |
 | Fecha | datetimeoffset | No | Inicio de la conversación |
+| Pregunta | nvarchar(500) | No | Pregunta del docente (Sprint 2, `Conversacion_Chat`) |
+| Respuesta | nvarchar(max) | No | Respuesta del agente tal como la vio el docente (Sprint 2) |
+| Modelo | nvarchar(100) | No | Modelo de lenguaje que respondió, p. ej. `qwen2.5:7b` (Sprint 2) |
+| DuracionMs | int | No | Tiempo total de la consulta medido en la API (Sprint 2) |
 
 ### TrazaHerramienta
 
@@ -168,6 +172,22 @@ Se muestra como «Requiere atención», nunca como «reprobará» ni «en riesgo
 | Herramienta | nvarchar(100) | No | Nombre de la herramienta, p. ej. `listar_cursos_autorizados` |
 | Parametros | nvarchar(max) | No | Parámetros en JSON. Nunca incluye tokens |
 | Resultado | nvarchar(max) | No | `OK` o `ERROR` y resumen |
+| Estado | nvarchar(20) | No | `OK` o `ERROR` (Sprint 2, `Conversacion_Chat`) |
+| DuracionMs | int | No | Duración de la llamada a la herramienta (Sprint 2) |
+| Fecha | datetimeoffset | No | Momento de la llamada (Sprint 2) |
+
+## Configuración
+
+### ConfiguracionMoodle
+
+Sprint 2, migración `ConfiguracionMoodle_Persistente` (HU-20, TA-20.4). Una sola fila con la conexión que guarda el ADMIN en «Configuración de Moodle». Si la tabla está vacía, la API usa `Moodle__Url` y `Moodle__Token` del entorno.
+
+| Columna | Tipo | Nulo | Descripción |
+|---|---|---|---|
+| Id | int | No | PK (identidad) |
+| Url | nvarchar(500) | No | URL del sitio Moodle |
+| TokenProtegido | nvarchar(max) | No | Token del servicio web protegido con ASP.NET Core Data Protection (propósito `EduMonitor.Moodle.Token`); nunca en texto plano. Las llaves están en el volumen `edumonitor_api-keys`, fuera de la base |
+| Actualizado | datetimeoffset | No | Último guardado desde la pantalla |
 
 ## Identidad y acceso
 

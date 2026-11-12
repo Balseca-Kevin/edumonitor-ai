@@ -350,6 +350,12 @@ input[readonly] {
   border-bottom: 3px double var(--linea);
 }
 
+.courses-user {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .courses-header h1 {
   margin: 0;
   font-size: clamp(1.8rem, 3vw, 2.4rem);

@@ -35,4 +35,4 @@ Cada herramienta: parámetros validados con Pydantic, tiempo máximo de 5 s, y u
 
 ## Pruebas
 
-`python -m pytest` desde `agent/`. Las herramientas se prueban con `respx` simulando la API: respuesta correcta, 403, 500 y tiempo agotado. La evaluación de 10 preguntas va en `docs/evidencias/sprint-2/HU-13/evaluacion.md`.
+`python -m pytest` desde `agent/`. Las herramientas se prueban con `respx` simulando la API: respuesta correcta, 403, 500 y tiempo agotado. La evaluación de 10 preguntas (TA-13.7) está en la sección «TA-13.7 · Evaluación en el sistema» de `docs/evidencias/sprint-2/HU-13/README.md`.

@@ -3,6 +3,7 @@ using EduMonitor.Application.Alertas;
 using EduMonitor.Application.Auth;
 using EduMonitor.Application.Configuracion;
 using EduMonitor.Application.Cursos;
+using EduMonitor.Application.Estado;
 using EduMonitor.Application.Herramientas;
 using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Sincronizaciones;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<AlertasService>();
         services.AddScoped<HerramientasService>();
         services.AddScoped<AgenteService>();
+        services.AddScoped<EstadoSistemaService>();
         services.AddScoped<ImportadorUnidades>();
         services.AddScoped<ImportadorMatriculados>();
         services.AddScoped<ImportadorCalificaciones>();

@@ -340,9 +340,29 @@ Todas responden 401 sin token y 403 si el curso no es del docente. El backend re
 
 Sin cambios.
 
-### GET /api/tools/calificaciones?cursoId=1&estudianteId=5
+### GET /api/tools/calificaciones?cursoId=1&estudianteId=5&nombre=elena
 
-`estudianteId` es opcional: sin él devuelve todo el curso.
+`estudianteId` y `nombre` son opcionales. Cambio del 11 nov 2026 (aprobado por Kevin): el curso completo con todas sus notas ocupaba unos 49 KB y no cabía en el contexto del modelo, así que la consulta del asistente se cortaba a los 60 s.
+
+Sin `estudianteId`: un resumen por estudiante, con los mismos números que el panel (`GET /api/cursos/{id}/indicadores`), de menor a mayor `promedioPonderado` (los que no tienen promedio van al final).
+
+```json
+{
+  "herramienta": "obtener_calificaciones",
+  "generado": "2026-11-10T09:30:00-05:00",
+  "curso": { "id": 1, "nombreCorto": "AGIL-4B", "ultimaSincronizacion": "2026-11-10T07:10:00-05:00" },
+  "estudiantes": [
+    {
+      "id": 5, "nombre": "Ana", "apellido": "Pérez", "promedioPonderado": 6.1, "parcial": false,
+      "notas": { "calificadas": 12, "ceros": 1, "sinEntrega": 2, "pendientes": 1 }
+    }
+  ]
+}
+```
+
+Con `nombre` (desde el 12 nov 2026; nombre o apellido, sin distinguir tildes ni mayúsculas; cada palabra tiene que ser el inicio de una palabra del nombre completo): con una sola coincidencia, el detalle de ese estudiante como con `estudianteId`; con varias, la lista corta en el formato del resumen para que el docente elija; sin ninguna, 404 «Ningún estudiante del curso 1 se llama «…»». El agente lo usa cuando el docente escribe un nombre, para no adivinar ids.
+
+Con `estudianteId`: las notas y estados de ese estudiante por actividad (escala 0 a 10). 404 si no está matriculado en el curso.
 
 ```json
 {
@@ -360,6 +380,8 @@ Sin cambios.
   ]
 }
 ```
+
+En los dos casos, un curso sin sincronizar responde con `estudiantes` vacío y `ultimaSincronizacion` en `null`.
 
 ### GET /api/tools/alertas?cursoId=1
 
@@ -395,6 +417,11 @@ Respuesta 200:
 }
 ```
 403 si el curso es ajeno (el agente no se llama). 503 con `ProblemDetails` («Asistente no disponible») si el agente no responde en 60 s. 400 si `mensaje` está vacío o pasa de 500 caracteres.
+
+Desde el 12 nov 2026: si el mensaje nombra el código de otro curso de la base (por ejemplo `BDD-4B` desde AGIL-4B), la API responde 200 sin llamar al agente, con `herramientas` vacío y `modelo: "ninguno"`:
+- curso del docente: `"Esta conversación es de AGIL-4B. Abre BDD-4B para preguntar sobre ese curso."`;
+- curso ajeno: `"No tienes acceso a BDD-4B."`.
+La conversación se guarda igual, para que aparezca en el historial.
 
 Requiere migración: `Conversacion` agrega `Pregunta`, `Respuesta`, `Modelo` y `DuracionMs`; `TrazaHerramienta` agrega `Estado`, `DuracionMs` y `Fecha`.
 

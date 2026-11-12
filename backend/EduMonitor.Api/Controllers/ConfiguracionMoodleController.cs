@@ -14,7 +14,7 @@ public sealed class ConfiguracionMoodleController(ConfiguracionMoodleService con
     [ProducesResponseType<ConfiguracionMoodleDto>(StatusCodes.Status200OK)]
     public IActionResult Obtener() => Ok(configuracion.Obtener());
 
-    /// <summary>Cambia la URL y el token de Moodle mientras corre la API. 400 si la URL no es http(s) absoluta.</summary>
+    /// <summary>Guarda la URL y el token de Moodle en la base (token protegido); sobrevive al reinicio. 400 si la URL no es http(s) absoluta.</summary>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
