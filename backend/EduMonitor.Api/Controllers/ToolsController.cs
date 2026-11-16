@@ -42,7 +42,9 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
     /// <summary>
     /// TA-13.1 · Resumen por estudiante de un curso; detalle por actividad de un estudiante con <c>estudianteId</c> o con <c>nombre</c>
     /// (nombre o apellido, sin tildes ni mayúsculas). Varias coincidencias de nombre devuelven la lista corta para elegir.
-    /// 400 sin <c>cursoId</c>; 403 si el curso no es del docente; 404 si el curso no existe o ningún estudiante coincide.
+    /// HU-23: el resumen acepta <c>promedioMenorA</c> (0 a 10) y <c>orden</c> (<c>promedio</c> o <c>sinEntrega</c>).
+    /// 400 sin <c>cursoId</c> o con un filtro fuera de rango; 403 si el curso no es del docente; 404 si el curso no existe o ningún
+    /// estudiante coincide.
     /// </summary>
     [HttpGet("calificaciones")]
     [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
@@ -50,7 +52,9 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Calificaciones([FromQuery] int? cursoId, [FromQuery] int? estudianteId, [FromQuery] string? nombre, CancellationToken ct)
+    public async Task<IActionResult> Calificaciones(
+        [FromQuery] int? cursoId, [FromQuery] int? estudianteId, [FromQuery] string? nombre,
+        [FromQuery] decimal? promedioMenorA, [FromQuery] string? orden, CancellationToken ct)
     {
         var usuario = await User.ResolverUsuarioAsync(cursos, ct);
         if (usuario is null)
@@ -63,9 +67,29 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
             return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
         }
 
+        // HU-23 · Filtro y orden del resumen hechos en el backend.
+        if (promedioMenorA is < 0 or > 10)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "promedioMenorA tiene que estar entre 0 y 10.");
+        }
+
+        OrdenCalificaciones ordenResumen;
+        switch (orden?.Trim().ToLowerInvariant())
+        {
+            case null or "" or "promedio":
+                ordenResumen = OrdenCalificaciones.Promedio;
+                break;
+            case "sinentrega":
+                ordenResumen = OrdenCalificaciones.SinEntrega;
+                break;
+            default:
+                return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El parámetro orden solo acepta «promedio» o «sinEntrega».");
+        }
+
         try
         {
-            var resultado = await herramientas.CalificacionesAsync(cursoId.Value, estudianteId, nombre, ct);
+            var resultado = await herramientas.CalificacionesAsync(
+                cursoId.Value, estudianteId, nombre, new FiltroCalificaciones(promedioMenorA, ordenResumen), ct);
             if (resultado is null)
             {
                 Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
