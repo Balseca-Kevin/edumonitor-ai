@@ -1,4 +1,4 @@
-# Contratos de API · Sprints 1 y 2 (versión 1.0 del 21 oct 2026; bloque del Sprint 2 al final)
+# Contratos de API · Sprints 1, 2 y 3 (versión 1.0 del 21 oct 2026; bloques de los Sprints 2 y 3 al final)
 
 Este archivo define lo que el frontend y el agente pueden pedir al backend en los Sprints 1 y 2. Santiago y Jeremy trabajan contra estos JSON con datos simulados mientras el backend se termina. Un cambio aquí se hace con un commit `docs(backend): ...` y se avisa en el grupo antes de fusionarlo.
 
@@ -478,3 +478,107 @@ Respuesta: la misma forma de la respuesta de `POST /api/agente/chat` sin `conver
 { "estado": "OK", "modelo": "qwen2.5:7b", "ollama": "OK" }
 ```
 `ollama`: `OK` o `NO_DISPONIBLE`.
+
+---
+
+# Contratos de API · Sprint 3 (versión 3.0, propuesta del 16 nov 2026)
+
+Lo de arriba sigue vigente. Este bloque tiene dos partes:
+
+- Contratos detallados, que se pueden programar desde hoy: el libro de calificaciones (HU-21) y los filtros de la herramienta de calificaciones (HU-23).
+- Rutas propuestas, que su responsable detalla aquí (petición, respuesta y códigos) antes de programarlas. Kevin aprueba cada cambio, como en el Sprint 2.
+
+Reglas que valen para todo el bloque:
+
+- Todos los endpoints `/api/cursos/{id}/*` usan la política `CursoAutorizado`: 401 sin token, 403 en curso ajeno, 404 si el curso no existe, 409 si el curso nunca se sincronizó.
+- Escala 0 a 10, aprobación 7,0. Solo las notas `CALIFICADO` entran a promedios. Un dato que no se pudo obtener va en `noDisponibles`, nunca como 0.
+- Las respuestas de `/api/tools/*` que van al modelo externo llevan códigos (E-001, E-002…) en lugar de nombres, sin correos ni ids de Moodle (HU-23). La pantalla siempre recibe nombres.
+
+## Libro de calificaciones (HU-21)
+
+### GET /api/cursos/{id}/libro · DOCENTE
+
+Parámetros opcionales: `busqueda` (nombre o apellido), `orden` (`apellido`, por defecto, o `promedio`).
+
+Se arma con los datos guardados de la última sincronización; no llama a Moodle. Las notas son las mismas de Moodle, en escala 0 a 10.
+
+```json
+{
+  "cursoId": 1,
+  "escala": 10,
+  "aprobacion": 7.0,
+  "sincronizacion": { "id": 12, "fecha": "2026-11-16T07:10:00-05:00", "estado": "COMPLETADA", "origen": "http://localhost:8080" },
+  "parciales": [
+    {
+      "numero": 1,
+      "unidades": [
+        {
+          "numero": 1,
+          "nombre": "Unidad 1",
+          "actividades": [
+            { "id": 101, "nombre": "Tarea 1", "categoria": "Tareas", "fechaLimite": "2026-10-23T23:59:00-05:00" },
+            { "id": 102, "nombre": "APE 1", "categoria": "APE", "fechaLimite": "2026-10-25T23:59:00-05:00" }
+          ]
+        }
+      ]
+    }
+  ],
+  "estudiantes": [
+    {
+      "id": 5,
+      "nombre": "Ana",
+      "apellido": "Pérez",
+      "promedioPonderado": 6.1,
+      "parcial": false,
+      "notas": [
+        { "actividadId": 101, "nota": 6.25, "estado": "CALIFICADO" },
+        { "actividadId": 102, "nota": null, "estado": "SIN_ENTREGA" }
+      ]
+    }
+  ],
+  "noDisponibles": []
+}
+```
+- Los valores del ejemplo son ilustrativos.
+- `categoria`: el nombre de la categoría del libro de Moodle (exámenes, tareas o APE), con el mismo valor que devuelve `GET /api/tools/calificaciones`.
+- Cada estudiante tiene una entrada en `notas` por cada actividad de `parciales`, en el mismo orden. `estado`: `CALIFICADO` (con `nota`, incluido 0), `SIN_ENTREGA` o `PENDIENTE` (con `nota` en `null`).
+- `promedioPonderado` es el mismo valor de `GET /api/cursos/{id}/indicadores`; `parcial: true` cuando faltó una categoría.
+
+## Filtros de la herramienta de calificaciones (HU-23)
+
+### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega
+
+Parámetros nuevos, opcionales, solo para el resumen sin `estudianteId`:
+
+- `promedioMenorA`: número de 0 a 10. Devuelve solo los estudiantes con `promedioPonderado` menor a ese valor; los que no tienen promedio quedan fuera. 400 si sale de 0 a 10.
+- `orden`: `promedio` (por defecto, de menor a mayor) o `sinEntrega` (de mayor a menor cantidad de actividades sin entrega; empate por apellido).
+
+La forma de la respuesta no cambia. Corrige las preguntas 5, 6 y 9 de la evaluación de TA-13.7, donde el modelo filtraba u ordenaba la lista de 32 estudiantes.
+
+## Rutas propuestas (se detallan antes de programarlas)
+
+Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nueva» no están en la planificación.
+
+| Método | Ruta | Rol | HU | Origen |
+|---|---|---|---|---|
+| GET | `/api/cursos/{id}/estudiantes/{eid}` | DOCENTE | HU-10 | Planificación |
+| GET | `/api/cursos/{id}/estudiantes/{eid}/nota-necesaria` | DOCENTE | HU-10 (TA-10.A1) | nueva |
+| GET/POST | `/api/cursos/{id}/unidades/{uid}/temas` | DOCENTE | HU-08 | Planificación |
+| PUT | `/api/cursos/{id}/actividades/{aid}/temas` | DOCENTE | HU-08 | Planificación (suma criterios de rúbrica) |
+| GET | `/api/cursos/{id}/tematicas` | DOCENTE | HU-22 (antes HU-11) | Planificación |
+| GET | `/api/cursos/{id}/analisis-grupal` | DOCENTE | HU-22 (antes HU-11) | Planificación |
+| GET | `/api/cursos/{id}/actividades/{aid}` | DOCENTE | HU-22 | nueva |
+| GET/PATCH | `/api/cursos/{id}/refuerzos` | DOCENTE | HU-15 | Planificación |
+| GET | `/api/cursos/{id}/refuerzos/{rid}/documento?formato=pdf\|docx` | DOCENTE | HU-15 | nueva |
+| GET | `/api/cursos/{id}/refuerzos/aplicados` | DOCENTE | HU-15 (TA-15.A2) | nueva |
+| GET | `/api/cursos/{id}/informe?formato=pdf` | DOCENTE | HU-16 | Planificación |
+| GET | `/api/auditoria` | ADMIN | HU-17 | Planificación |
+| GET/PUT | `/api/admin/modelo` | ADMIN | HU-23 | nueva |
+| POST/GET | `/api/admin/evaluacion-agente` | ADMIN | HU-18 (TA-18.A1) | nueva |
+| GET | `/api/tools/actividad`, `/api/tools/desempeno-tematico`, `/api/tools/retroalimentacion`, `/api/tools/refuerzos-aplicados`, `/api/tools/nota-necesaria` | DOCENTE, AGENTE | HU-15, HU-22, HU-23 | nueva |
+
+Cambios propuestos en rutas existentes (se detallan en la primera tarea de HU-23):
+
+- `POST /api/agente/chat` suma `conversacionId` (para seguir una conversación) y `foco` (`actividadId` y `estudianteId` opcionales). La respuesta suma `respaldo` (true si respondió el modelo local por falla del externo) y `cifras` (valor, herramienta, fila y si quedó verificada).
+- `POST /chat` del agente recibe el foco y los últimos 4 turnos.
+- `GET /salud` del agente y `GET /api/admin/estado` muestran el modelo externo y el local por separado.
