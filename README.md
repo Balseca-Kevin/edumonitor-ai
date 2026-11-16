@@ -182,7 +182,7 @@ La configuración de Moodle se guarda en la tabla `ConfiguracionMoodle`, con el 
 
 1. Entra como `admin`. En «Configuración de Moodle» deja la URL `http://localhost:8080`, pega el token (o deja el campo vacío para conservar el actual) y pulsa «Guardar». Anota la hora de «Última actualización».
 2. Reinicia la API con `docker compose restart api`, o reinicia Docker Desktop o el equipo.
-3. Vuelve a entrar como `admin`. «Última actualización» muestra la misma hora del paso 1, la clave actual termina en los mismos 4 caracteres y «Probar conexión» responde «Conexión correcta» con 8/8 funciones. Si la API hubiera vuelto a leer el entorno, la hora sería la del arranque.
+3. Vuelve a entrar como `admin`. «Última actualización» muestra la misma hora del paso 1, la clave actual termina en los mismos 4 caracteres y «Probar conexión» responde «Conexión correcta» con 11/11 funciones. Si la API hubiera vuelto a leer el entorno, la hora sería la del arranque.
 
 ### Cómo llega la API a Moodle
 

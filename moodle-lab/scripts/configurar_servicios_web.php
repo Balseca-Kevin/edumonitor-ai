@@ -2,9 +2,9 @@
 // TA-02.1 · Configura los servicios web de Moodle para EduMonitor. Idempotente: se puede ejecutar varias veces.
 //
 // Crea o actualiza:
-//   - el rol de sistema «edumonitor_lectura» con solo las capacidades de lectura que piden las 8 funciones permitidas,
+//   - el rol de sistema «edumonitor_lectura» con solo las capacidades que piden las 11 funciones permitidas,
 //   - el usuario técnico «edumonitor_ws_user» con ese rol,
-//   - el servicio externo «edumonitor_ws» con exactamente las 8 funciones permitidas y usuarios restringidos,
+//   - el servicio externo «edumonitor_ws» con exactamente las 11 funciones permitidas y usuarios restringidos,
 //   - un token permanente para el usuario técnico (solo si no existe; el token se imprime una única vez).
 //
 // Antes, habilitar servicios web y REST con la CLI estándar:
@@ -12,8 +12,8 @@
 //   php admin/cli/cfg.php --name=webserviceprotocols --set=rest
 //
 // Uso (desde la raíz del repo):
-//   docker cp moodle-lab/scripts/configurar_servicios_web.php edumonitor-moodle-1:/tmp/
-//   docker exec edumonitor-moodle-1 php /tmp/configurar_servicios_web.php
+//   docker cp moodle-lab/scripts/configurar_servicios_web.php aula-virtual-moodle-1:/tmp/
+//   docker exec aula-virtual-moodle-1 php /tmp/configurar_servicios_web.php
 
 define('CLI_SCRIPT', true);
 require('/var/www/html/config.php');
@@ -34,6 +34,10 @@ const FUNCIONES = [
     'mod_assign_get_assignments',
     'mod_assign_get_submissions',
     'core_completion_get_activities_completion_status',
+    // Sprint 3 (16 nov 2026): rúbricas y comentarios del docente para HU-08, HU-10, HU-15 y HU-22.
+    'core_grading_get_definitions',
+    'core_grading_get_gradingform_instances',
+    'mod_assign_get_submission_status',
 ];
 
 // Capacidades de lectura que necesitan esas funciones. Ninguna permite escribir ni calificar.
@@ -48,6 +52,11 @@ const CAPACIDADES = [
     'mod/assign:view',                      // mod_assign_get_assignments
     'mod/assign:viewgrades',                // mod_assign_get_submissions (lectura de entregas y estados)
     'report/progress:view',                 // core_completion_get_activities_completion_status de otros usuarios
+    // core_grading_get_gradingform_instances la exige siempre, y core_grading_get_definitions para leer las rúbricas.
+    // En Moodle es la capacidad de editar rúbricas, pero el token solo llega a las 11 funciones de lectura de FUNCIONES
+    // (core_grading_save_definitions no está en el servicio) y el usuario técnico no entra por la web: su contraseña es aleatoria.
+    'moodle/grade:managegradingforms',
+    // mod_assign_get_submission_status de otros usuarios usa mod/assign:viewgrades, que ya está arriba.
 ];
 
 $sistema = context_system::instance();
@@ -84,7 +93,7 @@ if (!$usuario) {
 role_assign($rolid, $usuario->id, $sistema->id);
 $resumen[] = 'rol asignado al usuario';
 
-// 3. Servicio externo con exactamente las 8 funciones y acceso solo para usuarios autorizados.
+// 3. Servicio externo con exactamente las 11 funciones y acceso solo para usuarios autorizados.
 $ws = new webservice();
 $servicio = $DB->get_record('external_services', ['shortname' => SERVICIO]);
 if (!$servicio) {
