@@ -6,7 +6,7 @@ Pega este archivo al inicio de cualquier conversación con una IA que no lea el 
 
 EduMonitor AI es una aplicación web separada de Moodle. Lee cursos, matriculados, actividades, calificaciones y estados de entrega de un Moodle de laboratorio por servicios web REST oficiales, los guarda en SQL Server, calcula indicadores en código determinista en el backend y ofrece al docente un agente de IA que consulta esos datos llamando a herramientas del backend.
 
-Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «B», julio–diciembre 2026). Docente y Product Owner: Ing. Hernán Fabricio Naranjo Ávalos. Scrum con 3 sprints (19 oct – 27 nov 2026). Los documentos fuente están en `docs/planificacion/` y el plan del sprint activo en `docs/sprint-2/PLAN.md`.
+Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «B», julio–diciembre 2026). Docente y Product Owner: Ing. Hernán Fabricio Naranjo Ávalos. Scrum con 3 sprints (19 oct – 27 nov 2026). Los documentos fuente están en `docs/planificacion/` y el plan del sprint activo en `docs/sprint-3/PLAN.md`.
 
 ## Fechas
 
@@ -14,9 +14,9 @@ Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «
 |---|---|---|
 | 1 | 19 oct – 30 oct 2026 | 29 oct 2026 |
 | 2 | 2 nov – 12 nov 2026 (re-planificación: domingo 8 nov 2026) | jueves 12 nov 2026 |
-| 3 | 16 nov – 27 nov 2026 | por confirmar |
+| 3 | 16 nov – 27 nov 2026 | viernes 27 nov 2026 (final) |
 
-Sprint activo: 2, hasta la Review del jueves 12 nov 2026. El siguiente es el 3.
+Sprint activo: 3, del lunes 16 al viernes 27 nov 2026. Es el último.
 
 ## Lo que pidió el Product Owner en la Review del Sprint 1
 
@@ -24,7 +24,23 @@ Sprint activo: 2, hasta la Review del jueves 12 nov 2026. El siguiente es el 3.
 - El inicio de sesión se veía genérico. La interfaz se rehace con el sistema de diseño de `docs/sprint-2/diseno.md`.
 - Las historias de usuario no van en primera persona y deben coincidir entre planificación, Jira e informe.
 
-## Equipo y responsabilidades del Sprint 2
+## Lo que pidió el Product Owner en la Review del Sprint 2
+
+- Señaló un solo error: la aplicación no muestra las notas completas de los estudiantes, solo cálculos (promedios, conteos, alertas). Sin las notas el docente no puede comprobar ningún cálculo. Respuesta: HU-21, libro de calificaciones, como primera pantalla del curso, y toda cifra se puede abrir para ver de qué notas sale.
+- Autorizó usar un modelo de IA externo, con cautela, tolerancia a fallos y un plan de respaldo. Reglas en «Modelo de IA» más abajo y en `agent/AGENTS.md`.
+
+## Equipo y responsabilidades del Sprint 3
+
+| Integrante | Rol Scrum | Área | HU del Sprint 3 |
+|---|---|---|---|
+| Kevin Balseca | Scrum Master / Developer | Backend, Moodle, integración, Docker | HU-22 Mapa del curso y panel de actividad (pantallas), HU-23 Asistente con contexto, memoria y respaldo, HU-17 Trazas y auditoría; endpoint de HU-21 y generador de documentos de HU-15 |
+| Sebastián Freire | Developer | Datos y analítica | HU-08 Mapeo temático; cálculos por actividad, criterio y tema de HU-22 |
+| Santiago Escobar | Developer | Interfaz | HU-21 Libro de calificaciones, HU-10 Ficha del estudiante, HU-16 Informe del curso |
+| Jeremy Guamán | Developer | Agente de IA | HU-15 Retroalimentación y refuerzo; nodos del grafo de HU-23; evaluación del agente (HU-18) |
+
+HU-18 (pruebas, documentación y demostración) es de todo el equipo. Tareas y horas en `docs/sprint-3/PLAN.md`.
+
+## Equipo y responsabilidades del Sprint 2 (cerrado)
 
 | Integrante | Rol Scrum | Área | HU del Sprint 2 |
 |---|---|---|---|
@@ -43,7 +59,7 @@ No se cambia sin acuerdo del equipo.
 - Backend: ASP.NET Core Web API sobre .NET 8 (`net8.0`), controladores, Entity Framework Core 8 con SQL Server, JWT, Swagger, xUnit. Paquetes `Microsoft.*` siempre en versión 8.0.x.
 - Base de datos: SQL Server 2022 en Docker, base `EduMonitorDB`, migraciones de EF Core versionadas.
 - Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Diseño D (`docs/sprint-2/diseno.md`): Archivo y JetBrains Mono para códigos de curso.
-- Agente: Python 3.11, FastAPI, LangGraph, Pydantic, Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`), pytest.
+- Agente: Python 3.11, FastAPI, LangGraph, Pydantic, pytest. Modelo: proveedor externo autorizado por el Product Owner en la Review del Sprint 2 (por confirmar con la prueba de las 10 preguntas), con Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`) como respaldo local.
 - Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. La API usa la red de `moodle-puente`, que lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`; el puente es el dueño de esa red para que un reinicio de la API no lo rompa. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
 - Gestión: Git + GitHub con Git Flow, GitHub Actions, Jira (tablero: Por hacer, En curso, En revisión, Finalizada).
 
@@ -85,6 +101,23 @@ Monolito modular con un servicio de agente aparte. No hay microservicios.
 - Solo `api` habla con Moodle y con SQL Server. Moodle está en otro entorno: la API lo llama por `Moodle__Url` (`http://localhost:8080`, que dentro de Docker lleva `moodle-puente` a `host.docker.internal:8080`), como llamaría al Moodle institucional.
 - Desde el Sprint 2 el docente pregunta en `POST /api/agente/chat`. La API valida el curso, emite un token de servicio corto para el agente y llama a `agent`. El agente ya no recibe el JWT del docente.
 - Promedios, desviaciones y alertas se calculan en el backend con código probado. El modelo de lenguaje solo explica resultados y recomienda.
+- Desde el Sprint 3 el agente llama primero al modelo externo y, si falla, a `ollama`. El proveedor se elige con variables de entorno, que se agregan a `.env.example` en la tarea de HU-23 que lo implemente.
+
+## Modelo de IA (Sprint 3)
+
+- Principal: modelo externo con llamadas a herramientas compatibles con LangGraph. Respaldo: `qwen2.5:7b` en `ollama`.
+- Seudonimización: antes de llamar al modelo externo, el backend cambia cada nombre de estudiante por un código (E-001, E-002…). La tabla código-nombre queda en el backend y la pantalla muestra nombres. No salen nombres, correos ni ids de Moodle.
+- Tolerancia a fallos:
+  1. Límite de 20 s para el modelo externo; la consulta completa mantiene los 60 s.
+  2. Error, tiempo agotado, 429 o respuesta sin el formato esperado: la misma pregunta va al modelo local.
+  3. 3 fallos del externo en 5 minutos: 5 minutos directo al modelo local.
+  4. «Estado del sistema» muestra los dos modelos, cuál está activo y el interruptor «Usar solo el modelo local» (solo ADMIN).
+  5. Cada respuesta dice «Respondió: modelo externo» o «Respondió: modelo local (respaldo)», y la traza lo guarda.
+  6. Si fallan los dos: «El asistente no está disponible» (503, como desde HU-14).
+- Contexto y memoria: el backend envía al agente el foco de la pantalla (curso, actividad, estudiante, por id) y los últimos 4 turnos de la conversación guardada.
+- Verificación de cifras: un nodo de código revisa que cada número de la respuesta esté en lo que devolvieron las herramientas y devuelve de dónde sale cada uno, para enlazarlo en pantalla. Si falta uno, el modelo redacta otra vez; si vuelve a faltar, la cifra se marca como no verificada.
+- Fuera de alcance: el asistente no evalúa aspectos clínicos ni psicológicos; dice que no puede y ofrece lo que muestran los datos.
+- Evaluación: 18 preguntas (10 del Sprint 2, 5 de seguimiento, 3 fuera de alcance), corridas con los dos modelos desde la pantalla «Calidad del asistente».
 
 ### Capas del backend
 
@@ -117,10 +150,16 @@ Dependencias permitidas: Api → Application, Infrastructure · Infrastructure �
 - Indicadores (planificación, tabla 5): promedio ponderado, media, mediana, desviación estándar muestral, grupos (alto ≥ 8,5; medio 6,0 a 8,49; bajo < 6,0), puntuación z, tasa de finalización, tendencia con N = 3. Caso de prueba fijo: 9, 8, 6, 3, 3 → promedio 5,80, desviación 2,77.
 - Reglas de alerta del Sprint 2: R1 descenso reciente (tendencia ≤ −1,5 con N = 3), R2 atrasos (2 o más actividades vencidas sin entrega), R4 promedio bajo (promedio ponderado < 7,0 con al menos 4 notas). Umbrales configurables por curso.
 - Lenguaje de alertas: «Requiere atención». Nunca «reprobará» ni «en riesgo».
+- Cálculos del Sprint 3, deterministas en Application y con pruebas:
+  - Desempeño por tema y por criterio de rúbrica, con el mapeo de HU-08.
+  - Por criterio: porcentaje de dominio del curso y correlación entre la nota del criterio y la nota total. En pantalla: «Casi todo el curso falló este criterio: revisar cómo se enseñó» o «Este criterio no separa a quienes van bien del resto: revisar el enunciado». Con 32 estudiantes es orientativo: se dice «revisar», no un veredicto, y no aparece la palabra correlación.
+  - Nota mínima para llegar a 7,0 con 40/30/30 y las actividades pendientes, o aviso de que ya no alcanza. En pantalla: «cálculo con las notas actuales», nunca «nota final».
+  - Refuerzo aplicado: al aprobar un refuerzo se guardan estudiante, tema y fecha; después de la siguiente sincronización se compara el promedio del tema antes y después. Estados: subió, igual, bajó, sin notas nuevas. En pantalla se dice el cambio («subió de 5,2 a 7,1 en el tema después del refuerzo»), no que el refuerzo lo causó.
+- Los borradores de retroalimentación y refuerzo los aprueba el docente y se descargan en PDF o DOCX. Nada se envía al estudiante.
 
 ## Funciones de Moodle permitidas
 
-Solo estas. Ninguna otra.
+Solo estas. Ninguna otra. Las tres últimas se agregan a `edumonitor_ws` en el Sprint 3 para rúbricas y comentarios del docente.
 
 | Función | Uso |
 |---|---|
@@ -132,10 +171,13 @@ Solo estas. Ninguna otra.
 | `mod_assign_get_assignments` | Tareas y fechas límite |
 | `mod_assign_get_submissions` | Estado de entrega por estudiante |
 | `core_completion_get_activities_completion_status` | Estado de finalización |
+| `core_grading_get_definitions` | Rúbricas y sus criterios (Sprint 3, HU-08) |
+| `core_grading_get_gradingform_instances` | Cómo se calificó cada criterio de la rúbrica (Sprint 3, HU-08 y HU-22) |
+| `mod_assign_get_submission_status` | Estado y comentario del docente por entrega (Sprint 3, HU-10 y HU-15) |
 
 ## Alcance por sprint
 
-Estado al cierre del Sprint 2 según los Pull Request fusionados en `develop` (12 nov 2026, día de la Review; detalle por tarea en `docs/sprint-2/PLAN.md`).
+Estado al inicio del Sprint 3 (16 nov 2026). Detalle del Sprint 2 por tarea en `docs/sprint-2/PLAN.md`; del Sprint 3 en `docs/sprint-3/PLAN.md`.
 
 | HU | Historia | Sprint | Responsable | Estado al cierre del Sprint 2 |
 |---|---|---|---|---|
@@ -146,9 +188,18 @@ Estado al cierre del Sprint 2 según los Pull Request fusionados en `develop` (1
 | HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | Hecha (#38) |
 | HU-13 | Herramientas del agente con trazas | 2 | Jeremy | Hecha (#21, #24, #28, #37, #39, #40) |
 | HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25, #36, #35) |
-| HU-08, HU-10, HU-11, HU-15, HU-16, HU-17, HU-18 | Mapeo temático, ficha del estudiante, desempeño por tema, refuerzo, informe, auditoría, cierre | 3 | varios | No iniciadas |
+| HU-21 | Libro de calificaciones (nueva, por la Review del Sprint 2) | 3 | Santiago; endpoint de Kevin | Por hacer |
+| HU-10 | Ficha del estudiante | 3 | Santiago | Por hacer |
+| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 3 | Sebastián | Por hacer |
+| HU-22 | Mapa del curso y panel de actividad (nueva, absorbe HU-11) | 3 | Kevin; cálculos de Sebastián | Por hacer |
+| HU-11 | Desempeño por tema y temas críticos | 3 | — | Fusionada en HU-22 |
+| HU-15 | Retroalimentación y refuerzo descargables | 3 | Jeremy; generador de documentos de Kevin | Por hacer |
+| HU-23 | Asistente con contexto, memoria, verificación de cifras y respaldo local (nueva) | 3 | Kevin; nodos del grafo de Jeremy | Por hacer |
+| HU-16 | Informe del curso | 3 | Santiago | Por hacer |
+| HU-17 | Trazas visibles y auditoría | 3 | Kevin | Por hacer |
+| HU-18 | Pruebas, documentación y demostración final | 3 | Todo el equipo | Por hacer |
 
-No construir nada del Sprint 3 mientras el sprint activo sea el 2.
+Los agregados del Sprint 3 (refuerzo antes y después, diagnóstico por criterio, nota necesaria, cifras enlazadas, «Calidad del asistente», preguntas fuera de alcance) son tareas TA-xx.A dentro de esas HU. El sábado 21 nov 2026 se decide si entran tres más (TA-xx.B), según `docs/sprint-3/PLAN.md`.
 
 ## Convenciones
 
