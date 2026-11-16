@@ -61,9 +61,11 @@ Release Plan vigente, re-planificado el 8 nov 2026 ([docs/sprint-2/PLAN.md](docs
 |---|---|---|---|---|
 | 1 | 19 oct – 30 oct 2026 | Moodle de laboratorio, conexión por servicios web, modelo de datos, autenticación con autorización por curso, Mis cursos, primera sincronización y spike del agente | 39 | Cerrado · Review el 29 oct 2026 |
 | 2 | 2 nov – 12 nov 2026 | Panel de indicadores, alertas con evidencia, asistente en la app, herramientas del agente con trazas, identidad visual y entorno único con Docker | 39 de 39 hechos | Cerrado · Review el jueves 12 nov 2026 · v0.2.1 |
-| 3 | 16 nov – 27 nov 2026 | Mapeo temático, ficha del estudiante, desempeño por tema, tareas de refuerzo, informe, auditoría y cierre (HU-08, HU-10, HU-11, HU-15 a HU-18) | 42 | Por iniciar |
+| 3 | 16 nov – 27 nov 2026 | Libro de calificaciones con las notas reales, ficha del estudiante, mapeo temático, mapa del curso y panel de actividad, retroalimentación y refuerzo descargables, asistente con contexto y respaldo local, informe, auditoría y cierre (HU-21, HU-10, HU-08, HU-22, HU-15, HU-23, HU-16, HU-17, HU-18) | 50 propuestos | En curso · Review final el viernes 27 nov 2026 · plan en [docs/sprint-3/PLAN.md](docs/sprint-3/PLAN.md) |
 
 Cambio frente a la planificación inicial (110 SP), por la retroalimentación de la Review del Sprint 1: entran las HU nuevas HU-19 y HU-20, HU-14 se adelanta al Sprint 2, y HU-08, HU-10 y HU-11 pasan al Sprint 3.
+
+Cambio para el Sprint 3, por la Review del Sprint 2 (12 nov 2026), donde el Product Owner señaló que la aplicación no muestra las notas reales: entran HU-21 (libro de calificaciones), HU-22 (mapa del curso y panel de actividad, que absorbe HU-11) y HU-23 (asistente con contexto, memoria y modelo externo con respaldo local).
 
 ### Sprint 1
 
