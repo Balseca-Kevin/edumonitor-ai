@@ -544,6 +544,14 @@ Se arma con los datos guardados de la última sincronización; no llama a Moodle
 - Cada estudiante tiene una entrada en `notas` por cada actividad de `parciales`, en el mismo orden. `estado`: `CALIFICADO` (con `nota`, incluido 0), `SIN_ENTREGA` o `PENDIENTE` (con `nota` en `null`).
 - `promedioPonderado` es el mismo valor de `GET /api/cursos/{id}/indicadores`; `parcial: true` cuando faltó una categoría.
 
+Detalle del 16 nov 2026 (TA-21.1, Kevin):
+- `orden=promedio` va de menor a mayor promedio, con los que no tienen promedio al final y empate por apellido, como `GET /api/tools/calificaciones`. Otro valor de `orden` responde 400.
+- `busqueda` usa la misma regla que el parámetro `nombre` de `GET /api/tools/calificaciones` (cada palabra es el inicio de una palabra del nombre completo, sin distinguir tildes ni mayúsculas). Sin coincidencias, `estudiantes` va vacío con 200; las columnas no cambian.
+- Solo aparecen las unidades con actividades y los parciales con unidades. Las actividades van en el orden del curso: unidad, fecha límite y orden del ítem en Moodle.
+- Una actividad que en Moodle no está en ninguna sección va al final, en el parcial `0` y la unidad `0` «Sin unidad».
+- `estado` es `null` cuando el estudiante no tiene registro para esa actividad o Moodle no dio el dato; la pantalla lo muestra como «no disponible».
+- `noDisponibles` lleva `"estadosEntrega"` cuando la última sincronización no pudo leer `mod_assign_get_assignments` o `mod_assign_get_submissions`. Así la pantalla avisa que «sin entrega» y «pendiente» pueden no estar al día.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega
