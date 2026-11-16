@@ -20,10 +20,13 @@ public class MoodleClientIntegracionTests
         "mod_assign_get_assignments",
         "mod_assign_get_submissions",
         "core_completion_get_activities_completion_status",
+        "core_grading_get_definitions",
+        "core_grading_get_gradingform_instances",
+        "mod_assign_get_submission_status",
     };
 
     [FactMoodleReal]
-    public async Task El_servicio_tiene_exactamente_las_8_funciones_permitidas()
+    public async Task El_servicio_tiene_exactamente_las_11_funciones_permitidas()
     {
         var info = await MoodleReal.Cliente().ObtenerInfoSitioAsync();
 

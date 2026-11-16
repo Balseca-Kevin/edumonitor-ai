@@ -20,6 +20,10 @@ public sealed class ConfiguracionMoodleService(IConfiguracionMoodle configuracio
         "mod_assign_get_assignments",
         "mod_assign_get_submissions",
         "core_completion_get_activities_completion_status",
+        // Sprint 3: rúbricas y comentarios del docente (HU-08, HU-10, HU-15, HU-22).
+        "core_grading_get_definitions",
+        "core_grading_get_gradingform_instances",
+        "mod_assign_get_submission_status",
     };
 
     public ConfiguracionMoodleDto Obtener()
