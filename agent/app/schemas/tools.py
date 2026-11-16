@@ -26,6 +26,17 @@ class ParametrosAlertas(BaseModel):
 class ParametrosCalificaciones(ParametrosAlertas):
     estudianteId: Optional[int] = Field(default=None, gt=0, strict=True)
     nombre: Optional[str] = Field(default=None, min_length=2, max_length=80, strict=True)
+    # HU-23: filtro y orden del resumen hechos por el backend (docs/contratos-api.md, bloque Sprint 3).
+    promedioMenorA: Optional[float] = Field(default=None, ge=0, le=10)
+    orden: Optional[Literal["promedio", "sinEntrega"]] = None
+
+    @field_validator("promedioMenorA", "orden", mode="before")
+    @classmethod
+    def filtro_vacio_es_ninguno(cls, valor):
+        """El modelo manda "" cuando no quiere filtrar ni ordenar: se trata como si no viniera."""
+        if isinstance(valor, str) and not valor.strip():
+            return None
+        return valor
 
     @field_validator("nombre", mode="before")
     @classmethod

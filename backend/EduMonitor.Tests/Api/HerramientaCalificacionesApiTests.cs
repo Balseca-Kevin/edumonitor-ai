@@ -186,4 +186,51 @@ public class HerramientaCalificacionesApiTests
         Assert.False(HerramientasService.CoincideNombre("ana", "Adriana", "Toapanta"));
         Assert.True(HerramientasService.CoincideNombre("elena espi", "Elena", "Espinoza"));
     }
+
+    [Fact]
+    public async Task PromedioMenorA_deja_solo_a_los_que_estan_por_debajo_sin_incluir_el_limite()
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        // Ana 3,64 y Luis 7,00: con 7 solo entra Ana, porque 7,00 no es menor a 7.
+        var cuerpo = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&promedioMenorA=7");
+        var unico = Assert.Single(cuerpo.GetProperty("estudiantes").EnumerateArray());
+        Assert.Equal("Ana", unico.GetProperty("nombre").GetString());
+
+        var todos = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&promedioMenorA=7.5");
+        Assert.Equal(2, todos.GetProperty("estudiantes").GetArrayLength());
+
+        var ninguno = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&promedioMenorA=3");
+        Assert.Empty(ninguno.GetProperty("estudiantes").EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Orden_sinEntrega_pone_primero_a_quien_mas_actividades_sin_entregar_tiene()
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var porPromedio = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}");
+        Assert.Equal(new[] { "Ana", "Luis" }, porPromedio.GetProperty("estudiantes").EnumerateArray().Select(e => e.GetProperty("nombre").GetString()));
+
+        var porSinEntrega = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&orden=sinEntrega");
+        var lista = porSinEntrega.GetProperty("estudiantes").EnumerateArray().ToList();
+        Assert.Equal(new[] { "Luis", "Ana" }, lista.Select(e => e.GetProperty("nombre").GetString())); // Luis: 1 sin entrega; Ana: 0
+        Assert.Equal(1, lista[0].GetProperty("notas").GetProperty("sinEntrega").GetInt32());
+    }
+
+    [Theory]
+    [InlineData("promedioMenorA=-1")]
+    [InlineData("promedioMenorA=10.5")]
+    [InlineData("orden=nota")]
+    public async Task Filtro_fuera_de_rango_responde_400(string filtro)
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var respuesta = await doc01.GetAsync($"/api/tools/calificaciones?cursoId={curso}&{filtro}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+    }
 }
