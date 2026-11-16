@@ -22,6 +22,28 @@ React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. La int
 | `/admin/moodle` | `pages/ConfiguracionMoodle.jsx` | HU-02 |
 | `/admin/estado` | `pages/admin/EstadoSistema.jsx` | HU-20 |
 
+Pantallas del Sprint 3 (rutas propuestas; se confirman con el contrato de cada HU):
+
+| Ruta | Página | HU |
+|---|---|---|
+| `/cursos/:id/libro` | `pages/curso/Libro.jsx` | HU-21 |
+| `/cursos/:id/estudiantes/:eid` | `pages/curso/FichaEstudiante.jsx` | HU-10 |
+| `/cursos/:id/mapa` | `pages/curso/Mapa.jsx` | HU-22 |
+| `/cursos/:id/actividades/:aid` | `pages/curso/Actividad.jsx` | HU-22 |
+| `/cursos/:id/refuerzos` | `pages/curso/Refuerzos.jsx` | HU-15 |
+| `/cursos/:id/informe` | `pages/curso/Informe.jsx` | HU-16 |
+| `/admin/auditoria` | `pages/admin/Auditoria.jsx` | HU-17 |
+| `/admin/calidad-asistente` | `pages/admin/CalidadAsistente.jsx` | HU-18 (TA-18.A2) |
+
+Reglas nuevas del Sprint 3:
+
+- Barra lateral del curso en este orden: Libro, Panel, Mapa, Alertas, Asistente. El libro es la primera pantalla al abrir un curso.
+- Toda cifra (promedio, alerta, desempeño por tema, nota necesaria) se puede abrir para ver de qué notas sale.
+- Cada panel tiene el botón «Analizar con el asistente», que abre el chat con el curso, la actividad o el estudiante cargados (por id).
+- Cero, sin entrega y pendiente se ven igual en todas las pantallas.
+- Cada respuesta del asistente muestra «Respondió: modelo externo» o «Respondió: modelo local (respaldo)», y sus cifras verificadas son enlaces.
+- La nota necesaria lleva la leyenda «cálculo con las notas actuales». El diagnóstico por criterio dice «revisar», sin la palabra correlación.
+
 El router (`src/App.jsx`) tiene `/login`, `/cursos`, `/cursos/:id/panel`, `/cursos/:id/alertas`, `/cursos/:id/asistente`, `/admin/moodle` y `/admin/estado`. «Acceso no permitido» y «Tu sesión venció» se muestran en la misma ruta con `components/PaginaError.jsx`, sin rutas propias.
 
 Un servicio por recurso en `src/services/` (`indicadores.js`, `alertas.js`, `agente.js`, `estado.js`), con las rutas y JSON de `docs/contratos-api.md`.
