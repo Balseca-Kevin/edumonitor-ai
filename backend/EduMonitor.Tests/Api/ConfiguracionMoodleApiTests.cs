@@ -129,9 +129,12 @@ public class ConfiguracionMoodleApiTests
         Assert.Equal("edumonitor_ws_user", cuerpo.GetProperty("usuarioTecnico").GetString());
         var funciones = cuerpo.GetProperty("funciones").EnumerateArray()
             .ToDictionary(f => f.GetProperty("nombre").GetString()!, f => f.GetProperty("disponible").GetBoolean());
-        Assert.Equal(8, funciones.Count);
+        Assert.Equal(11, funciones.Count);
         Assert.False(funciones["core_completion_get_activities_completion_status"]);
-        Assert.Equal(7, funciones.Values.Count(d => d));
+        Assert.Equal(10, funciones.Values.Count(d => d));
+        Assert.True(funciones["core_grading_get_definitions"]); // Sprint 3: rúbricas y comentarios
+        Assert.True(funciones["core_grading_get_gradingform_instances"]);
+        Assert.True(funciones["mod_assign_get_submission_status"]);
     }
 
     [Fact]

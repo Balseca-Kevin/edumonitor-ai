@@ -158,6 +158,42 @@ Casos de prueba en AGIL-4B (uno por regla de alerta):
 
 Los demás estudiantes tienen notas entre 6 y 10 con alguna entrega faltante. Los datos se generan con una semilla fija, así que cada carga produce lo mismo.
 
+### Rúbricas, comentarios y enunciados en AGIL-4B (Sprint 3, 16 nov 2026)
+
+`scripts/cargar_rubricas.php` prepara AGIL-4B para HU-08 (mapeo de criterios a temas), HU-22 (panel de actividad), HU-10 y HU-15 (comentarios del docente). Se corre después de `cargar_datos_laboratorio.php`:
+
+```powershell
+docker cp moodle-lab/scripts/cargar_rubricas.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_rubricas.php
+```
+
+En Tarea 1, Tarea 2, Tarea 3, Tarea 5 y Tarea 6:
+- enunciado completo y un archivo «Instrucciones Tarea n.txt» adjunto;
+- rúbrica activa de 4 criterios con 4 niveles: Insuficiente 0 · En proceso 1 · Logrado 2 · Destacado 2,5 (total 10);
+- cada nota existente se califica con la rúbrica: se eligen los niveles cuya suma queda más cerca de la nota de Moodle, y la nota pasa a ser esa suma (en promedio cambia 0,1 a 0,5 puntos; el script imprime la diferencia por tarea);
+- un comentario del docente en cada entrega calificada, con los criterios que hay que revisar.
+
+Sin nota (sin entrega o pendiente de calificar) no hay rúbrica ni comentario. Es idempotente: una tarea que ya tiene la rúbrica calificada no se vuelve a tocar. BDD-4B y MCS-4B no cambian.
+
+| Tarea | Criterios (tema sugerido para HU-08) |
+|---|---|
+| Tarea 1 | Redacción de historias de usuario (Historias de usuario) · Roles y artefactos de Scrum (Marco Scrum) · Priorización del Product Backlog (Product Backlog) · Formato y entrega (Presentación) |
+| Tarea 2 | Priorización del Product Backlog (Product Backlog) · Definición de terminado (Marco Scrum) · Eventos de Scrum (Marco Scrum) · Formato y entrega (Presentación) |
+| Tarea 3 | Criterios de aceptación de las historias (Historias de usuario) · Estimación con puntos de historia (Estimación) · Planificación del sprint (Planificación) · Formato y entrega (Presentación) |
+| Tarea 5 | División de historias con INVEST (Historias de usuario) · Tablero Kanban y límite WIP (Kanban) · Velocidad y burndown (Métricas) · Formato y entrega (Presentación) |
+| Tarea 6 | Estimación con Planning Poker (Estimación) · Retrospectiva y mejora continua (Mejora continua) · Velocidad y burndown (Métricas) · Formato y entrega (Presentación) |
+
+Casos para la demostración del Sprint 3:
+
+| Caso | Dónde |
+|---|---|
+| Un estudiante falla el mismo tema en 3 actividades | est04, «Historias de usuario»: Insuficiente o En proceso en Tarea 1, Tarea 3 y Tarea 5 |
+| Casi todo el curso falla un criterio («revisar cómo se enseñó») | Tarea 3, «Estimación con puntos de historia»: el 85 % en Insuficiente o En proceso |
+| Un criterio no separa a quienes van bien del resto («revisar el enunciado») | «Formato y entrega»: Logrado o Destacado al azar, sin relación con la nota |
+| Nota 0 calificada con rúbrica | est05 en Tarea 3: los 4 criterios en Insuficiente |
+
+Las notas se leen con `core_grading_get_definitions` (criterios y niveles), `core_grading_get_gradingform_instances` (nivel elegido en cada criterio; su `itemid` es el id de la calificación de la tarea) y `mod_assign_get_submission_status` (id de esa calificación, nota y comentario del docente por estudiante).
+
 ## Respaldos (carpeta `backups/`)
 
 | Archivo | Contenido | Autor |
@@ -189,6 +225,10 @@ docker exec aula-virtual-moodle-1 php admin/cli/restore_backup.php --file=/tmp/c
 
 # 4. Libro, actividades, usuarios y notas
 docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
+
+# 5. Rúbricas, comentarios del docente y enunciados en AGIL-4B (Sprint 3)
+docker cp moodle-lab/scripts/cargar_rubricas.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_rubricas.php
 ```
 
 Atajo: si se omiten los pasos 2 y 3, el paso 4 crea las categorías y los tres cursos con la misma estructura: AGIL-4B con id 2, BDD-4B con id 3 y MCS-4B con id 4.
