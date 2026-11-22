@@ -325,6 +325,31 @@
 .chips { display: flex; gap: var(--e-6); flex-wrap: wrap; }
 .ficha-acciones { display: flex; flex-direction: column; gap: var(--e-8); }
 
+/* ---------- Alertas en tarjetas y modal de umbrales (R.5) ---------- */
+.alertas-s3 { display: flex; flex-direction: column; gap: 18px; }
+.alertas-cabecera { display: flex; align-items: flex-end; gap: var(--e-12); flex-wrap: wrap; border-bottom: var(--grosor-regla) solid var(--tinta); padding-bottom: var(--e-12); }
+.alertas-cabecera h2 { margin: 0 var(--e-12) 0 0; font-size: 28px; font-weight: 900; letter-spacing: -0.03em; }
+.alertas-umbrales { margin-left: auto; }
+.chips-filtro { display: flex; gap: var(--e-6); flex-wrap: wrap; }
+.chip-filtro { min-height: 40px; padding: var(--e-8) var(--e-14); border: var(--grosor-linea) solid var(--linea-2); border-radius: var(--radio-6); background: var(--hoja); color: var(--tinta-hover); font: 400 var(--fs-13) var(--fuente); cursor: pointer; }
+.chip-filtro[aria-pressed='true'] { background: var(--tinta); border-color: var(--tinta); color: var(--papel); font-weight: 700; }
+.alertas-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--e-16); align-items: stretch; }
+.alerta-tarjeta { padding: var(--e-20); display: flex; flex-direction: column; gap: var(--e-12); min-width: 0; }
+.alerta-tarjeta-cabeza { display: flex; align-items: center; gap: var(--e-8); flex-wrap: wrap; }
+.alerta-revisada { margin-left: auto; font-size: var(--fs-12); color: var(--ok); font-weight: 700; }
+.alerta-nombre { border: 0; background: none; padding: 0; text-align: left; font: 800 18px var(--fuente); color: var(--tinta); cursor: pointer; }
+.alerta-nombre:hover { text-decoration: underline; }
+.alerta-tarjeta .alerta-evidencia { margin: 0; color: var(--tinta-hover); line-height: var(--interlineado); }
+.alerta-acciones { display: flex; gap: var(--e-8); flex-wrap: wrap; margin-top: auto; }
+.alerta-acciones .boton--ia { flex: 1; }
+.modal-fondo { position: fixed; inset: 0; background: rgba(22, 24, 29, 0.45); display: flex; align-items: center; justify-content: center; padding: var(--e-24); z-index: 40; animation: velo-entra var(--t-ficha) ease both; }
+.modal { width: 100%; max-width: 440px; padding: var(--e-24); display: flex; flex-direction: column; gap: var(--e-16); }
+.modal h2 { margin: 0; font-size: var(--fs-20); font-weight: 800; }
+.modal .ayuda { margin: var(--e-4) 0 0; }
+.modal-acciones { display: flex; gap: var(--e-8); }
+.modal-acciones .boton:first-child { flex: 1; }
+@media (max-width: 720px) { .alertas-rejilla { grid-template-columns: 1fr; } .alertas-umbrales { margin-left: 0; } }
+
 /* ---------- Mis cursos en tarjetas (R.3) ---------- */
 .mis-cursos { display: flex; flex-direction: column; gap: 22px; }
 .mis-cursos-cabecera { border-bottom: var(--grosor-regla) solid var(--tinta); padding-bottom: var(--e-12); }

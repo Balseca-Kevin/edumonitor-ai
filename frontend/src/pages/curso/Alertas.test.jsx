@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import Alertas from './Alertas'
 
 vi.mock('../../services/alertas', () => ({
@@ -9,26 +9,18 @@ vi.mock('../../services/alertas', () => ({
   obtenerAlertas: vi.fn(),
   marcarAlerta: vi.fn(),
 }))
+vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn() }))
+vi.mock('../../services/libro', async (original) => ({ ...(await original()), obtenerLibro: vi.fn() }))
 
 import { actualizarReglas, marcarAlerta, obtenerAlertas, obtenerReglas } from '../../services/alertas'
+import { obtenerIndicadores } from '../../services/indicadores'
+import { obtenerLibro } from '../../services/libro'
 
 // Reglas con la forma de GET /api/cursos/{id}/reglas (docs/contratos-api.md).
 const reglas = [
-  {
-    codigo: 'R1',
-    nombre: 'Descenso reciente',
-    umbral: 1.5,
-    activa: true,
-    condicion: 'Tendencia menor o igual a −umbral con las últimas 3 notas',
-  },
+  { codigo: 'R1', nombre: 'Descenso reciente', umbral: 1.5, activa: true, condicion: 'Tendencia menor o igual a −umbral con las últimas 3 notas' },
   { codigo: 'R2', nombre: 'Atrasos', umbral: 2, activa: true, condicion: 'Actividades vencidas sin entrega mayor o igual a umbral' },
-  {
-    codigo: 'R4',
-    nombre: 'Promedio bajo',
-    umbral: 7.0,
-    activa: true,
-    condicion: 'Promedio ponderado menor a umbral con al menos 4 notas',
-  },
+  { codigo: 'R4', nombre: 'Promedio bajo', umbral: 7.0, activa: true, condicion: 'Promedio ponderado menor a umbral con al menos 4 notas' },
 ]
 
 // Alertas con la forma de GET /api/cursos/{id}/alertas.
@@ -54,11 +46,17 @@ const alertaR2 = {
   evidencia: { actividades: [{ nombre: 'Tarea 5', fechaLimite: '2026-11-03T23:59:00-05:00' }], umbral: 2 },
 }
 
-function renderAlertas() {
+function Ubicacion() {
+  const { pathname, search } = useLocation()
+  return <p data-testid="ruta">{pathname + search}</p>
+}
+
+function renderAlertas(ruta = '/cursos/1/alertas') {
   return render(
-    <MemoryRouter initialEntries={['/cursos/1/alertas']}>
+    <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/cursos/:id/alertas" element={<Alertas />} />
+        <Route path="*" element={<Ubicacion />} />
       </Routes>
     </MemoryRouter>,
   )
@@ -69,121 +67,126 @@ afterEach(() => {
   vi.clearAllMocks()
 })
 
-describe('TA-12.4 · Pantalla Alertas', () => {
-  it('agrupa las alertas por estudiante, muestra la evidencia en una línea y las reglas con sus umbrales', async () => {
+describe('R.5 · Alertas en tarjetas', () => {
+  it('una tarjeta por alerta con la regla, «Requiere atención», la evidencia en una frase y «Debe: …»', async () => {
     obtenerReglas.mockResolvedValue(reglas)
     obtenerAlertas.mockResolvedValue([alertaR4, alertaR2])
-
     renderAlertas()
 
-    expect(await screen.findByRole('heading', { name: 'Pérez, Ana' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Mora, Luis' })).toBeInTheDocument()
-
-    // Evidencia en una línea con sus números, por regla, en lenguaje docente.
-    expect(screen.getByText('Promedio 6,10 con 12 notas registradas; el mínimo es 7,0')).toBeInTheDocument()
-    expect(screen.getByText('1 actividad vencida sin entregar: Tarea 5 (03/11)')).toBeInTheDocument()
-
-    // «Requiere atención» y el nombre de la regla, sin su código, y el botón en cada alerta.
-    const tarjetas = screen.getAllByRole('article')
-    expect(tarjetas).toHaveLength(2)
-    expect(screen.getAllByText('Requiere atención')).toHaveLength(2)
-    expect(within(tarjetas[0]).getByText('Promedio bajo')).toBeInTheDocument()
-    expect(within(tarjetas[1]).getByText('Atrasos')).toBeInTheDocument()
-    expect(within(tarjetas[1]).getByRole('button', { name: 'Marcar como revisada' })).toBeInTheDocument()
-    expect(screen.queryByText(/R[124]/)).not.toBeInTheDocument()
-
-    // Panel «Cuándo avisar» con un campo por regla y el botón Guardar.
-    expect(screen.getByLabelText('Descenso reciente')).toHaveValue(1.5)
-    expect(screen.getByLabelText('Atrasos')).toHaveValue(2)
-    expect(screen.getByLabelText('Promedio bajo')).toHaveValue(7)
-    expect(screen.getByText('Avisa cuando el promedio queda bajo este valor, con al menos 4 notas registradas.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
-
+    const tarjetaR4 = await screen.findByRole('article', { name: 'Promedio bajo de Pérez, Ana' })
+    expect(within(tarjetaR4).getByText('Requiere atención')).toBeInTheDocument()
+    expect(within(tarjetaR4).getByText('Promedio 6,10 con 12 notas registradas; el mínimo es 7,0')).toBeInTheDocument()
+    const tarjetaR2 = screen.getByRole('article', { name: 'Atrasos de Mora, Luis' })
+    expect(within(tarjetaR2).getByText('Debe: Tarea 5')).toBeInTheDocument()
+    expect(within(tarjetaR4).queryByText(/Debe:/)).toBeNull()
     expect(obtenerAlertas).toHaveBeenCalledWith('1', 'ACTIVA', 'todo')
+    expect(screen.queryByText(/\bR[124]\b/)).toBeNull() // los códigos de regla no se muestran
   })
 
-  it('marca una alerta como revisada y sale de la lista de activas', async () => {
+  it('los chips por regla filtran las tarjetas', async () => {
     obtenerReglas.mockResolvedValue(reglas)
-    obtenerAlertas.mockResolvedValueOnce([alertaR4]).mockResolvedValueOnce([])
-    marcarAlerta.mockResolvedValue({ ...alertaR4, estado: 'REVISADA' })
+    obtenerAlertas.mockResolvedValue([alertaR4, alertaR2])
+    renderAlertas()
+    await screen.findByRole('article', { name: 'Promedio bajo de Pérez, Ana' })
+    const chips = screen.getByRole('group', { name: 'Filtrar alertas por regla' })
 
+    fireEvent.click(within(chips).getByRole('button', { name: 'Atrasos' }))
+
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+    expect(screen.getByRole('article', { name: 'Atrasos de Mora, Luis' })).toBeInTheDocument()
+    fireEvent.click(within(chips).getByRole('button', { name: 'Descenso reciente' }))
+    expect(screen.getByText('No hay alertas con este filtro.')).toBeInTheDocument()
+  })
+
+  it('«Marcar revisada» la saca de las activas y «Revisadas» pide ese estado al backend', async () => {
+    obtenerReglas.mockResolvedValue(reglas)
+    obtenerAlertas
+      .mockResolvedValueOnce([alertaR4])
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...alertaR4, estado: 'REVISADA', revisada: '2026-11-22T10:00:00-05:00' }])
+    marcarAlerta.mockResolvedValue({ ...alertaR4, estado: 'REVISADA' })
     renderAlertas()
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Marcar como revisada' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Marcar revisada' }))
 
+    expect(await screen.findByText('Alerta marcada como revisada')).toBeInTheDocument()
     expect(marcarAlerta).toHaveBeenCalledWith('1', 31, 'REVISADA')
-    expect(await screen.findByText('No hay alertas activas. Al sincronizar el curso, las reglas detectan quiénes requieren atención.')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent('Alerta marcada como revisada')
+    fireEvent.click(screen.getByRole('button', { name: 'Revisadas' }))
+    expect(await screen.findByText('Revisada')).toBeInTheDocument()
+    expect(obtenerAlertas).toHaveBeenLastCalledWith('1', 'REVISADA', 'todo')
   })
 
-  it('al guardar un umbral nuevo envía las tres reglas y confirma que se recalculó', async () => {
+  it('el modal «Umbrales de alerta» envía las tres reglas, recalcula y se cierra', async () => {
     obtenerReglas.mockResolvedValue(reglas)
     obtenerAlertas.mockResolvedValue([alertaR4])
-    actualizarReglas.mockResolvedValue(undefined)
-
+    actualizarReglas.mockResolvedValue()
     renderAlertas()
 
-    const campoR4 = await screen.findByLabelText('Promedio bajo')
-    fireEvent.change(campoR4, { target: { value: '5' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Umbrales de alerta' }))
+    const modal = screen.getByRole('dialog', { name: 'Umbrales de alerta' })
+    fireEvent.change(within(modal).getByLabelText('Promedio bajo: menor a'), { target: { value: '6.5' } })
+    fireEvent.click(within(modal).getByRole('button', { name: 'Guardar' }))
 
-    await screen.findByText('Umbrales guardados')
+    expect(await screen.findByText('Umbrales guardados')).toBeInTheDocument()
     expect(actualizarReglas).toHaveBeenCalledWith('1', [
       { codigo: 'R1', umbral: 1.5, activa: true },
       { codigo: 'R2', umbral: 2, activa: true },
-      { codigo: 'R4', umbral: 5, activa: true },
+      { codigo: 'R4', umbral: 6.5, activa: true },
     ])
-    expect(screen.getByRole('status')).toHaveTextContent('Las alertas del curso se recalcularon.')
-    expect(obtenerReglas).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('un umbral vacío no se envía y muestra el aviso de validación', async () => {
+  it('un umbral vacío no se envía y el aviso se ve dentro del modal; Escape lo cierra', async () => {
     obtenerReglas.mockResolvedValue(reglas)
     obtenerAlertas.mockResolvedValue([])
-
     renderAlertas()
 
-    fireEvent.change(await screen.findByLabelText('Descenso reciente'), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Umbrales de alerta' }))
+    const modal = screen.getByRole('dialog', { name: 'Umbrales de alerta' })
+    fireEvent.change(within(modal).getByLabelText('Atrasos: actividades vencidas sin entregar desde'), { target: { value: '' } })
+    fireEvent.click(within(modal).getByRole('button', { name: 'Guardar' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Captura un número en cada campo antes de guardar.')
+    expect(within(modal).getByText('Umbral no válido')).toBeInTheDocument()
     expect(actualizarReglas).not.toHaveBeenCalled()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('cambia el filtro a revisadas y pide ese estado al backend', async () => {
+  it('«Armar plan de refuerzo» lleva el estudiante y el tramo, y el nombre abre la ficha', async () => {
     obtenerReglas.mockResolvedValue(reglas)
-    obtenerAlertas.mockResolvedValue([])
+    obtenerAlertas.mockResolvedValue([alertaR4])
+    obtenerIndicadores.mockResolvedValue({ unidades: [], estudiantes: [{ id: 5, nombre: 'Ana', apellido: 'Pérez', promedioPonderado: 6.1, categorias: [] }] })
+    obtenerLibro.mockResolvedValue({ parciales: [], estudiantes: [] })
+    renderAlertas('/cursos/1/alertas?tramo=u3')
 
-    renderAlertas()
+    fireEvent.click(await screen.findByRole('button', { name: 'Pérez, Ana' }))
+    const ficha = await screen.findByRole('dialog', { name: 'Ficha de Pérez, Ana' })
+    expect(within(ficha).getByText('6,10')).toBeInTheDocument()
+    expect(obtenerIndicadores).toHaveBeenCalledWith('1', 'u3')
+    fireEvent.click(within(ficha).getByRole('button', { name: 'Cerrar ficha' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 
-    await screen.findByText('No hay alertas activas. Al sincronizar el curso, las reglas detectan quiénes requieren atención.')
-    fireEvent.click(screen.getByRole('button', { name: 'Revisadas' }))
-
-    expect(await screen.findByText('Todavía no hay alertas revisadas.')).toBeInTheDocument()
-    expect(obtenerAlertas).toHaveBeenCalledWith('1', 'REVISADA', 'todo')
-    expect(screen.getByRole('button', { name: 'Revisadas' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Armar plan de refuerzo' }))
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/refuerzos?estudiante=5&tramo=u3')
   })
 
   it('un error del backend se muestra en pantalla, nunca una lista vacía como si fuera 0', async () => {
     obtenerReglas.mockResolvedValue(reglas)
-    obtenerAlertas.mockRejectedValue(
-      Object.assign(new Error('HTTP 500'), {
-        response: { status: 500, data: { title: 'Error interno', detail: 'Ocurrió un error inesperado.' } },
-      }),
-    )
-
+    obtenerAlertas.mockRejectedValue({ response: { status: 500, data: { title: 'Error interno', detail: 'Falló el cálculo.' } } })
     renderAlertas()
 
-    const aviso = await screen.findByRole('alert')
-    expect(aviso).toHaveTextContent('Error interno')
-    expect(aviso).toHaveTextContent('Ocurrió un error inesperado.')
-    expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toBeInTheDocument()
+    expect(screen.queryByText(/No hay alertas activas/)).toBeNull()
   })
 
   it('la evidencia de descenso reciente dice cuánto bajaron las últimas notas', async () => {
-    const { textoEvidencia } = await import('../../components/lenguaje')
-    expect(
-      textoEvidencia({ regla: 'R1', evidencia: { ultimas: [5, 4.5, 4], anteriores: [7.5, 8], diferencia: -3.25, umbral: 1.5 } }),
-    ).toBe('Sus últimas notas (5,0 · 4,5 · 4,0) están 3,3 puntos bajo las anteriores (7,5 · 8,0); el aviso salta desde 1,5')
+    obtenerReglas.mockResolvedValue(reglas)
+    obtenerAlertas.mockResolvedValue([
+      { ...alertaR4, id: 40, regla: 'R1', evidencia: { ultimas: [5, 4.5, 4], anteriores: [7.5, 8], diferencia: -3.25, umbral: 1.5 } },
+    ])
+    renderAlertas()
+
+    const tarjeta = await screen.findByRole('article', { name: 'Descenso reciente de Pérez, Ana' })
+    expect(within(tarjeta).getByText(/3,3 puntos bajo las anteriores/)).toBeInTheDocument()
   })
 })
