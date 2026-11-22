@@ -105,6 +105,39 @@ public class SincronizacionMoodleRealTests(ITestOutputHelper salida)
         Assert.DoesNotContain(api.Logs.Mensajes, m => m.Contains(MoodleReal.Configuracion.Token, StringComparison.Ordinal));
     }
 
+    /// <summary>TA-08.A1 · Con moodle-lab/scripts/cargar_silabos.php: nombre del sílabo y temas iniciales en cada unidad.</summary>
+    [FactMoodleReal]
+    public async Task Las_unidades_llegan_con_el_nombre_y_los_temas_del_silabo()
+    {
+        await using var api = new ApiConMoodleReal();
+        var doc01 = await api.ClienteConSesionAsync("doc01");
+        var doc02 = await api.ClienteConSesionAsync("doc02");
+        var agil = api.IdCurso("AGIL-4B");
+        var bdd = api.IdCurso("BDD-4B");
+        (await doc01.PostAsync($"/api/cursos/{agil}/sync", null)).EnsureSuccessStatusCode();
+        (await doc02.PostAsync($"/api/cursos/{bdd}/sync", null)).EnsureSuccessStatusCode();
+
+        using var alcance = api.Services.CreateScope();
+        var db = alcance.ServiceProvider.GetRequiredService<EduMonitorDbContext>();
+        List<(int Numero, string Nombre, int Temas)> Unidades(int curso) => db.Unidades.Where(u => u.CursoId == curso).OrderBy(u => u.Numero)
+            .Select(u => new { u.Numero, u.Nombre, Temas = db.Temas.Count(t => t.UnidadId == u.Id) }).AsEnumerable()
+            .Select(u => (u.Numero, u.Nombre, u.Temas)).ToList();
+
+        Assert.Equal(new[]
+        {
+            (1, "Principios fundamentales de las metodologías ágiles", 4),
+            (2, "Filosofía y enfoques ágiles de la actualidad", 2),
+            (3, "Principales metodologías ágiles del mercado", 4),
+            (4, "Herramientas ágiles del mercado", 4),
+        }, Unidades(agil));
+        Assert.Contains(db.Temas, t => t.Nombre == "1.3 Manifiesto Ágil");
+
+        var unidadesBdd = Unidades(bdd);
+        Assert.Equal(5, unidadesBdd.Count);
+        Assert.Equal((5, "Procesos transaccionales con bloques PL/SQL", 1), unidadesBdd[4]);
+        Assert.False(db.Actividades.Any(a => a.CursoId == bdd && a.Unidad != null && a.Unidad.Numero == 5)); // la unidad 5 no tiene actividades
+    }
+
     [FactMoodleReal]
     public async Task Sincronizar_dos_veces_no_duplica()
     {

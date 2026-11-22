@@ -40,7 +40,15 @@ public class MoodleClientIntegracionTests
         var secciones = await cliente.ObtenerContenidoCursoAsync(AgilMoodleId);
         var tareas = await cliente.ObtenerTareasAsync(AgilMoodleId);
 
-        Assert.Equal(new[] { "Unidad 1", "Unidad 2", "Unidad 3", "Unidad 4" }, secciones.Where(s => s.Numero > 0).Select(s => s.Nombre));
+        // TA-08.A1: cada sección lleva el nombre de la unidad del sílabo y sus temas en el resumen (moodle-lab/scripts/cargar_silabos.php).
+        Assert.Equal(new[]
+        {
+            "Principios fundamentales de las metodologías ágiles",
+            "Filosofía y enfoques ágiles de la actualidad",
+            "Principales metodologías ágiles del mercado",
+            "Herramientas ágiles del mercado",
+        }, secciones.Where(s => s.Numero > 0).Select(s => s.Nombre));
+        Assert.All(secciones.Where(s => s.Numero > 0), s => Assert.Contains("<li>", s.Resumen));
         Assert.Equal(16, tareas.Count);
         Assert.All(tareas, t => Assert.NotNull(t.FechaLimite));
     }

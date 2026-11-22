@@ -1,6 +1,6 @@
-# Sprint 3 · plan de trabajo
+# Sprint 3 · plan de trabajo por bloques
 
-Sprint: lunes 16 a viernes 27 nov 2026. Sprint Review final: viernes 27 nov 2026. Es el último sprint del proyecto.
+Último sprint del proyecto. Las fechas, horas y tiempos del informe los define Kevin; este archivo no lleva fechas ni plazos.
 Plan del equipo (documento compartido): https://claude.ai/artifact/GtZsV4WVnhjnQN7QJWYXjm
 
 ## Sprint Goal
@@ -9,109 +9,167 @@ El docente ve la nota real de cada estudiante en cada actividad, recorre su curs
 
 ## Por qué cambia el plan
 
-En la Review del Sprint 2 (12 nov 2026) el Product Owner señaló un solo error: la aplicación no muestra las notas completas de los estudiantes. La tabla de estudiantes del panel (HU-09) muestra conteos («Con cero», «Sin entregar», «Por calificar») y promedios, pero no la nota de cada estudiante en cada actividad. Las calificaciones están en la base desde HU-05 (512 en AGIL-4B); falta la pantalla. Por eso HU-21 va primero.
+En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicación no muestra las notas completas de los estudiantes, solo cálculos. Las calificaciones están en la base desde HU-05; falta la pantalla. Por eso las notas reales van primero. El Product Owner también autorizó un modelo de IA externo, con cautela, tolerancia a fallos y plan de respaldo.
 
-El Product Owner también autorizó un modelo de IA externo, con cautela, tolerancia a fallos y plan de respaldo. Las reglas están en `docs/CONTEXTO_IA.md` y `agent/AGENTS.md`.
+## Cómo se trabaja en este sprint
 
-## Compromiso propuesto
+- El trabajo se divide en bloques. Cada bloque tiene un responsable, pero cualquier integrante puede adelantar cualquier bloque. Kevin adelanta los bloques que no avancen para no depender de entregas de último momento.
+- Quien hace una tarea queda registrado en la columna «Hizo». Cada responsable debe poder explicar su HU en la Review aunque otro la haya adelantado.
+- El Product Owner revisa el proyecto como carpeta (OneDrive o copia local), no en GitHub. Todo lo que se demuestra tiene que funcionar desde esa carpeta siguiendo el README, y las evidencias van dentro de ella en `docs/evidencias/sprint-3/HU-xx/`.
+- Los bloques se ejecutan en el orden de la tabla. Dentro de un bloque, una tarea por sesión de Claude Code.
 
-9 HU · 50 SP antes de los agregados. Los SP se confirman con Planning Poker.
+## Historias del sprint
 
-| Orden | HU | Historia | SP | Responsable | RF | Rama |
-|---|---|---|---|---|---|---|
-| 1 | HU-21 (nueva) | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | `feature/HU-21-libro-calificaciones` |
-| 2 | HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | `feature/HU-10-ficha-estudiante` |
-| 3 | HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | `feature/HU-08-mapeo-tematico` |
-| 4 | HU-22 (nueva, absorbe HU-11) | Mapa del curso (parcial, unidad, actividad) y panel de actividad | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | `feature/HU-22-mapa-y-actividad` |
-| 5 | HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | `feature/HU-15-retroalimentacion-refuerzo` |
-| 6 | HU-23 (nueva) | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | `feature/HU-23-asistente-contexto` |
-| 7 | HU-16 | Informe del curso en PDF | 3 | Santiago | RF-11 | `feature/HU-16-informe` |
-| 8 | HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | `feature/HU-17-trazas-auditoria` |
-| 9 | HU-18 | Pruebas, README, matriz RF/RNF, evaluación del agente y ensayo | 5 | Todo el equipo | RNF-05, RNF-06 | `chore/HU-18-entrega-final` |
+| HU | Historia | SP | Responsable | RF | Estado |
+|---|---|---|---|---|---|
+| HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint en PR #50; falta la pantalla |
+| HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Por hacer |
+| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Rúbricas y funciones de Moodle en PR #49; falta backend y pantalla |
+| HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Por hacer |
+| HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Por hacer |
+| HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Filtros en PR #51; falta el resto |
+| HU-16 | Informe del curso en PDF (solo el resumen del asistente, por la línea de corte) | 3 | Santiago | RF-11 | Por hacer |
+| HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | Por hacer |
+| HU-18 | Pruebas, README, matriz RF/RNF, evaluación del agente, paquete de entrega y ensayo | 5 | Todo el equipo | RNF-05, RNF-06 | Por hacer |
 
 HU-11 se cierra en Jira como fusionada en HU-22. Formato de las HU: «Como [rol], se requiere … para …».
 
-Las tareas base de cada HU (TA-21.1, TA-21.2, …) las define su responsable en la Sprint Planning, con 4 h o menos cada una, y se agregan a este archivo. Las tareas de los agregados ya están definidas abajo (TA-xx.A).
+## Decisión de la revisión del burndown
 
-### Criterio que se muestra en la Review
+Se activó la línea de corte (más de la mitad de los SP pendientes):
+
+- La rúbrica se queda en las actividades que ya tiene el aula virtual (PR #49).
+- HU-16 exporta solo el resumen del asistente.
+- Salen TA-22.A1 y TA-22.A2 (diagnóstico por criterio).
+- No entra ningún agregado TA-xx.B (resumen al abrir el curso, grupos de refuerzo, estilo del docente). Después, Kevin reincorporó las diferencias entre sincronizaciones (antes TA-23.B1) como TA-21.A1; ver «Datos reales y tareas del rediseño».
+
+## Datos reales y tareas del rediseño
+
+Regla de Kevin: todo dato que se ve en la aplicación es real. Fechas, semanas, unidades, temas, notas, entregas, cambios entre sincronizaciones e historial de refuerzos salen de Moodle o de lo que el docente registra en EduMonitor. Nada queda de adorno ni de ejemplo. El origen de cada dato está en `docs/sprint-3/diseno.md`, «De dónde sale cada dato». Si el Moodle de laboratorio no tiene un dato que la pantalla necesita, se agrega en Moodle con sus scripts (`moodle-lab/scripts/`), nunca en el frontend ni en una semilla de EduMonitor.
+
+Lo que pide el prototipo y no estaba en el plan entra como tareas de HU que ya existen, no como HU nuevas:
+
+| TA | HU | Tarea | Responsable | Hizo |
+|---|---|---|---|---|
+| TA-08.A1 | HU-08 | Sílabos en el Moodle de laboratorio (`docs/sprint-3/silabos.md`): nombre de cada sección y sus temas en los 3 cursos; sección 5 de BDD-4B; enunciados y criterios de rúbrica de AGIL-4B alineados con los temas de su unidad, sin cambiar las notas ni los casos de la demo (est04 falla el mismo tema en 3 actividades; casi todo el curso falla un criterio de Tarea 3). La sincronización importa el nombre de la sección y HU-08 toma los temas como temas iniciales de cada unidad | Kevin | Kevin |
+| TA-22.A3 | HU-22 | Actividades de AGIL-4B que vencen después de la Review, para que la línea de tiempo y el plan de refuerzo tengan evaluaciones futuras. Nombres, categorías y fechas límite los da Kevin antes de empezar; se crean con el script de carga y se mapean a temas | Kevin | |
+| TA-22.A4 | HU-22 | Estado del período: `GET /api/cursos/{id}/periodo` (semana actual y total, unidades con su nombre y fechas, actividades con fecha límite y estado, vencidas, entregas que faltan, vence esta semana, siguiente) y la herramienta del asistente `GET /api/tools/estado-periodo`, con pruebas | Kevin; Sebastián (cálculos) | |
+| TA-22.A5 | HU-22 | Cabecera del curso con la línea de tiempo, los tres bloques y la leyenda, según `diseno.md` | Kevin | |
+| TA-21.A1 | HU-21 | Diferencias entre sincronizaciones: la sincronización guarda qué calificaciones y entregas cambiaron frente a la anterior; `GET /api/cursos/{id}/sync/{sid}/cambios` con los conteos y las celdas | Kevin | |
+| TA-21.A2 | HU-21 | Pantalla de carga («Abriendo curso…» y «Sincronizando curso…»), aviso grande al terminar con las cifras de TA-21.A1 y celdas nuevas marcadas en el libro | Santiago | |
+| TA-15.A3 | HU-15 | Pantalla «Plan de refuerzo»: actividad evaluada, temáticas donde falló con el porcentaje que domina cada tema y quién quedó bajo 6,0, estudiantes, dónde se vuelven a evaluar esos temas, nota necesaria; «Enviar el plan al asistente» guarda el plan (`POST /api/cursos/{id}/refuerzos`) | Jeremy | |
+| TA-15.A4 | HU-15 | El asistente recibe el plan como foco, redacta el borrador por estudiante (tareas por tema, entrega sugerida antes de la próxima evaluación de esos temas, qué está en juego) en una conversación propia; «Aprobar borrador» habilita PDF y DOCX; «Historial de refuerzos» en el plan y en el asistente con su estado y el resultado de TA-15.A1 | Jeremy; Kevin (contrato del chat) | |
+
+TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kevin lo reincorpora como tarea de HU-21. La línea de corte sigue vigente para TA-22.A1, TA-22.A2, TA-15.B1, TA-15.B2 y TA-15.B3.
+
+## Bloques
+
+| Orden | Bloque | Responsable | Depende de |
+|---|---|---|---|
+| 0 | Integración de lo que ya está en PR | Kevin | — |
+| M | Moodle alineado con los sílabos y actividades futuras (TA-08.A1, TA-22.A3) | Kevin | 0 |
+| R | Rediseño de la interfaz según `docs/sprint-3/diseno.md` | Kevin | 0 |
+| 1 | Notas reales: libro y ficha | Santiago | 0, R |
+| 2 | Rúbricas y temas | Kevin (sincronización), Sebastián (mapeo) | 0 |
+| 3 | Asistente con contexto y respaldo | Kevin, Jeremy | 0 |
+| 4 | Retroalimentación, refuerzo y documentos | Jeremy, Kevin, Sebastián, Santiago | 2, 3 |
+| 5 | Curso y actividad | Kevin, Sebastián | 2, R |
+| 6 | Trazas y auditoría | Kevin | 3 |
+| 7 | Cierre y entrega en carpeta | Todo el equipo | 1 a 6 |
+
+### Bloque 0 · Integración (Kevin)
+
+- Fusionar en `develop`, en este orden: #48 (contexto), #49 (rúbricas en el aula virtual), #50 (endpoint del libro, TA-21.1) y #51 (filtros de calificaciones, HU-23).
+- Corregir `SincronizacionMoodleRealTests`: espera la nota 0 de est05 en Tarea 3, que se cambió a mano a 5,5 en Moodle. Se devuelve la nota en Moodle o se actualiza la prueba.
+
+### Bloque R · Rediseño de la interfaz (Kevin)
+
+Guía: `docs/sprint-3/diseno.md` y el prototipo `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html`, aprobados por Kevin. Reemplaza la propuesta anterior de índigo y slate. Este bloque va antes de las pantallas nuevas para no hacerlas dos veces. Se mantienen todas las animaciones del diseño D y las del prototipo.
+
+- R.1 Tokens del Sprint 3 en `tokens.css`: paleta oscura del diseño D para inicio, barra lateral, cabecera, carga y aviso; papel `#F4F2ED` para el contenido; verde petróleo `#0E6E60` para las acciones del asistente y del plan de refuerzo.
+- R.2 Barra lateral oscura con la navegación del curso y el contador de alertas; barra blanca con el control segmentado que filtra de verdad, «Sincronizar» y «Preguntar al asistente».
+- R.3 Mis cursos en tarjetas con «Abrir curso» y «Sincronizar y abrir» (la pantalla de carga es TA-21.A2).
+- R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante».
+- R.5 Alertas en tarjetas con chips por regla, «Debe: …», «Armar plan de refuerzo», «Marcar revisada» y el modal «Umbrales de alerta».
+- R.6 Asistente: historial con los grupos «Planes de refuerzo» y «Conversaciones», contexto visible y el desplegable cerrado «Cómo llegó a esta respuesta».
+- R.7 Inicio de sesión del diseño D con lo que suma el prototipo.
+
+Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesgo» ni «reprobación»; sin emoji; sin términos estadísticos. Las reglas del sistema (nada se envía a Moodle ni al estudiante, seudonimización) se cumplen pero no se escriben en pantalla.
+
+### Bloque M · Moodle alineado con los sílabos (Kevin)
+
+- TA-08.A1 Sílabos en el Moodle de laboratorio (`docs/sprint-3/silabos.md`).
+- TA-22.A3 Actividades de AGIL-4B que vencen después de la Review; nombres, categorías y fechas los da Kevin.
+- Los scripts actualizan el aula virtual sin borrarla: nunca `docker compose down -v` ni `docker volume rm`. Después de cargar, se sincroniza desde la aplicación y se corre `SincronizacionMoodleRealTests`.
+
+### Bloque 1 · Notas reales (Santiago)
+
+- TA-21.2 Pantalla `Libro.jsx`, primera del curso, con cero, sin entrega y pendiente diferenciados y «no disponible» cuando falta el dato.
+- TA-21.3 Prueba de interfaz del libro.
+- HU-10 Ficha del estudiante (`GET /api/cursos/{id}/estudiantes/{eid}`; se detalla el contrato antes).
+- TA-10.A1 Cálculo de la nota necesaria para llegar a 7,0, con pruebas y herramienta del asistente (Kevin).
+- TA-10.A2 Bloque «Para llegar a 7,0» en la ficha (Santiago).
+- TA-21.A1 Diferencias entre sincronizaciones (Kevin) y TA-21.A2 pantalla de carga, aviso y celdas nuevas en el libro (Santiago).
+
+### Bloque 2 · Rúbricas y temas (Kevin, Sebastián)
+
+- Kevin: tres métodos nuevos en `IMoodleClient` (rúbricas, calificación por criterio, estado de cada entrega con el comentario del docente), entidad y migración de los criterios de rúbrica, importación en la sincronización.
+- Sebastián, HU-08: temas y contenidos mínimos por unidad, mapeo actividad → tema y criterio → tema, desempeño por tema con pruebas, pantalla de mapeo.
+
+### Bloque 3 · Asistente con contexto y respaldo (Kevin, Jeremy)
+
+- Kevin: contrato de `POST /api/agente/chat` con `conversacionId`, `foco`, `respaldo` y `cifras`; foco de la pantalla y últimos 4 turnos hacia el agente; seudonimización (E-001…); modelo externo con respaldo local (20 s, 3 fallos en 5 minutos, variables en `.env.example`); `GET/PUT /api/admin/modelo` y el interruptor en «Estado del sistema»; «Respondió: modelo externo / local».
+- Jeremy: verificador de cifras (TA-23.A1); preguntas fuera de alcance (TA-23.A3).
+- Kevin: cada cifra de la respuesta abre la celda del libro de donde sale (TA-23.A2).
+
+### Bloque 4 · Retroalimentación, refuerzo y documentos
+
+- Kevin: generador de documentos PDF (QuestPDF) y DOCX.
+- Jeremy, HU-15: borradores de retroalimentación y refuerzo por estudiante, editables, aprobados por el docente y descargables.
+- Sebastián, TA-15.A1: promedio del tema antes y después del refuerzo aprobado.
+- Jeremy, TA-15.A2: panel «Refuerzos aplicados» y su herramienta.
+- Jeremy, TA-15.A3 y TA-15.A4: pantalla «Plan de refuerzo», envío del plan al asistente, borrador por estudiante, aprobación e historial.
+- Santiago, HU-16: informe del curso con el resumen del asistente; TA-16.A1 si entra TA-15.A1.
+
+### Bloque 5 · Curso y actividad (Kevin, Sebastián)
+
+- Kevin: `GET /api/cursos/{id}/actividades/{aid}` (se detalla el contrato antes), panel de actividad (enunciado, archivos, entregas, distribución, dominio por criterio, alertas) y mapa del curso.
+- Sebastián: cálculos por actividad, criterio y tema; mapa de calor estudiante × tema.
+- Kevin, TA-22.A4 y TA-22.A5: estado del período (endpoint y herramienta) y cabecera del curso con la línea de tiempo.
+
+### Bloque 6 · Trazas y auditoría (Kevin)
+
+- HU-17: «Cómo llegó a esta respuesta» (herramientas, parámetros, modelo y duración) y pantalla de auditoría para ADMIN.
+
+### Bloque 7 · Cierre y entrega en carpeta (todo el equipo)
+
+- README que se sigue desde la carpeta entregada, sin GitHub.
+- Matriz RF/RNF y registro de contribuciones.
+- Jeremy: TA-18.A1 y TA-18.A2, evaluación de 18 preguntas con los dos modelos y pantalla «Calidad del asistente».
+- Capturas de cada criterio en `docs/evidencias/sprint-3/HU-xx/`, con la interfaz final.
+- Paquete para OneDrive: carpeta del proyecto sin `node_modules`, `bin`, `obj`, `.env` ni secretos, más el informe y el video.
+- Congelamiento, ensayo con cronómetro, video de respaldo y Review.
+
+## Criterio que se muestra en la Review
 
 | HU | Criterio |
 |---|---|
 | HU-21 | 3 notas elegidas por el Product Owner coinciden con Moodle abierto al lado; cero, sin entrega y pendiente se distinguen. |
 | HU-10 | La ficha muestra las mismas notas y estados que el libro. |
-| HU-08 | 4 a 6 actividades con rúbrica asociada a temas; desempeño por tema con pruebas unitarias. |
-| HU-22 | Panel de actividad con enunciado, archivos, entregas, distribución, dominio por criterio y alertas; mapa de calor estudiante × tema. |
-| HU-15 | Borrador con criterios fallados y notas reales, editable, aprobado por el docente y descargado en PDF y DOCX. Nada se envía al estudiante. |
+| HU-08 | Actividades con rúbrica asociadas a temas; desempeño por tema con pruebas unitarias. |
+| HU-22 | Cabecera con la semana real del período, las actividades vencidas y la siguiente evaluación de AGIL-4B. Panel de actividad con enunciado, archivos, entregas, distribución, dominio por criterio y alertas; mapa de calor estudiante × tema. |
+| HU-15 | Plan de refuerzo con los temas marcados en una actividad real, enviado al asistente; borrador con criterios fallados y notas reales, editable, aprobado por el docente y descargado en PDF y DOCX. |
 | HU-23 | Una pregunta de seguimiento responde bien; con «Usar solo el modelo local» activo responde el local y lo indica. |
 | HU-16 | PDF del informe descargado desde la aplicación. |
 | HU-17 | «Cómo llegó a esta respuesta» muestra herramientas, parámetros, modelo y duración. |
 | HU-18 | README, matriz RF/RNF, pruebas en verde y evaluación del agente en «Calidad del asistente». |
-
-## Agregados como tareas (26 h, sin HU nuevas)
-
-| TA | HU | Tarea | h | Responsable |
-|---|---|---|---|---|
-| TA-15.A1 | HU-15 | Al aprobar un refuerzo se guardan estudiante, tema y fecha; después de la siguiente sincronización se compara el promedio del tema antes y después | 3 | Sebastián |
-| TA-15.A2 | HU-15 | Panel «Refuerzos aplicados» (subió, igual, bajó, sin notas nuevas) y herramienta del asistente para consultarlo | 3 | Jeremy |
-| TA-16.A1 | HU-16 | Refuerzos aplicados y su resultado en el informe del curso | 1 | Santiago |
-| TA-22.A1 | HU-22 | Por criterio de rúbrica: porcentaje de dominio del curso y si el criterio separa a quienes van bien del resto (correlación criterio-total), con pruebas | 3 | Sebastián |
-| TA-22.A2 | HU-22 | Avisos «revisar cómo se enseñó» y «revisar el enunciado» en el panel de actividad; borrador de enunciado corregido desde el asistente | 3 | Kevin |
-| TA-10.A1 | HU-10 | Cálculo de la nota mínima para llegar a 7,0 con 40/30/30, con pruebas y herramienta para el asistente | 2 | Kevin |
-| TA-10.A2 | HU-10 | Bloque «Para llegar a 7,0» en la ficha, con la leyenda «cálculo con las notas actuales» | 1 | Santiago |
-| TA-23.A1 | HU-23 | El verificador devuelve la herramienta y la fila de donde sale cada cifra | 2 | Jeremy |
-| TA-23.A2 | HU-23 | Cada cifra de la respuesta abre la celda del libro o el criterio de donde sale | 2 | Kevin |
-| TA-23.A3 | HU-23 | Respuesta a preguntas clínicas o psicológicas (fuera de alcance) y 3 preguntas de ese tipo en la evaluación | 1 | Jeremy |
-| TA-18.A1 | HU-18 | Endpoint que corre las 18 preguntas de la evaluación contra un modelo y guarda aciertos, datos inventados y tiempos | 3 | Jeremy |
-| TA-18.A2 | HU-18 | Pantalla «Calidad del asistente» (solo ADMIN) con la tabla por modelo | 2 | Jeremy |
-
-Horas extra por integrante: Jeremy 11, Kevin 7, Sebastián 6 y Santiago 2. Si se aplica la línea de corte, salen primero TA-22.A1 y TA-22.A2.
-
-## Decisión del sábado 21 nov 2026
-
-Línea de corte: si el burndown muestra más de la mitad de los SP pendientes, la rúbrica se queda en 4 actividades y HU-16 exporta solo el resumen del asistente.
-
-Si no se activa la línea de corte, cada agregado pendiente entra solo si está listo lo que necesita. Kevin lo revisa en la Daily del 21 y registra la decisión en Jira y aquí.
-
-| Agregado | Debe estar listo el 21 | Depende de | TA si entra |
-|---|---|---|---|
-| Resumen al abrir el curso (cambios desde la sincronización anterior) | HU-21 terminada; la sincronización guarda la fecha en que cambia cada calificación; HU-23 con modelo externo | Kevin, Jeremy | TA-23.B1 diferencias entre sincronizaciones, 3 h, Kevin; TA-23.B2 tarjeta de resumen, 2 h, Santiago |
-| Grupos de refuerzo por tema (menos de 6,0 en el mismo tema) | HU-08 probada; borrador individual de HU-15 con PDF | Sebastián, Jeremy, Kevin | TA-15.B1 agrupación, 2 h, Sebastián; TA-15.B2 borrador grupal, 2 h, Jeremy |
-| Borradores con el estilo del docente (2 versiones editadas como ejemplo al modelo) | Edición y aprobación con versión final guardada (HU-15); modelo externo con respaldo | Jeremy | TA-15.B3, 2 h, Jeremy |
 
 ## Definition of Done del Sprint 3
 
 La del Sprint 2 (`docs/sprint-2/PLAN.md`) sigue vigente, con estos cambios:
 
 - La HU se demuestra con los datos de AGIL-4B y el caso de la demo (un estudiante que falla el mismo tema en 3 actividades).
-- Las capturas de evidencia se toman con la interfaz final, con fecha posterior al último cambio de interfaz, en `docs/evidencias/sprint-3/HU-xx/`.
-- «Planificada para» coincide con «Hizo». Una reasignación se dice en la Daily y queda en Jira y en este archivo.
-- Pull Request de 30 archivos como máximo, salvo migraciones. Un Pull Request por tarea o par de tareas.
-- Antes del Pull Request, el responsable recorre su HU en la aplicación con `docs/PRUEBAS.md` y adjunta las capturas.
-
-## Dependencias que no se pueden mover
-
-| Límite | Qué queda listo | Quién lo necesita |
-|---|---|---|
-| Lun 16 | Contratos de HU-21, HU-22, HU-23 y del generador de documentos en `docs/contratos-api.md` | Todo el equipo |
-| Lun 16 | Funciones nuevas de Moodle en `edumonitor_ws` y rúbricas en 4 a 6 actividades de AGIL-4B | Sebastián (HU-08), Kevin (HU-22) |
-| Mar 17 | HU-21 terminada y comparada contra Moodle | Santiago (HU-10), Jeremy (TA-23.A1) |
-| Jue 19 | Mapeo y desempeño por tema (HU-08) | Kevin (HU-22), Jeremy (HU-15) |
-| Vie 20 | Generador de documentos PDF y DOCX | Jeremy (HU-15), Santiago (HU-16) |
-
-## Calendario
-
-| Fecha | Qué |
-|---|---|
-| Dom 15 | Retrospectiva del Sprint 2, Sprint Planning con Planning Poker, Jira |
-| Lun 16 | Contratos publicados; funciones nuevas de Moodle; rúbricas en el aula virtual |
-| Lun 16 – mar 17 | HU-21 |
-| Mié 18 – lun 23 | HU-08, HU-10, HU-22, HU-15, HU-23 y agregados |
-| Sáb 21 | Revisión del burndown y decisión de agregados |
-| Mar 24 | HU-16, HU-17 e integración |
-| Mié 25 | Congelamiento: solo correcciones |
-| Jue 26 | Ensayo con cronómetro, evaluación del agente, video de respaldo |
-| Vie 27 | Sprint Review final |
-
-## Evidencia para el informe
-
-Cada responsable guarda en `docs/evidencias/sprint-3/HU-xx/` las capturas de cada criterio de aceptación. Kevin guarda la captura diaria del tablero de Jira y exporta el burndown el 27. La Daily va en `docs/sprint-3/daily.md`.
+- Las capturas de evidencia se toman con la interfaz final.
+- «Hizo» dice quién hizo de verdad cada tarea.
+- Pull Request de 30 archivos como máximo, salvo migraciones.
+- Antes del Pull Request, quien hizo la tarea recorre la HU en la aplicación con `docs/PRUEBAS.md`.

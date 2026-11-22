@@ -12,8 +12,11 @@ public sealed record InfoSitioMoodle(
 /// <summary>Curso de <c>core_enrol_get_users_courses</c>.</summary>
 public sealed record CursoMoodle(int Id, string NombreCorto, string Nombre);
 
-/// <summary>Sección de <c>core_course_get_contents</c>; en EduMonitor es una unidad.</summary>
-public sealed record SeccionMoodle(int Id, int Numero, string Nombre, IReadOnlyList<ModuloMoodle> Modulos);
+/// <summary>
+/// Sección de <c>core_course_get_contents</c>; en EduMonitor es una unidad. <see cref="Resumen"/> es el resumen HTML de la sección:
+/// en el aula virtual lleva los temas del sílabo como lista (TA-08.A1).
+/// </summary>
+public sealed record SeccionMoodle(int Id, int Numero, string Nombre, IReadOnlyList<ModuloMoodle> Modulos, string? Resumen = null);
 
 /// <summary>Módulo (actividad) dentro de una sección. <see cref="Instancia"/> es el id de la tarea, foro, etc.</summary>
 public sealed record ModuloMoodle(int Id, int Instancia, string Nombre, string TipoModulo);

@@ -1,4 +1,5 @@
 using EduMonitor.Application.Abstractions;
+using EduMonitor.Application.Abstractions.Moodle;
 using EduMonitor.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,9 @@ namespace EduMonitor.Application.Sincronizaciones;
 /// <summary>
 /// TA-05.1 · Importa las secciones del curso como unidades (core_course_get_contents) y devuelve la estructura
 /// módulo → unidad que usan los demás pasos. Upsert por id de sección: sincronizar dos veces no duplica.
+/// TA-08.A1 · El nombre de la unidad es el de la sección (el del sílabo en el aula virtual). Si la unidad todavía no tiene temas,
+/// los temas del resumen de la sección (<see cref="TemasSilabo"/>) quedan como sus temas iniciales; después los administra el
+/// docente en el mapeo de HU-08 y la sincronización ya no los toca.
 /// </summary>
 public sealed class ImportadorUnidades(IMoodleClient moodle, IEduMonitorDbContext db)
 {
@@ -36,7 +40,32 @@ public sealed class ImportadorUnidades(IMoodleClient moodle, IEduMonitorDbContex
         }
 
         await db.SaveChangesAsync(ct);
+        await AgregarTemasInicialesAsync(seccionesUnidad, ct);
         return estructura;
+    }
+
+    private async Task AgregarTemasInicialesAsync(IReadOnlyList<SeccionMoodle> secciones, CancellationToken ct)
+    {
+        var ids = secciones.Select(s => s.Id).ToList();
+        var unidades = await db.Unidades.Where(u => ids.Contains(u.MoodleSeccionId)).ToDictionaryAsync(u => u.MoodleSeccionId, ct);
+        var idsUnidad = unidades.Values.Select(u => u.Id).ToList();
+        var conTemas = (await db.Temas.Where(t => idsUnidad.Contains(t.UnidadId)).Select(t => t.UnidadId).Distinct().ToListAsync(ct)).ToHashSet();
+
+        foreach (var seccion in secciones)
+        {
+            var unidad = unidades[seccion.Id];
+            if (conTemas.Contains(unidad.Id))
+            {
+                continue;
+            }
+
+            foreach (var tema in TemasSilabo.Leer(seccion.Resumen))
+            {
+                db.Temas.Add(new Tema { UnidadId = unidad.Id, Nombre = tema });
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Modelo UTA: el Parcial 1 tiene las unidades 1 y 2; el Parcial 2, las unidades 3 y 4.</summary>

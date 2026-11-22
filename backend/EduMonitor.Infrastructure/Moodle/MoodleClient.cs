@@ -60,7 +60,8 @@ internal sealed partial class MoodleClient(HttpClient http, IConfiguracionMoodle
                 Texto(s, "name"),
                 s.TryGetProperty("modules", out var modulos)
                     ? modulos.EnumerateArray().Select(m => new ModuloMoodle(Entero(m, "id"), Entero(m, "instance"), Texto(m, "name"), Texto(m, "modname"))).ToList()
-                    : new List<ModuloMoodle>()))
+                    : new List<ModuloMoodle>(),
+                s.TryGetProperty("summary", out var resumen) && resumen.ValueKind == JsonValueKind.String ? resumen.GetString() : null))
             .ToList();
     }
 
