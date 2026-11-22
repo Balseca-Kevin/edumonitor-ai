@@ -80,7 +80,7 @@ TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kev
 ### Bloque 0 · Integración (Kevin)
 
 - Fusionar en `develop`, en este orden: #48 (contexto), #49 (rúbricas en el aula virtual), #50 (endpoint del libro, TA-21.1) y #51 (filtros de calificaciones, HU-23).
-- Corregir `SincronizacionMoodleRealTests`: espera la nota 0 de est05 en Tarea 3, que se cambió a mano a 5,5 en Moodle. Se devuelve la nota en Moodle o se actualiza la prueba.
+- Corregir `SincronizacionMoodleRealTests`: espera la nota 0 de est05 en Tarea 3, que se cambió a mano a 5,5 en Moodle. Se devuelve la nota en Moodle o se actualiza la prueba. Hizo: Kevin. Se quitó la sobrescritura del libro con `moodle-lab/scripts/restaurar_casos_demo.php`: la tarea ya tenía 0, y el libro vuelve a mostrarlo.
 
 ### Bloque R · Rediseño de la interfaz (Kevin)
 

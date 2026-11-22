@@ -228,6 +228,15 @@ No cambia ninguna nota: solo toca textos. Los niveles, los puntajes y las califi
 
 El tema de cada criterio es una sugerencia para el mapeo de HU-08; quien lo decide es el docente, en EduMonitor.
 
+### Casos de la demo sobrescritos a mano
+
+Si alguien sobrescribe a mano en el libro de Moodle una nota de un caso de la demo, `scripts/restaurar_casos_demo.php` quita la sobrescritura y el libro vuelve a mostrar la nota que tiene la tarea. Hoy cubre la nota 0 de est05 en Tarea 3 de AGIL-4B. No cambia la nota de la tarea y, si el caso ya está bien, no hace nada.
+
+```powershell
+docker cp moodle-lab/scripts/restaurar_casos_demo.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/restaurar_casos_demo.php
+```
+
 ## Respaldos (carpeta `backups/`)
 
 | Archivo | Contenido | Autor |
