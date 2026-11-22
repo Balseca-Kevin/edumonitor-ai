@@ -89,7 +89,7 @@ Guía: `docs/sprint-3/diseno.md` y el prototipo `docs/sprint-3/prototipo/EduMoni
 - R.1 Tokens del Sprint 3 en `tokens.css`: paleta oscura del diseño D para inicio, barra lateral, cabecera, carga y aviso; papel `#F4F2ED` para el contenido; verde petróleo `#0E6E60` para las acciones del asistente y del plan de refuerzo. Hizo: Kevin.
 - R.2 Barra lateral oscura con la navegación del curso y el contador de alertas; barra blanca con el control segmentado que filtra de verdad, «Sincronizar» y «Preguntar al asistente». Hizo: Kevin. El filtro llega al backend con el parámetro `tramo` (contrato «Tramo del período»); Libro, Mapa y Plan de refuerzo se suman a la barra cuando exista su pantalla.
 - R.3 Mis cursos en tarjetas con «Abrir curso» y «Sincronizar y abrir» (la pantalla de carga es TA-21.A2). Hizo: Kevin. La semana, la unidad actual y lo que vence esta semana se suman a la tarjeta con TA-22.A4.
-- R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante».
+- R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante». Hizo: Kevin. La ficha suma el desglose 40/30/30 y «aún no vence» calculados en el backend; «Para llegar a 7,0» llega con TA-10.A1.
 - R.5 Alertas en tarjetas con chips por regla, «Debe: …», «Armar plan de refuerzo», «Marcar revisada» y el modal «Umbrales de alerta».
 - R.6 Asistente: historial con los grupos «Planes de refuerzo» y «Conversaciones», contexto visible y el desplegable cerrado «Cómo llegó a esta respuesta».
 - R.7 Inicio de sesión del diseño D con lo que suma el prototipo.

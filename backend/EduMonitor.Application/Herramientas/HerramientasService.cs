@@ -146,7 +146,7 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
                         x.Actividad.Categoria,
                         x.Actividad.UnidadId is int id && unidades.TryGetValue(id, out var numero) ? numero : null,
                         CalculadoraIndicadores.Redondear(CalculadoraIndicadores.NotaEnEscala(x.Calificacion!.Nota, x.Actividad.NotaMaxima)),
-                        x.Calificacion.Estado?.ToString()))
+                        Libro.LibroService.EstadoNota(x.Calificacion, x.Actividad, datos.Ahora)))
                     .ToList()))
             .ToList();
 

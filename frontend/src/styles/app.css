@@ -15,6 +15,8 @@
 @keyframes rotar { 0% { opacity: 0; transform: translateY(14px); } 6%, 28% { opacity: 1; transform: none; } 34%, 100% { opacity: 0; transform: translateY(-14px); } }
 @keyframes brillo { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
 @keyframes punto { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }
+@keyframes ficha-entra { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes velo-entra { from { opacity: 0; } to { opacity: 1; } }
 
 .entra { animation: subir var(--t-entrada) var(--curva-suave) both; }
 .regla { height: var(--grosor-regla); background: var(--tinta); transform-origin: left; animation: trazar var(--t-barra) var(--curva-suave) both; }
@@ -266,6 +268,62 @@
 .punto-estado--error { background: var(--error); }
 .enlace { border: 0; background: none; padding: 0; color: var(--ia); font: 600 var(--fs-13) var(--fuente); cursor: pointer; }
 .enlace:hover { color: var(--ia-hover); text-decoration: underline; }
+
+/* ---------- Panel del curso (R.4) ---------- */
+.panel-cifras-s3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); border-top: var(--grosor-regla) solid var(--tinta); border-bottom: var(--grosor-linea) solid var(--linea); }
+.panel-cifra { display: flex; flex-direction: column; gap: var(--e-4); padding: 18px var(--e-20); border-left: var(--grosor-linea) solid var(--linea); text-align: left; background: transparent; color: var(--tinta); font-family: var(--fuente); }
+.panel-cifra:first-child { border-left: 0; padding-left: 0; }
+.panel-cifra .cifra-titulo { text-transform: none; letter-spacing: 0; font-size: var(--fs-13); font-weight: 400; }
+.panel-cifra .cifra { line-height: 1.05; }
+.panel-cifra .cifra-contexto { font-size: var(--fs-12); }
+.panel-cifra--atencion { border: 0; border-left: var(--grosor-linea) solid var(--linea); border-radius: 0; background: var(--bajo-fondo); color: var(--bajo-texto); cursor: pointer; }
+.panel-cifra--atencion .cifra-titulo, .panel-cifra--atencion .cifra-contexto { color: var(--bajo-texto); font-weight: 600; }
+.panel-cifra--atencion:hover { filter: brightness(0.98); }
+.panel-medio-s3 { display: flex; flex-wrap: wrap; gap: var(--e-24); align-items: flex-start; }
+.panel-reparto { flex: 1 1 320px; padding: var(--e-20); display: flex; flex-direction: column; gap: var(--e-12); }
+.panel-tabla { flex: 2 1 520px; min-width: 0; display: flex; flex-direction: column; }
+.hoja-titulo { margin: 0; font-size: 17px; font-weight: 800; }
+.hoja-cabecera { padding: var(--e-16) var(--e-20); border-bottom: var(--grosor-linea) solid var(--linea); display: flex; align-items: center; gap: var(--e-12); flex-wrap: wrap; }
+.hoja-cabecera-accion { margin-left: auto; }
+.hoja-vacia { padding: var(--e-20); margin: 0; }
+.histograma { height: 180px; }
+.histograma .histograma-cantidad { fill: var(--tinta-4); font-size: var(--fs-11); font-family: var(--fuente); }
+.histograma-botones { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: var(--e-4); }
+.histograma-botones button { min-height: 28px; border: var(--grosor-linea) solid var(--linea); border-radius: var(--radio-4); background: var(--hoja); color: var(--tinta-2); font: 400 var(--fs-11) var(--fuente-mono); cursor: pointer; }
+.histograma-botones button[aria-pressed='true'] { background: var(--tinta); border-color: var(--tinta); color: var(--papel); }
+.tabla--filas th { border-bottom-width: var(--grosor-linea); border-bottom-color: var(--linea); text-transform: none; letter-spacing: 0; font-size: var(--fs-12); padding: var(--e-10) var(--e-20); }
+.tabla--filas td { padding: 11px var(--e-20); font-size: var(--fs-13); border-bottom-color: var(--pista); }
+.fila-abre { cursor: pointer; }
+.fila-abre:hover, .fila-abre:focus-visible { background: var(--hoja-2); }
+.fuerte-600 { font-weight: 600; }
+.promedio-barra { display: flex; align-items: center; gap: var(--e-10); }
+.pista-fina { height: 5px; background: var(--pista); border-radius: var(--radio-pildora); overflow: hidden; }
+.pista-fina--corta { width: 70px; }
+.pista-fina-valor { height: 100%; background: var(--grafico); border-radius: var(--radio-pildora); transform-origin: left; animation: trazar var(--t-barra) var(--curva-suave) both; }
+.pista-fina-valor--bajo { background: var(--arena); }
+
+/* ---------- Ficha lateral del estudiante (R.4) ---------- */
+.velo { position: fixed; inset: 0; background: rgba(22, 24, 29, 0.35); z-index: 40; animation: velo-entra var(--t-ficha) ease both; }
+.ficha-lateral { position: fixed; top: 0; right: 0; bottom: 0; width: min(var(--ancho-ficha), 100vw); background: var(--hoja); z-index: 41; display: flex; flex-direction: column; box-shadow: -12px 0 32px rgba(22, 24, 29, 0.18); animation: ficha-entra var(--t-ficha) ease both; }
+.ficha-cabecera { padding: 22px; background: var(--oscuro-fondo); color: var(--oscuro-texto); display: flex; align-items: flex-start; gap: var(--e-12); }
+.ficha-cabecera > div { flex: 1; }
+.ficha-cabecera .mono { font-size: var(--fs-11); color: var(--oscuro-texto-2); }
+.ficha-cabecera h2 { margin: var(--e-6) 0 var(--e-8); font-size: var(--fs-24); font-weight: 800; letter-spacing: -0.02em; }
+.ficha-cerrar { width: 40px; height: 40px; border-radius: var(--radio-6); background: var(--oscuro-hover); border: var(--grosor-linea) solid var(--oscuro-linea-2); color: var(--oscuro-texto); cursor: pointer; display: grid; place-items: center; }
+.ficha-cuerpo { padding: 22px; display: flex; flex-direction: column; gap: 22px; overflow-y: auto; }
+.ficha-promedio { display: flex; align-items: baseline; gap: var(--e-10); flex-wrap: wrap; }
+.ficha-bloque { display: flex; flex-direction: column; gap: var(--e-10); }
+.ficha-bloque h3 { margin: 0; font-size: var(--fs-13); text-transform: uppercase; letter-spacing: 0.05em; color: var(--tinta-4); }
+.ficha-categoria { display: flex; flex-direction: column; gap: var(--e-4); }
+.ficha-categoria > div:first-child { display: flex; justify-content: space-between; font-size: var(--fs-13); }
+.evolucion { position: relative; height: 92px; display: flex; align-items: flex-end; gap: var(--e-4); border-bottom: var(--grosor-linea) solid var(--tinta); }
+.evolucion-raya { position: absolute; left: 0; right: 0; bottom: 70%; border-top: 1px dashed var(--acento-texto); pointer-events: none; }
+.evolucion-barra { flex: 1; min-width: 4px; background: var(--grafico); border-radius: 2px 2px 0 0; transform-origin: bottom; animation: crecer-y var(--t-barra) var(--curva-suave) both; }
+.evolucion-barra--bajo { background: var(--arena); }
+.evolucion-barra--sin-entrega { background: var(--error); }
+.evolucion-barra--espera { background: var(--linea-2); }
+.chips { display: flex; gap: var(--e-6); flex-wrap: wrap; }
+.ficha-acciones { display: flex; flex-direction: column; gap: var(--e-8); }
 
 /* ---------- Mis cursos en tarjetas (R.3) ---------- */
 .mis-cursos { display: flex; flex-direction: column; gap: 22px; }

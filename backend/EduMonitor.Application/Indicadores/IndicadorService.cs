@@ -11,7 +11,7 @@ namespace EduMonitor.Application.Indicadores;
 /// con <see cref="CalculadoraIndicadores"/>. Si la última sincronización no pudo leer la finalización, la tasa va en null y
 /// aparece en <c>noDisponibles</c>; la interfaz la muestra como «no disponible», nunca como 0.
 /// </summary>
-public sealed class IndicadorService(IEduMonitorDbContext db)
+public sealed class IndicadorService(IEduMonitorDbContext db, TimeProvider? reloj = null)
 {
     public const string FuncionFinalizacion = "core_completion_get_activities_completion_status";
     public const string IndicadorTasaFinalizacion = "tasaFinalizacion";
@@ -94,6 +94,6 @@ public sealed class IndicadorService(IEduMonitorDbContext db)
             .ToListAsync(ct);
 
         var finalizacionDisponible = !sincronizacion.Errores.Any(e => e.Funcion == FuncionFinalizacion);
-        return new DatosCurso(unidades, actividades, estudiantes, calificaciones, finalizacionDisponible);
+        return new DatosCurso(unidades, actividades, estudiantes, calificaciones, finalizacionDisponible, (reloj ?? TimeProvider.System).GetUtcNow());
     }
 }

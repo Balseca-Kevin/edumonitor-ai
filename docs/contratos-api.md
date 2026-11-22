@@ -553,6 +553,28 @@ Detalle del 16 nov 2026 (TA-21.1, Kevin):
 - `estado` es `null` cuando el estudiante no tiene registro para esa actividad o Moodle no dio el dato; la pantalla lo muestra como «no disponible».
 - `noDisponibles` lleva `"estadosEntrega"` cuando la última sincronización no pudo leer `mod_assign_get_assignments` o `mod_assign_get_submissions`. Así la pantalla avisa que «sin entrega» y «pendiente» pueden no estar al día.
 
+## Aún no vence y desglose por categoría (R.4)
+
+Cambios en dos rutas:
+- `GET /api/cursos/{id}/indicadores`:
+  - `notas` de cada estudiante suma `aunNoVence`: actividades sin entrega con fecha límite futura según la fecha del servidor. Ya no cuentan en `sinEntrega`, que queda solo con las vencidas.
+  - Cada estudiante suma `categorias`: el promedio de cada categoría ponderada, con su peso y cuántas notas tiene. Una categoría sin notas va con `promedio: null`, nunca 0.
+- `GET /api/cursos/{id}/libro`: una celda sin entrega cuya fecha límite todavía no llega tiene `estado: "AUN_NO_VENCE"`. Los demás estados no cambian.
+
+```json
+{
+  "id": 5, "nombre": "Ana", "apellido": "Pérez", "promedioPonderado": 6.1,
+  "notas": { "calificadas": 12, "ceros": 1, "sinEntrega": 2, "pendientes": 1, "aunNoVence": 3 },
+  "categorias": [
+    { "categoria": "Exámenes", "peso": 0.40, "promedio": 5.4, "notas": 1 },
+    { "categoria": "Tareas", "peso": 0.30, "promedio": 6.8, "notas": 9 },
+    { "categoria": "APE", "peso": 0.30, "promedio": null, "notas": 0 }
+  ]
+}
+```
+
+`GET /api/tools/calificaciones` con `estudianteId` también usa `AUN_NO_VENCE`, para que el asistente no diga que falta una entrega que todavía no vence.
+
 ## Tramo del período (R.2)
 
 El control segmentado de la barra del curso (Todo el ciclo, Parcial 1, Parcial 2, U1 … Un) filtra el libro, el panel y las alertas. El backend calcula con las actividades del tramo, con el mismo código del curso completo; el frontend solo elige el tramo.

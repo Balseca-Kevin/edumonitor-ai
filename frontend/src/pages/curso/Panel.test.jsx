@@ -1,12 +1,15 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import Panel from './Panel'
-import { frenteAlCurso, ultimasNotas } from '../../components/lenguaje'
 
-vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarAlertasActivas: vi.fn() }))
+vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn() }))
+vi.mock('../../services/alertas', () => ({ obtenerAlertas: vi.fn() }))
+vi.mock('../../services/libro', async (original) => ({ ...(await original()), obtenerLibro: vi.fn() }))
 
-import { contarAlertasActivas, obtenerIndicadores } from '../../services/indicadores'
+import { obtenerIndicadores } from '../../services/indicadores'
+import { obtenerAlertas } from '../../services/alertas'
+import { obtenerLibro } from '../../services/libro'
 
 // Recharts usa ResizeObserver, que jsdom no trae.
 beforeAll(() => {
@@ -17,149 +20,187 @@ beforeAll(() => {
   }
 })
 
-// Respuesta con la forma de GET /api/cursos/{id}/indicadores (docs/contratos-api.md).
-function indicadores({ finalizacion = true } = {}) {
+const unidades = [
+  { numero: 1, nombre: 'Principios fundamentales de las metodologías ágiles', parcial: 1, actividades: 4, calificadas: 4 },
+  { numero: 2, nombre: 'Filosofía y enfoques ágiles de la actualidad', parcial: 1, actividades: 4, calificadas: 4 },
+]
+
+function estudiante(id, nombre, apellido, promedio, notas, extra = {}) {
+  return {
+    id,
+    nombre,
+    apellido,
+    promedioPonderado: promedio,
+    parcial: false,
+    z: null,
+    grupo: null,
+    notas: { calificadas: 0, ceros: 0, sinEntrega: 0, pendientes: 0, aunNoVence: 0, ...notas },
+    tasaFinalizacion: null,
+    tendencia: null,
+    categorias: [],
+    ...extra,
+  }
+}
+
+// Respuesta con la forma de GET /api/cursos/{id}/indicadores (docs/contratos-api.md, con «Aún no vence y desglose por categoría»).
+function indicadores() {
   return {
     cursoId: 1,
     escala: 10,
     aprobacion: 7.0,
-    sincronizacion: { id: 12, fecha: '2026-11-09T07:10:00-05:00', estado: finalizacion ? 'COMPLETADA' : 'PARCIAL' },
-    unidades: [{ numero: 1, nombre: 'Unidad 1', parcial: 1, actividades: 4, calificadas: 4 }],
-    curso: {
-      estudiantes: 32,
-      actividadesEvaluadas: 16,
-      promedio: 7.42,
-      mediana: 7.6,
-      desviacion: 1.35,
-      tasaFinalizacion: finalizacion ? 0.81 : null,
-      tendencia: -0.4,
-    },
-    distribucion: Array.from({ length: 10 }, (_, i) => ({ desde: i, hasta: i + 1, cantidad: i === 7 ? 9 : 1 })),
-    grupos: { alto: 6, medio: 18, bajo: 8 },
+    tramo: 'todo',
+    sincronizacion: { id: 12, fecha: '2026-11-21T07:10:00-05:00', estado: 'COMPLETADA' },
+    unidades,
+    curso: { estudiantes: 3, actividadesEvaluadas: 16, promedio: 7.42, mediana: 7.6, desviacion: 1.35, tasaFinalizacion: 0.81, tendencia: -0.4 },
+    distribucion: Array.from({ length: 10 }, (_, i) => ({ desde: i, hasta: i + 1, cantidad: { 5: 1, 6: 1, 8: 1 }[i] ?? 0 })),
+    grupos: { alto: 1, medio: 1, bajo: 1 },
     estudiantes: [
-      {
-        id: 5,
-        nombre: 'Ana',
-        apellido: 'Pérez',
-        promedioPonderado: 6.1,
-        parcial: false,
-        z: -0.98,
-        grupo: 'MEDIO',
-        notas: { calificadas: 12, ceros: 1, sinEntrega: 2, pendientes: 3 },
-        tasaFinalizacion: finalizacion ? 0.75 : null,
+      estudiante(5, 'Ana', 'Pérez', 6.1, { calificadas: 12, ceros: 1, sinEntrega: 2 }, {
         tendencia: -1.8,
-      },
+        categorias: [
+          { categoria: 'Exámenes', peso: 0.4, promedio: 5.4, notas: 1 },
+          { categoria: 'Tareas', peso: 0.3, promedio: 6.8, notas: 9 },
+          { categoria: 'APE', peso: 0.3, promedio: null, notas: 0 },
+        ],
+      }),
+      estudiante(6, 'Luis', 'Mora', 8.75, { calificadas: 14 }),
+      estudiante(7, 'Elena', 'Espinoza', 5.2, { calificadas: 10, sinEntrega: 1 }),
     ],
-    noDisponibles: finalizacion ? [] : ['tasaFinalizacion'],
+    noDisponibles: [],
   }
 }
 
-function renderPanel() {
+const alertaAna = { id: 31, regla: 'R4', titulo: 'Requiere atención', estudiante: { id: 5, nombre: 'Ana', apellido: 'Pérez' }, estado: 'ACTIVA', evidencia: {} }
+
+function Ubicacion() {
+  const { pathname, search } = useLocation()
+  return <p data-testid="ruta">{`${pathname}${search}`}</p>
+}
+
+function renderPanel(ruta = '/cursos/1/panel') {
   return render(
-    <MemoryRouter initialEntries={['/cursos/1/panel']}>
+    <MemoryRouter initialEntries={[ruta]}>
       <Routes>
         <Route path="/cursos/:id/panel" element={<Panel />} />
+        <Route path="*" element={<Ubicacion />} />
       </Routes>
     </MemoryRouter>,
   )
 }
 
-afterEach(() => {
-  cleanup()
-  vi.clearAllMocks()
+beforeEach(() => {
+  obtenerIndicadores.mockResolvedValue(indicadores())
+  obtenerAlertas.mockResolvedValue([alertaAna, { ...alertaAna, id: 32, regla: 'R2' }])
 })
 
-describe('Panel del curso', () => {
-  it('muestra las cuatro cifras en lenguaje docente: promedio, la mitad del curso, actividades completadas y requiere atención', async () => {
-    obtenerIndicadores.mockResolvedValue(indicadores())
-    contarAlertasActivas.mockResolvedValue(4)
+afterEach(() => cleanup())
+
+describe('R.4 · Panel del curso', () => {
+  it('muestra los 4 indicadores con las cifras de la API y «Requieren atención» cuenta estudiantes', async () => {
     renderPanel()
 
-    const promedio = await screen.findByRole('region', { name: 'Promedio del curso' })
-    expect(within(promedio).getByText('7,42')).toBeInTheDocument()
-    expect(within(promedio).getByText(/sobre 10 · aprobación 7,0/)).toBeInTheDocument()
-    const mitad = screen.getByRole('region', { name: 'La mitad del curso tiene más de' })
-    expect(within(mitad).getByText('7,60')).toBeInTheDocument()
-    expect(within(mitad).getByText('las notas varían unos 1,4 puntos alrededor del promedio')).toBeInTheDocument()
-    const atencion = screen.getByRole('region', { name: 'Requiere atención' })
-    expect(within(atencion).getByText('4')).toBeInTheDocument()
-    expect(within(atencion).getByRole('link', { name: 'ver alertas →' })).toHaveAttribute('href', '/cursos/1/alertas')
-    expect(within(screen.getByRole('region', { name: 'Actividades completadas' })).getByText('81 %')).toBeInTheDocument()
-    const reparto = screen.getByRole('region', { name: 'Cómo se reparte el curso' })
-    expect(within(reparto).getByText('8,5 o más')).toBeInTheDocument()
-    expect(within(reparto).getByText('18')).toBeInTheDocument()
-    expect(within(reparto).getByText('Menos de 6,0')).toBeInTheDocument()
+    const cifras = await screen.findByRole('region', { name: 'Cifras del curso' })
+    await waitFor(() => expect(within(cifras).getByText('7,42')).toBeInTheDocument())
+    expect(within(cifras).getByText('7,60')).toBeInTheDocument()
+    expect(within(cifras).getByText('en Todo el ciclo')).toBeInTheDocument()
+    expect(within(cifras).getByText('36')).toBeInTheDocument() // 12 + 14 + 10 notas calificadas
+    expect(within(cifras).getByRole('button', { name: /Requieren atención\s*1/ })).toBeInTheDocument() // Ana, con dos alertas, cuenta una vez
     expect(obtenerIndicadores).toHaveBeenCalledWith('1', 'todo')
+    expect(obtenerAlertas).toHaveBeenCalledWith('1', 'ACTIVA', 'todo')
   })
 
-  it('no muestra términos estadísticos ni códigos internos', async () => {
-    obtenerIndicadores.mockResolvedValue(indicadores())
-    contarAlertasActivas.mockResolvedValue(4)
-    renderPanel()
+  it('«Requieren atención» lleva a las alertas del mismo tramo', async () => {
+    renderPanel('/cursos/1/panel?tramo=u2')
 
-    await screen.findByRole('table', { name: 'Estudiantes' })
-    for (const termino of [/desviación/i, /mediana/i, /z/, /tendencia/i, /MEDIO/, /R4/]) {
-      expect(screen.queryByText(termino)).not.toBeInTheDocument()
-    }
+    fireEvent.click(await screen.findByRole('button', { name: /Requieren atención/ }))
+
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/alertas?tramo=u2')
+    expect(obtenerIndicadores).toHaveBeenCalledWith('1', 'u2')
   })
 
-  it('distingue nota cero, sin entregar y por calificar en la tabla de estudiantes', async () => {
-    obtenerIndicadores.mockResolvedValue(indicadores())
-    contarAlertasActivas.mockResolvedValue(0)
+  it('la tabla dice quién requiere atención y quién está al día, y el histograma la filtra por tramo de 1 punto', async () => {
     renderPanel()
 
     const tabla = await screen.findByRole('table', { name: 'Estudiantes' })
-    const encabezados = within(tabla).getAllByRole('columnheader').map((th) => th.textContent)
-    const fila = within(tabla).getByText('Pérez, Ana').closest('tr')
-    const celdas = within(fila).getAllByRole('cell').map((td) => td.textContent)
-    const valor = (columna) => celdas[encabezados.indexOf(columna)]
+    const filaAna = within(tabla).getByRole('row', { name: /Pérez, Ana/ })
+    expect(within(filaAna).getByText('Requiere atención')).toBeInTheDocument()
+    expect(within(within(tabla).getByRole('row', { name: /Mora, Luis/ })).getByText('Al día')).toBeInTheDocument()
+    expect(within(filaAna).getByText('6,10')).toBeInTheDocument()
 
-    expect(valor('Con cero')).toBe('1')
-    expect(valor('Sin entregar')).toBe('2')
-    expect(valor('Por calificar')).toBe('3')
-    expect(valor('Notas registradas')).toBe('12')
-    expect(valor('Frente al curso')).toBe('1,3 bajo el promedio')
-    expect(valor('Últimas notas')).toBe('↓ bajando 1,8')
+    fireEvent.click(screen.getByRole('button', { name: '1 estudiantes con promedio de 8 a 9' }))
+
+    expect(within(screen.getByRole('table', { name: 'Estudiantes' })).getAllByRole('row')).toHaveLength(2) // encabezado + Luis
+    expect(screen.getByText('1 con promedio de 8 a 9')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Quitar filtro' }))
+    expect(within(screen.getByRole('table', { name: 'Estudiantes' })).getAllByRole('row')).toHaveLength(4)
   })
 
-  it('muestra «no disponible» y no 0 cuando la finalización viene en noDisponibles o faltan las alertas', async () => {
-    obtenerIndicadores.mockResolvedValue(indicadores({ finalizacion: false }))
-    contarAlertasActivas.mockResolvedValue(null)
+  it('un clic en la fila abre la ficha con el desglose 40/30/30, la evolución y lo que no entregó', async () => {
+    obtenerLibro.mockResolvedValue({
+      parciales: [{ numero: 1, unidades: [{ numero: 1, nombre: 'U1', actividades: [
+        { id: 101, nombre: 'Tarea 1', categoria: 'Tareas', fechaLimite: '2026-09-08T23:59:00-05:00' },
+        { id: 102, nombre: 'Tarea 5', categoria: 'Tareas', fechaLimite: '2026-10-14T23:59:00-05:00' },
+        { id: 103, nombre: 'Tarea 9', categoria: 'Tareas', fechaLimite: '2026-11-28T23:59:00-05:00' },
+      ] }] }],
+      estudiantes: [{ id: 5, nombre: 'Ana', apellido: 'Pérez', notas: [
+        { actividadId: 101, nota: 6.25, estado: 'CALIFICADO' },
+        { actividadId: 102, nota: null, estado: 'SIN_ENTREGA' },
+        { actividadId: 103, nota: null, estado: 'AUN_NO_VENCE' },
+      ] }],
+    })
     renderPanel()
 
-    const finalizacion = await screen.findByRole('region', { name: 'Actividades completadas' })
-    expect(within(finalizacion).getByText('no disponible')).toBeInTheDocument()
-    expect(within(finalizacion).queryByText('0 %')).not.toBeInTheDocument()
-    expect(within(screen.getByRole('region', { name: 'Requiere atención' })).getByText('no disponible')).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('row', { name: /Pérez, Ana/ }))
+
+    const ficha = await screen.findByRole('dialog', { name: 'Ficha de Pérez, Ana' })
+    expect(within(ficha).getByText('Requiere atención')).toBeInTheDocument()
+    expect(within(ficha).getByText('promedio ponderado en Todo el ciclo')).toBeInTheDocument()
+    expect(within(ficha).getByText('Exámenes · 40 %')).toBeInTheDocument()
+    expect(within(ficha).getByText('5,40')).toBeInTheDocument()
+    expect(within(ficha).getByText('sin notas')).toBeInTheDocument() // APE sin notas: no es 0
+    expect(await within(ficha).findByRole('img', { name: 'Tarea 1: 6,25' })).toBeInTheDocument()
+    expect(within(ficha).getByRole('img', { name: 'Tarea 5: sin entrega' })).toBeInTheDocument()
+    expect(within(ficha).getByRole('img', { name: 'Tarea 9: aún no vence' })).toBeInTheDocument()
+    const sinEntregar = within(ficha).getByRole('region', { name: 'Sin entregar' })
+    expect(within(sinEntregar).getByText('Tarea 5')).toBeInTheDocument()
+    expect(within(sinEntregar).queryByText('Tarea 9')).toBeNull() // aún no vence: no es una falta
+    expect(obtenerLibro).toHaveBeenCalledWith('1', { tramo: 'todo' })
+
+    fireEvent.click(within(ficha).getByRole('button', { name: 'Preguntar al asistente por este estudiante' }))
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/asistente?estudiante=5')
   })
 
-  it('con 409 muestra «Curso sin sincronizar» con enlace a Mis cursos', async () => {
-    obtenerIndicadores.mockRejectedValue(
-      Object.assign(new Error('HTTP 409'), {
-        response: { status: 409, data: { title: 'Curso sin sincronizar', detail: 'El curso todavía no tiene datos de Moodle.' } },
-      }),
-    )
-    contarAlertasActivas.mockResolvedValue(null)
+  it('«Armar plan de refuerzo» lleva el estudiante y el tramo, y Escape cierra la ficha', async () => {
+    obtenerLibro.mockResolvedValue({ parciales: [], estudiantes: [] })
+    renderPanel('/cursos/1/panel?tramo=p1')
+
+    fireEvent.click(await screen.findByRole('row', { name: /Mora, Luis/ }))
+    expect(await screen.findByRole('dialog', { name: 'Ficha de Mora, Luis' })).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+
+    fireEvent.click(screen.getByRole('row', { name: /Mora, Luis/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Armar plan de refuerzo' }))
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/refuerzos?estudiante=6&tramo=p1')
+  })
+
+  it('sin alertas disponibles dice «no disponible», nunca 0, y un promedio null tampoco es 0', async () => {
+    const datos = indicadores()
+    datos.curso.mediana = null
+    obtenerIndicadores.mockResolvedValue(datos)
+    obtenerAlertas.mockRejectedValue(new Error('caída'))
     renderPanel()
 
-    const aviso = await screen.findByRole('alert')
-    expect(aviso).toHaveTextContent('Curso sin sincronizar')
-    expect(within(aviso).getByRole('link', { name: 'Ir a Mis cursos' })).toHaveAttribute('href', '/cursos')
-  })
-})
-
-describe('Lenguaje docente del panel', () => {
-  it('«Frente al curso» dice cuánto está sobre o bajo el promedio del curso', () => {
-    expect(frenteAlCurso(5.92, 7.42)).toBe('1,5 bajo el promedio')
-    expect(frenteAlCurso(7.85, 7.42)).toBe('0,4 sobre el promedio')
-    expect(frenteAlCurso(7.42, 7.42)).toBe('en el promedio')
-    expect(frenteAlCurso(null, 7.42)).toBe('no disponible')
+    const cifras = await screen.findByRole('region', { name: 'Cifras del curso' })
+    await waitFor(() => expect(within(cifras).getAllByText('no disponible')).toHaveLength(2))
+    expect(within(cifras).getByText('Las alertas no están disponibles.')).toBeInTheDocument()
   })
 
-  it('«Últimas notas» dice si baja, sube o se mantiene', () => {
-    expect(ultimasNotas(-1.8)).toBe('↓ bajando 1,8')
-    expect(ultimasNotas(0.2)).toBe('↑ subiendo 0,2')
-    expect(ultimasNotas(0.01)).toBe('→ se mantiene')
-    expect(ultimasNotas(null)).toBe('aún sin datos')
+  it('un curso sin sincronizar lo dice con un enlace a Mis cursos', async () => {
+    obtenerIndicadores.mockRejectedValue({ response: { status: 409, data: { title: 'Curso sin sincronizar', detail: 'El curso todavía no tiene datos de Moodle.' } } })
+    renderPanel()
+
+    expect(await screen.findByText('Curso sin sincronizar')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ir a Mis cursos' })).toHaveAttribute('href', '/cursos')
   })
 })

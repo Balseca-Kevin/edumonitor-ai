@@ -5,6 +5,7 @@ using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Libro;
 using EduMonitor.Domain.Entities;
+using EduMonitor.Domain.Enums;
 using EduMonitor.Tests.Infraestructura;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -91,6 +92,20 @@ public class LibroApiTests
             Assert.Equal(delPanel.GetProperty("promedioPonderado").ToString(), delLibro.GetProperty("promedioPonderado").ToString());
             Assert.Equal(delPanel.GetProperty("parcial").GetBoolean(), delLibro.GetProperty("parcial").GetBoolean());
         }
+    }
+
+    [Fact]
+    public void Una_falta_de_entrega_que_todavia_no_vence_se_ve_como_aun_no_vence()
+    {
+        var ahora = new DateTimeOffset(2026, 11, 22, 12, 0, 0, TimeSpan.FromHours(-5));
+        var futura = new Actividad { Id = 1, FechaLimite = ahora.AddDays(6) };
+        var vencida = new Actividad { Id = 2, FechaLimite = ahora.AddDays(-1) };
+        var sinEntrega = new Calificacion { Estado = EstadoCalificacion.SIN_ENTREGA };
+
+        Assert.Equal(LibroService.EstadoAunNoVence, LibroService.EstadoNota(sinEntrega, futura, ahora));
+        Assert.Equal("SIN_ENTREGA", LibroService.EstadoNota(sinEntrega, vencida, ahora));
+        Assert.Equal("CALIFICADO", LibroService.EstadoNota(new Calificacion { Estado = EstadoCalificacion.CALIFICADO, Nota = 0 }, futura, ahora));
+        Assert.Null(LibroService.EstadoNota(null, futura, ahora));
     }
 
     [Fact]

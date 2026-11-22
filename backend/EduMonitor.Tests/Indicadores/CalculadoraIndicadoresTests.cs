@@ -101,6 +101,49 @@ public class CalculadoraIndicadoresTests
     }
 
     [Fact]
+    public void Una_actividad_sin_entrega_que_todavia_no_vence_cuenta_aparte_y_no_como_sin_entrega()
+    {
+        // R.4 · Con la fecha del servidor: la Tarea 2 vence después de «ahora», así que todavía no es una falta.
+        var ahora = new DateTimeOffset(2026, 11, 22, 12, 0, 0, TimeSpan.FromHours(-5));
+        var datos = Curso(
+            (1, "Tareas", 1, 8m, EstadoCalificacion.CALIFICADO),
+            (1, "Tareas", 1, null, EstadoCalificacion.SIN_ENTREGA),
+            (1, "Tareas", 1, null, EstadoCalificacion.SIN_ENTREGA));
+        datos.Actividades[1].FechaLimite = ahora.AddDays(6);   // Tarea 2: vence la semana que viene
+        datos.Actividades[2].FechaLimite = ahora.AddDays(-3);  // Tarea 3: ya venció
+
+        var conFecha = CalculadoraIndicadores.Calcular(datos with { Ahora = ahora }).Estudiantes.Single();
+        var sinFecha = CalculadoraIndicadores.Calcular(datos).Estudiantes.Single();
+
+        Assert.Equal(new ConteoNotasDto(Calificadas: 1, Ceros: 0, SinEntrega: 1, Pendientes: 0, AunNoVence: 1), conFecha.Notas);
+        Assert.Equal(new ConteoNotasDto(Calificadas: 1, Ceros: 0, SinEntrega: 2, Pendientes: 0), sinFecha.Notas);
+        Assert.Equal(8m, conFecha.PromedioPonderado); // ninguna de las dos entra al promedio
+    }
+
+    [Fact]
+    public void Desglose_por_categoria_con_sus_pesos_y_sin_inventar_la_que_falta()
+    {
+        // Exámenes 9 y 3 → 6,00; Tareas 8, 6 y 3 → 5,67; sin APE. Promedio ponderado 5,86 (pesos normalizados a 0,7).
+        var datos = Curso(
+            (1, "Exámenes", 1, 9m, EstadoCalificacion.CALIFICADO),
+            (1, "Tareas", 1, 8m, EstadoCalificacion.CALIFICADO),
+            (1, "Tareas", 1, 6m, EstadoCalificacion.CALIFICADO),
+            (1, "Exámenes", 1, 3m, EstadoCalificacion.CALIFICADO),
+            (1, "Tareas", 1, 3m, EstadoCalificacion.CALIFICADO));
+
+        var estudiante = CalculadoraIndicadores.Calcular(datos).Estudiantes.Single();
+
+        Assert.Equal(new[]
+        {
+            new CategoriaPromedioDto("Exámenes", 0.40m, 6.00m, 2),
+            new CategoriaPromedioDto("Tareas", 0.30m, 5.67m, 3),
+            new CategoriaPromedioDto("APE", 0.30m, null, 0),
+        }, estudiante.Categorias);
+        Assert.Equal(5.86m, estudiante.PromedioPonderado);
+        Assert.True(estudiante.Parcial);
+    }
+
+    [Fact]
     public void Cero_calificado_entra_al_promedio_y_sin_entrega_o_pendiente_no()
     {
         var datos = Curso(
