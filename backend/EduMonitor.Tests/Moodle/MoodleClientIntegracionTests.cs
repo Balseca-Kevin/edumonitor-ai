@@ -36,7 +36,7 @@ public class MoodleClientIntegracionTests
     }
 
     [FactMoodleReal]
-    public async Task Lee_las_cuatro_unidades_y_las_16_tareas_de_AGIL_4B()
+    public async Task Lee_las_cuatro_unidades_y_las_19_tareas_de_AGIL_4B()
     {
         var cliente = MoodleReal.Cliente();
 
@@ -52,7 +52,8 @@ public class MoodleClientIntegracionTests
             "Herramientas ágiles del mercado",
         }, secciones.Where(s => s.Numero > 0).Select(s => s.Nombre));
         Assert.All(secciones.Where(s => s.Numero > 0), s => Assert.Contains("<li>", s.Resumen));
-        Assert.Equal(16, tareas.Count);
+        Assert.Equal(19, tareas.Count); // 16 de TA-01.3 y 3 que vencen después de la Review (TA-22.A3)
+        Assert.Contains(tareas, t => t.Nombre == "Proyecto integrador");
         Assert.All(tareas, t => Assert.NotNull(t.FechaLimite));
     }
 
@@ -81,6 +82,6 @@ public class MoodleClientIntegracionTests
 
         Assert.Contains(entregas, e => e.Estado == "submitted" && e.EstadoCalificacion == "notgraded");
         Assert.Contains(entregas, e => e.EstadoCalificacion == "graded");
-        Assert.Equal(16, finalizacion.Count);
+        Assert.Equal(19, finalizacion.Count);
     }
 }

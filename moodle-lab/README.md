@@ -228,6 +228,28 @@ No cambia ninguna nota: solo toca textos. Los niveles, los puntajes y las califi
 
 El tema de cada criterio es una sugerencia para el mapeo de HU-08; quien lo decide es el docente, en EduMonitor.
 
+### Actividades que vencen después de la Review (TA-22.A3)
+
+AGIL-4B suma 3 actividades en la unidad 4, para que la línea de tiempo y el plan de refuerzo tengan evaluaciones futuras. Los nombres, las categorías y las fechas límite los dio Kevin:
+
+| Actividad | Categoría | Fecha límite (hora de Ecuador) | Temas que evalúa (en el enunciado) |
+|---|---|---|---|
+| Tarea 9 | Tareas | 2026-11-28 23:59 | 4.1 Herramientas para Scrum y 4.3 Herramientas para Kanban |
+| APE 5 | APE | 2026-12-04 23:59 | 4.2 Herramientas para XP y 4.4 Herramientas para otras metodologías |
+| Proyecto integrador | Tareas | 2026-12-11 23:59 | Los temas del curso, del 1.3 Manifiesto Ágil a las herramientas de la unidad 4 |
+
+En un aula virtual ya cargada, solo las agrega:
+
+```powershell
+docker cp moodle-lab/scripts/cargar_datos_laboratorio.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php --actividades-futuras
+```
+
+En una carga desde cero, el script las crea junto con las demás.
+- Todavía no vencen: no tienen entregas ni notas, así que no cambian ningún promedio. AGIL-4B pasa de 16 a 19 actividades.
+- La fecha límite se fija en America/Guayaquil, porque el servidor del aula virtual está en Europe/London. Las 16 actividades anteriores no cambian: vencen a las 23:59 de Londres, que en Ecuador es el mismo día.
+- Los temas van en el enunciado como referencia. La asociación actividad → tema en EduMonitor la hace el docente en el mapeo de HU-08.
+
 ### Casos de la demo sobrescritos a mano
 
 Si alguien sobrescribe a mano en el libro de Moodle una nota de un caso de la demo, `scripts/restaurar_casos_demo.php` quita la sobrescritura y el libro vuelve a mostrar la nota que tiene la tarea. Hoy cubre la nota 0 de est05 en Tarea 3 de AGIL-4B. No cambia la nota de la tarea y, si el caso ya está bien, no hace nada.
