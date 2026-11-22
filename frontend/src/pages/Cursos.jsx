@@ -1,28 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  obtenerCursos,
-  sincronizarCurso,
-  obtenerHistorialSincronizaciones,
-} from '../services/cursos'
+import { obtenerCursos, obtenerHistorialSincronizaciones, sincronizarCurso } from '../services/cursos'
+import { contarEstudiantesConAlertas, obtenerIndicadores } from '../services/indicadores'
 import Marco from '../components/Marco'
-import Button from '../components/ui/Button'
-import Input from '../components/ui/Input'
 import Table from '../components/ui/Table'
 import StatusBadge from '../components/ui/StatusBadge'
 import Alert from '../components/ui/Alert'
+import { formatearFecha, formatearNumero, tonoDeEstado } from '../components/formato'
 
-function formatearFecha(fecha) {
-  if (!fecha) return 'No disponible'
-  const valor = new Date(fecha)
-  return Number.isNaN(valor.getTime())
-    ? fecha
-    : valor.toLocaleString('es-EC', { dateStyle: 'short', timeStyle: 'short' })
-}
-
-function etiquetaEstado(estado) {
-  return String(estado || 'PENDIENTE').toUpperCase()
-}
+const NO_DISPONIBLE = 'no disponible'
 
 function mensajeError(error) {
   if (error?.response?.status === 403) return 'Este curso no está asignado a tu cuenta'
@@ -30,18 +16,8 @@ function mensajeError(error) {
   return (
     error?.response?.data?.detail ||
     error?.response?.data?.title ||
-    (error?.response
-      ? 'No se pudo completar la operación.'
-      : 'No se pudo conectar con el servidor. Intenta de nuevo.')
+    (error?.response ? 'No se pudo completar la operación.' : 'No se pudo conectar con el servidor. Intenta de nuevo.')
   )
-}
-
-function usuarioActual() {
-  try {
-    return JSON.parse(sessionStorage.getItem('edumonitor_usuario') || 'null')
-  } catch {
-    return null
-  }
 }
 
 function ErroresSincronizacion({ errores }) {
@@ -57,100 +33,112 @@ function ErroresSincronizacion({ errores }) {
   )
 }
 
-function DetalleCurso({ curso, resultado, historial, historialAbierto, cargandoHistorial }) {
-  if (!resultado && !historialAbierto) return null
-
-  const columnasHistorial = [
-    {
-      key: 'fecha',
-      label: 'Fecha',
-      render: (_valor, item) => formatearFecha(item.fin || item.inicio || item.fecha),
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      render: (estado) => <StatusBadge status={estado} />,
-    },
+/** HU-05 · Resultado de la última sincronización hecha desde la tarjeta y el historial del curso. */
+function Historial({ curso, resultado, historial, cargando }) {
+  const filas = [...(historial ?? [])].sort((a, b) => new Date(b.fin || b.inicio || 0) - new Date(a.fin || a.inicio || 0))
+  const columnas = [
+    { key: 'fecha', label: 'Fecha', render: (_v, item) => formatearFecha(item.fin || item.inicio) || NO_DISPONIBLE },
+    { key: 'estado', label: 'Estado', render: (estado) => <StatusBadge status={estado} /> },
     {
       key: 'registros',
       label: 'Registros',
-      render: (registros) => Object.values(registros || {}).reduce(
-        (total, cantidad) => total + (Number(cantidad) || 0), 0,
-      ),
+      render: (registros) => Object.values(registros || {}).reduce((total, cantidad) => total + (Number(cantidad) || 0), 0),
     },
-    {
-      key: 'errores',
-      label: 'Errores',
-      render: (errores) => errores?.length
-        ? <ErroresSincronizacion errores={errores} />
-        : 'Sin errores',
-    },
+    { key: 'errores', label: 'Errores', render: (errores) => (errores?.length ? <ErroresSincronizacion errores={errores} /> : 'Sin errores') },
   ]
-
-  const historialOrdenado = [...(historial || [])].sort(
-    (a, b) => new Date(b.fin || b.inicio || b.fecha || 0) -
-      new Date(a.fin || a.inicio || a.fecha || 0),
-  )
-
   return (
-    <section className="hu19-cursos__detalle" aria-label={`Detalle de ${curso.nombreCorto}`}>
-      {resultado && (
-        <section className="hu19-cursos__resultado" aria-label="Resultado de sincronización">
-          {['PARCIAL', 'FALLIDA'].includes(etiquetaEstado(resultado.estado)) && (
-            <Alert variant="warning" title="Sincronización incompleta">
-              <p>La sincronización no se completó correctamente. Revisa los errores reportados.</p>
-              <ErroresSincronizacion errores={resultado.errores} />
-            </Alert>
-          )}
-          <div className="hu19-cursos__titulo-detalle">
-            <h3>Resultado de sincronización</h3>
-            <StatusBadge status={resultado.estado} />
-          </div>
-          <div className="hu19-cursos__fechas">
-            {resultado.inicio && <span>Inicio: {formatearFecha(resultado.inicio)}</span>}
-            {resultado.fin && <span>Fin: {formatearFecha(resultado.fin)}</span>}
-          </div>
-          {resultado.registros && (
-            <dl className="hu19-cursos__registros">
-              {Object.entries(resultado.registros).map(([nombre, cantidad]) => (
-                <div key={nombre}>
-                  <dt>{nombre}</dt>
-                  <dd>{cantidad}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {resultado.errores?.length > 0 && (
-            <div>
-              <h4>Errores reportados</h4>
-              <ErroresSincronizacion errores={resultado.errores} />
-            </div>
-          )}
-        </section>
+    <section className="tarjeta-curso-detalle" aria-label={`Historial de ${curso.nombreCorto}`}>
+      {resultado && ['PARCIAL', 'FALLIDA'].includes(String(resultado.estado).toUpperCase()) && (
+        <Alert variant="warning" title="Sincronización incompleta">
+          <p>La sincronización no se completó correctamente. Revisa los errores reportados.</p>
+          <ErroresSincronizacion errores={resultado.errores} />
+        </Alert>
       )}
-      {historialAbierto && (
-        <section className="hu19-cursos__historial">
-          <h3>Historial de sincronizaciones</h3>
-          {cargandoHistorial
-            ? <p role="status">Cargando historial...</p>
-            : historialOrdenado.length === 0
-              ? <p>No hay sincronizaciones registradas.</p>
-              : <Table caption={`Historial de sincronizaciones de ${curso.nombreCorto}`} columns={columnasHistorial} rows={historialOrdenado} />}
-        </section>
+      <h3>Historial de sincronizaciones</h3>
+      {cargando ? (
+        <p role="status">Cargando historial…</p>
+      ) : filas.length === 0 ? (
+        <p>No hay sincronizaciones registradas.</p>
+      ) : (
+        <Table caption={`Historial de sincronizaciones de ${curso.nombreCorto}`} columns={columnas} rows={filas} />
       )}
     </section>
   )
 }
 
+/**
+ * R.3 · Tarjeta de un curso (docs/sprint-3/diseno.md): código y nombre, cuántos estudiantes requieren atención, promedio del curso,
+ * entregas calificadas y estado de la última sincronización, con «Abrir curso» y «Sincronizar y abrir». Las cifras salen de la API
+ * (indicadores y alertas del curso); un curso sin sincronizar lo dice, nunca muestra 0.
+ */
+function TarjetaCurso({ curso, resumen, sincronizando, ocupado, onAbrir, onSincronizar, onHistorial, historialAbierto, children }) {
+  const ultima = curso.ultimaSincronizacion
+  const sinDatos = resumen?.sinDatos
+  const promedio = formatearNumero(resumen?.promedio)
+  return (
+    <article className="tarjeta-curso hoja levanta" aria-label={`${curso.nombreCorto} · ${curso.nombre}`}>
+      <div className="tarjeta-curso-cabeza">
+        <div>
+          <div className="mono">{curso.nombreCorto}</div>
+          <h2>{curso.nombre}</h2>
+        </div>
+        {resumen?.atencion > 0 && <span className="chip-bajo num">{resumen.atencion} requieren atención</span>}
+      </div>
+
+      {sinDatos ? (
+        <p className="ayuda">El curso todavía no tiene datos del aula virtual. Sincronízalo para ver sus notas.</p>
+      ) : (
+        <div className="tarjeta-curso-cifras">
+          <div>
+            <div className={`cifra-media${promedio ? '' : ' cifra--no-disponible'}`}>{resumen ? promedio ?? NO_DISPONIBLE : '…'}</div>
+            <div className="ayuda">promedio del curso</div>
+          </div>
+          <div>
+            <div className="cifra-media">{resumen ? resumen.calificadas ?? NO_DISPONIBLE : '…'}</div>
+            <div className="ayuda">entregas calificadas</div>
+          </div>
+        </div>
+      )}
+
+      <div className="tarjeta-curso-sync">
+        <span className={`punto-estado punto-estado--${tonoDeEstado(ultima?.estado) ?? 'neutro'}`} aria-hidden="true" />
+        <span>{ultima ? `Última sincronización: ${formatearFecha(ultima.fecha)} · ${ultima.estado}` : 'Sin sincronizar'}</span>
+      </div>
+
+      <div className="tarjeta-curso-acciones">
+        <button type="button" className="boton tarjeta-curso-abrir" onClick={onAbrir}>
+          Abrir curso
+        </button>
+        <button type="button" className="boton boton--secundario" onClick={onSincronizar} disabled={ocupado} aria-busy={sincronizando}>
+          {sincronizando ? 'Sincronizando…' : 'Sincronizar y abrir'}
+        </button>
+        <button type="button" className="enlace" aria-expanded={historialAbierto} onClick={onHistorial}>
+          {historialAbierto ? 'Ocultar historial' : 'Ver historial'}
+        </button>
+      </div>
+      {children}
+    </article>
+  )
+}
+
+/** Resumen de la tarjeta: promedio y entregas calificadas del curso (indicadores) y estudiantes con alertas activas. */
+async function resumirCurso(curso) {
+  if (!curso.ultimaSincronizacion) return { sinDatos: true }
+  try {
+    const [indicadores, atencion] = await Promise.all([obtenerIndicadores(curso.id), contarEstudiantesConAlertas(curso.id)])
+    const calificadas = indicadores.estudiantes.reduce((total, e) => total + (e.notas?.calificadas ?? 0), 0)
+    return { promedio: indicadores.curso?.promedio ?? null, calificadas, atencion }
+  } catch (error) {
+    return error?.response?.status === 409 ? { sinDatos: true } : { promedio: null, calificadas: null, atencion: null }
+  }
+}
+
 export default function Cursos() {
   const navigate = useNavigate()
-  const usuario = usuarioActual()
   const [cursos, setCursos] = useState([])
+  const [resumenes, setResumenes] = useState({})
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
-  const [busqueda, setBusqueda] = useState('')
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState('')
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState('')
   const [sincronizandoId, setSincronizandoId] = useState(null)
   const [historialAbiertoId, setHistorialAbiertoId] = useState(null)
   const [historialPorCurso, setHistorialPorCurso] = useState({})
@@ -162,91 +150,25 @@ export default function Cursos() {
     let activo = true
     obtenerCursos()
       .then((datos) => {
-        if (activo) setCursos(Array.isArray(datos) ? datos : [])
+        if (!activo) return
+        const lista = Array.isArray(datos) ? datos : []
+        setCursos(lista)
+        lista.forEach((curso) =>
+          resumirCurso(curso).then((resumen) => activo && setResumenes((anterior) => ({ ...anterior, [curso.id]: resumen }))),
+        )
       })
-      .catch(() => {
-        if (activo) setError('No fue posible cargar los cursos')
-      })
-      .finally(() => {
-        if (activo) setCargando(false)
-      })
-    return () => { activo = false }
+      .catch(() => activo && setError('No fue posible cargar los cursos'))
+      .finally(() => activo && setCargando(false))
+    return () => {
+      activo = false
+    }
   }, [])
 
-  const periodos = useMemo(
-    () => [...new Set(cursos.map((curso) => curso.periodo).filter(Boolean))],
-    [cursos],
-  )
-
-  const cursosFiltrados = useMemo(() => {
-    const texto = busqueda.trim().toLowerCase()
-    return cursos.filter((curso) => {
-      const coincideBusqueda = !texto || [curso.nombre, curso.nombreCorto]
-        .filter(Boolean)
-        .some((valor) => String(valor).toLowerCase().includes(texto))
-      const coincidePeriodo = !periodoSeleccionado || curso.periodo === periodoSeleccionado
-      const completa = etiquetaEstado(curso.ultimaSincronizacion?.estado) === 'COMPLETADA'
-      const coincideEstado = !estadoSeleccionado ||
-        (estadoSeleccionado === 'sincronizado' && completa) ||
-        (estadoSeleccionado === 'pendiente' && !completa)
-      return coincideBusqueda && coincidePeriodo && coincideEstado
-    })
-  }, [cursos, busqueda, periodoSeleccionado, estadoSeleccionado])
-
-  function limpiarFiltros() {
-    setBusqueda('')
-    setPeriodoSeleccionado('')
-    setEstadoSeleccionado('')
-  }
-
-  async function manejarSincronizacion(curso) {
-    if (sincronizandoId !== null) return
-    setSincronizandoId(curso.id)
-    setErrorOperacion('')
-    try {
-      const resultado = await sincronizarCurso(curso.id)
-      setResultadoPorCurso((anterior) => ({ ...anterior, [curso.id]: resultado }))
-      setCursos((anteriores) => anteriores.map((item) => item.id === curso.id
-        ? {
-            ...item,
-            ultimaSincronizacion: {
-              id: resultado?.id,
-              fecha: resultado?.fin || resultado?.fecha || new Date().toISOString(),
-              estado: resultado?.estado || 'PENDIENTE',
-            },
-          }
-        : item))
-      try {
-        const historial = await obtenerHistorialSincronizaciones(curso.id)
-        setHistorialPorCurso((anterior) => ({
-          ...anterior,
-          [curso.id]: Array.isArray(historial) ? historial : [],
-        }))
-      } catch {
-        // El resultado de sincronización queda visible aunque falle la consulta del historial.
-      }
-    } catch (err) {
-      setErrorOperacion(`No se pudo sincronizar "${curso.nombre || curso.nombreCorto || 'el curso'}": ${mensajeError(err)}`)
-    } finally {
-      setSincronizandoId(null)
-    }
-  }
-
-  async function manejarHistorial(curso) {
-    if (historialAbiertoId === curso.id) {
-      setHistorialAbiertoId(null)
-      return
-    }
-    setHistorialAbiertoId(curso.id)
-    setErrorOperacion('')
-    if (historialPorCurso[curso.id]) return
+  async function cargarHistorial(curso) {
     setCargandoHistorialId(curso.id)
     try {
       const historial = await obtenerHistorialSincronizaciones(curso.id)
-      setHistorialPorCurso((anterior) => ({
-        ...anterior,
-        [curso.id]: Array.isArray(historial) ? historial : [],
-      }))
+      setHistorialPorCurso((anterior) => ({ ...anterior, [curso.id]: Array.isArray(historial) ? historial : [] }))
     } catch (err) {
       setErrorOperacion(`No se pudo cargar el historial: ${mensajeError(err)}`)
       setHistorialPorCurso((anterior) => ({ ...anterior, [curso.id]: [] }))
@@ -255,140 +177,97 @@ export default function Cursos() {
     }
   }
 
-  const columnas = [
-    { key: 'nombreCorto', label: 'Código' },
-    { key: 'nombre', label: 'Curso', render: (valor, curso) => valor || curso.nombreCorto || 'Curso sin nombre' },
-    { key: 'periodo', label: 'Período', render: (valor) => valor || '—' },
-    {
-      key: 'ultimaSincronizacion',
-      label: 'Última sincronización',
-      render: (ultima) => ultima ? formatearFecha(ultima.fecha) : 'Sin registro',
-    },
-    {
-      key: 'estado',
-      label: 'Estado',
-      render: (_valor, curso) => <StatusBadge status={curso.ultimaSincronizacion?.estado} />,
-    },
-    {
-      key: 'acciones',
-      label: 'Acciones',
-      render: (_valor, curso) => (
-        <div className="hu19-cursos__acciones">
-          <Button variant="secondary" size="small" onClick={() => navigate(`/cursos/${curso.id}/panel`)}>
-            Abrir
-          </Button>
-          <Button
-            size="small"
-            disabled={sincronizandoId !== null}
-            aria-busy={sincronizandoId === curso.id}
-            onClick={() => manejarSincronizacion(curso)}
-          >
-            {sincronizandoId === curso.id ? 'Sincronizando...' : 'Sincronizar curso'}
-          </Button>
-          <Button
-            variant="secondary"
-            size="small"
-            disabled={cargandoHistorialId === curso.id}
-            aria-expanded={historialAbiertoId === curso.id}
-            onClick={() => manejarHistorial(curso)}
-          >
-            {cargandoHistorialId === curso.id
-              ? 'Cargando historial...'
-              : historialAbiertoId === curso.id
-                ? 'Ocultar historial'
-                : 'Ver historial'}
-          </Button>
-        </div>
-      ),
-    },
-  ]
+  async function sincronizarYAbrir(curso) {
+    if (sincronizandoId !== null) return
+    setSincronizandoId(curso.id)
+    setErrorOperacion('')
+    try {
+      const resultado = await sincronizarCurso(curso.id)
+      setResultadoPorCurso((anterior) => ({ ...anterior, [curso.id]: resultado }))
+      const estado = String(resultado?.estado ?? '').toUpperCase()
+      const actualizado = { ...curso, ultimaSincronizacion: { id: resultado?.id, fecha: resultado?.fin || resultado?.inicio, estado } }
+      setCursos((anteriores) => anteriores.map((item) => (item.id === curso.id ? actualizado : item)))
+      if (estado === 'FALLIDA') {
+        // No se importó nada: el docente se queda aquí y ve por qué en el historial.
+        setHistorialAbiertoId(curso.id)
+        await cargarHistorial(curso)
+        return
+      }
+      navigate(`/cursos/${curso.id}/panel`)
+    } catch (err) {
+      setErrorOperacion(`No se pudo sincronizar "${curso.nombre || curso.nombreCorto}": ${mensajeError(err)}`)
+    } finally {
+      setSincronizandoId(null)
+    }
+  }
+
+  async function alternarHistorial(curso) {
+    if (historialAbiertoId === curso.id) {
+      setHistorialAbiertoId(null)
+      return
+    }
+    setHistorialAbiertoId(curso.id)
+    setErrorOperacion('')
+    if (!historialPorCurso[curso.id]) await cargarHistorial(curso)
+  }
 
   return (
     <Marco>
-      <div className="hu19-cursos">
-        <header className="hu19-cursos__cabecera">
-          <div>
-            <p className="hu19-cursos__sobretitulo">
-              {usuario?.nombre ? `Hola, ${usuario.nombre}` : 'Bienvenido'}
-              {periodos.length > 0 && ` · Período ${periodos.join(', ')}`}
-            </p>
-            <h1>Mis cursos</h1>
-            <p className="hu19-cursos__subtitulo">
-              <strong>{cursosFiltrados.length === 1 ? '1 curso' : `${cursosFiltrados.length} cursos`}</strong> en el registro
-            </p>
-          </div>
-          <div className="hu19-cursos__cabecera-acciones">
-            {usuario?.rol === 'ADMIN' && (
-              <>
-                <Button variant="secondary" onClick={() => navigate('/admin/moodle')}>Configuración de Moodle</Button>
-                <Button variant="secondary" onClick={() => navigate('/admin/estado')}>Estado del sistema</Button>
-              </>
-            )}
-          </div>
+      <div className="mis-cursos">
+        <header className="mis-cursos-cabecera">
+          <h1>Mis cursos</h1>
+          <p>Solo aparecen los cursos asignados a tu usuario.</p>
         </header>
-
-        <section className="hu19-cursos__filtros" aria-label="Búsqueda y filtros">
-          <Input
-            aria-label="Buscar cursos"
-            type="search"
-            placeholder="Buscar por nombre o código"
-            value={busqueda}
-            onChange={(event) => setBusqueda(event.target.value)}
-          />
-          <select
-            aria-label="Filtrar por período"
-            value={periodoSeleccionado}
-            onChange={(event) => setPeriodoSeleccionado(event.target.value)}
-          >
-            <option value="">Todos los períodos</option>
-            {periodos.map((periodo) => <option key={periodo} value={periodo}>{periodo}</option>)}
-          </select>
-          <select
-            aria-label="Filtrar por sincronización"
-            value={estadoSeleccionado}
-            onChange={(event) => setEstadoSeleccionado(event.target.value)}
-          >
-            <option value="">Todos los estados</option>
-            <option value="sincronizado">Sincronización completa</option>
-            <option value="pendiente">Incompleta o sin sincronizar</option>
-          </select>
-          <Button variant="secondary" onClick={limpiarFiltros}>Limpiar filtros</Button>
-        </section>
 
         {error && (
           <Alert variant="error">
             <p>{error}</p>
-            <Button variant="secondary" onClick={() => window.location.reload()}>Reintentar</Button>
+            <button type="button" className="boton boton--secundario" onClick={() => window.location.reload()}>
+              Reintentar
+            </button>
           </Alert>
         )}
         {errorOperacion && (
           <Alert variant="error">
             <p>{errorOperacion}</p>
-            <Button variant="secondary" onClick={() => setErrorOperacion('')}>Cerrar</Button>
+            <button type="button" className="boton boton--secundario" onClick={() => setErrorOperacion('')}>
+              Cerrar
+            </button>
           </Alert>
         )}
 
         {cargando ? (
-          <p role="status">Cargando cursos...</p>
-        ) : cursosFiltrados.length === 0 ? (
+          <p role="status">Cargando cursos…</p>
+        ) : cursos.length === 0 && !error ? (
           <div className="hu19-cursos__vacio">
             <h2>No hay cursos disponibles</h2>
             <p>Aún no tienes cursos</p>
           </div>
         ) : (
-          <>
-            <Table caption="Catálogo de cursos" columns={columnas} rows={cursosFiltrados} />
-            {cursosFiltrados.map((curso) => (
-              <DetalleCurso
+          <div className="mis-cursos-rejilla">
+            {cursos.map((curso) => (
+              <TarjetaCurso
                 key={curso.id}
                 curso={curso}
-                resultado={resultadoPorCurso[curso.id]}
-                historial={historialPorCurso[curso.id]}
+                resumen={resumenes[curso.id]}
+                sincronizando={sincronizandoId === curso.id}
+                ocupado={sincronizandoId !== null}
                 historialAbierto={historialAbiertoId === curso.id}
-                cargandoHistorial={cargandoHistorialId === curso.id}
-              />
+                onAbrir={() => navigate(`/cursos/${curso.id}/panel`)}
+                onSincronizar={() => sincronizarYAbrir(curso)}
+                onHistorial={() => alternarHistorial(curso)}
+              >
+                {historialAbiertoId === curso.id && (
+                  <Historial
+                    curso={curso}
+                    resultado={resultadoPorCurso[curso.id]}
+                    historial={historialPorCurso[curso.id]}
+                    cargando={cargandoHistorialId === curso.id}
+                  />
+                )}
+              </TarjetaCurso>
             ))}
-          </>
+          </div>
         )}
       </div>
     </Marco>

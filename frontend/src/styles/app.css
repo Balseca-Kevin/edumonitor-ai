@@ -250,6 +250,42 @@
   .hu19-cursos__filtros, .hu19-config__columnas { grid-template-columns: 1fr; }
 }
 
+/* ---------- Hojas y tarjetas del Sprint 3 ---------- */
+.hoja { background: var(--hoja); border: var(--grosor-linea) solid var(--linea); border-radius: var(--radio-8); }
+.levanta { transition: border-color 200ms ease, transform 200ms ease; }
+.levanta:hover { border-color: var(--linea-fuerte); transform: translateY(-1px); }
+.chip-bajo { background: var(--bajo-fondo); color: var(--bajo-texto); border-radius: var(--radio-pildora); padding: 4px var(--e-10); font-size: var(--fs-12); font-weight: 700; white-space: nowrap; }
+.chip-ok { background: var(--ok-fondo); color: var(--ok); border-radius: var(--radio-pildora); padding: 3px var(--e-10); font-size: var(--fs-12); font-weight: 700; white-space: nowrap; }
+.chip-sin-entrega { background: var(--sin-entrega-fondo); color: var(--sin-entrega-texto); border-radius: var(--radio-4); padding: 3px var(--e-8); font-size: var(--fs-12); }
+.chip-descenso { background: var(--descenso-fondo); color: var(--descenso-texto); border-radius: var(--radio-pildora); padding: 3px var(--e-10); font-size: var(--fs-12); font-weight: 700; }
+.cifra-media { font-size: var(--fs-34); font-weight: 900; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.cifra-media.cifra--no-disponible { font-size: var(--fs-20); font-weight: 500; letter-spacing: 0; }
+.punto-estado { width: 8px; height: 8px; border-radius: 50%; background: var(--tinta-3); flex: none; }
+.punto-estado--ok { background: var(--ok); }
+.punto-estado--atencion { background: var(--oscuro-arena); }
+.punto-estado--error { background: var(--error); }
+.enlace { border: 0; background: none; padding: 0; color: var(--ia); font: 600 var(--fs-13) var(--fuente); cursor: pointer; }
+.enlace:hover { color: var(--ia-hover); text-decoration: underline; }
+
+/* ---------- Mis cursos en tarjetas (R.3) ---------- */
+.mis-cursos { display: flex; flex-direction: column; gap: 22px; }
+.mis-cursos-cabecera { border-bottom: var(--grosor-regla) solid var(--tinta); padding-bottom: var(--e-12); }
+.mis-cursos-cabecera h1 { margin: 0; font-size: var(--fs-34); font-weight: 900; letter-spacing: -0.03em; }
+.mis-cursos-cabecera p { margin: var(--e-4) 0 0; color: var(--tinta-2); font-size: var(--fs-14); }
+.mis-cursos-rejilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; align-items: start; }
+.tarjeta-curso { padding: 22px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.tarjeta-curso-cabeza { display: flex; gap: var(--e-12); align-items: flex-start; }
+.tarjeta-curso-cabeza > div { flex: 1; min-width: 0; }
+.tarjeta-curso-cabeza .mono { color: var(--tinta-2); }
+.tarjeta-curso-cabeza h2 { margin: var(--e-4) 0 0; font-size: var(--fs-20); font-weight: 800; letter-spacing: -0.02em; }
+.tarjeta-curso-cifras { display: flex; gap: var(--e-28); flex-wrap: wrap; }
+.tarjeta-curso-sync { display: flex; align-items: center; gap: var(--e-8); font-size: var(--fs-12); color: var(--tinta-2); }
+.tarjeta-curso-acciones { display: flex; gap: var(--e-8); flex-wrap: wrap; align-items: center; }
+.tarjeta-curso-abrir { flex: 1; }
+.tarjeta-curso-detalle { display: flex; flex-direction: column; gap: var(--e-12); border-top: var(--grosor-linea) solid var(--linea); padding-top: var(--e-14); min-width: 0; overflow-x: auto; }
+.tarjeta-curso-detalle h3 { margin: 0; font-size: var(--fs-15); font-weight: 700; }
+@media (max-width: 720px) { .mis-cursos-rejilla { grid-template-columns: 1fr; } }
+
 /* ---------- Asistente: chat ---------- */
 /* La pantalla del Asistente mide el alto de la ventana y la página no tiene scroll: solo el historial y los mensajes se desplazan,
    y el cuadro de la pregunta queda siempre abajo, aunque el historial tenga cientos de conversaciones. */
