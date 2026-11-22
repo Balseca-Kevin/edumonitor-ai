@@ -25,7 +25,7 @@ function Fondo() {
     <div className="login-fondo" aria-hidden="true">
       <div className="login-raya7" style={{ bottom: alto(APROBACION) }} />
       <span className="login-raya7-texto" style={{ bottom: alto(APROBACION) + 6 }}>
-        7,0
+        7,0 aprueba
       </span>
       <svg viewBox={`0 0 1000 ${ALTO_FONDO}`} preserveAspectRatio="none">
         <path
@@ -61,9 +61,11 @@ function Fondo() {
 }
 
 /**
- * HU-19 · TA-19.3 · Inicio de sesión del diseño D (mockup MK-19): pantalla oscura con los puntos que suben, la curva que se
- * dibuja y la raya de 7,0; el lema, tres preguntas que rotan cada 3 s y el formulario real contra POST /api/auth/login.
- * El error no dice si falló el usuario o la contraseña.
+ * HU-19 y R.7 · Inicio de sesión del diseño D (mockup MK-19) con lo que suma el prototipo del Sprint 3: pantalla oscura con los
+ * puntos que suben, la curva que se dibuja y la raya de 7,0; el sello con el punto «en línea» que late, el lema, el subtexto que
+ * menciona el asistente y el período, tres preguntas que rotan cada 3 s y el formulario real contra POST /api/auth/login con las
+ * etiquetas «Notas tal como en Moodle», «Alertas con evidencia» y «Asistente con respaldo local». El error no dice si falló el
+ * usuario o la contraseña.
  */
 export default function Login() {
   const [usuario, setUsuario] = useState('')
@@ -108,7 +110,10 @@ export default function Login() {
           <p className="grande">
             Seguimiento académico y <b>apoyo a tiempo</b>.
           </p>
-          <p className="suave">Encuentra a quién apoyar en tu curso y por qué, con las notas reales del aula virtual.</p>
+          <p className="suave">
+            Encuentra a quién apoyar en tu curso y por qué, con las notas reales del aula virtual y un asistente que sabe en qué punto
+            del período estás.
+          </p>
         </div>
         <div className="login-preguntas entra" style={{ animationDelay: '700ms' }}>
           <span className="mono">Pregúntale a tu curso</span>
@@ -134,7 +139,10 @@ export default function Login() {
 
       <section className="login-acceso">
         <form className="login-form entra" style={{ animationDelay: '550ms' }} onSubmit={ingresar} noValidate>
-          <h2>Iniciar sesión</h2>
+          <div>
+            <h2>Ingresar</h2>
+            <p className="login-ayuda">Con tu usuario docente de EduMonitor.</p>
+          </div>
           <label className="etiqueta" htmlFor="usuario">
             Usuario
             <input
@@ -166,7 +174,11 @@ export default function Login() {
           <button type="submit" className="login-boton" disabled={cargando}>
             {cargando ? 'Ingresando…' : 'Ingresar'} <span className="flecha" aria-hidden="true">→</span>
           </button>
-          <p className="login-nota">Solo lectura del aula virtual. Modelo de IA local.</p>
+          <ul className="login-etiquetas" aria-label="Qué ofrece EduMonitor">
+            <li>Notas tal como en Moodle</li>
+            <li>Alertas con evidencia</li>
+            <li>Asistente con respaldo local</li>
+          </ul>
         </form>
       </section>
     </main>

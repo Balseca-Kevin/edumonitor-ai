@@ -92,7 +92,7 @@ Guía: `docs/sprint-3/diseno.md` y el prototipo `docs/sprint-3/prototipo/EduMoni
 - R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante». Hizo: Kevin. La ficha suma el desglose 40/30/30 y «aún no vence» calculados en el backend; «Para llegar a 7,0» llega con TA-10.A1.
 - R.5 Alertas en tarjetas con chips por regla, «Debe: …», «Armar plan de refuerzo», «Marcar revisada» y el modal «Umbrales de alerta». Hizo: Kevin.
 - R.6 Asistente: historial con los grupos «Planes de refuerzo» y «Conversaciones», contexto visible y el desplegable cerrado «Cómo llegó a esta respuesta». Hizo: Kevin. El grupo «Planes de refuerzo» aparece con TA-15.A4 y la semana del período en «Sabe: …» con TA-22.A4.
-- R.7 Inicio de sesión del diseño D con lo que suma el prototipo.
+- R.7 Inicio de sesión del diseño D con lo que suma el prototipo. Hizo: Kevin.
 
 Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesgo» ni «reprobación»; sin emoji; sin términos estadísticos. Las reglas del sistema (nada se envía a Moodle ni al estudiante, seudonimización) se cumplen pero no se escriben en pantalla.
 

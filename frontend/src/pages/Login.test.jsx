@@ -12,6 +12,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from '@testing-library/react'
 
 import { MemoryRouter } from 'react-router-dom'
@@ -162,5 +163,26 @@ describe('Login', () => {
     expect(
       await screen.findByRole('alert'),
     ).toHaveTextContent('No se pudo iniciar sesión.')
+  })
+})
+describe('R.7 · Inicio de sesión del Sprint 3', () => {
+  it('muestra el sello en línea, el subtexto con el asistente y el período, y las tres etiquetas', () => {
+    render(
+      <MemoryRouter>
+        <Login />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('Aula virtual · UTA · FISEI · Software')).toBeInTheDocument()
+    expect(screen.getByText(/un asistente que sabe en qué punto del período estás/)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ingresar' })).toBeInTheDocument()
+    expect(screen.getByText('Con tu usuario docente de EduMonitor.')).toBeInTheDocument()
+    const etiquetas = screen.getByRole('list', { name: 'Qué ofrece EduMonitor' })
+    expect(within(etiquetas).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Notas tal como en Moodle',
+      'Alertas con evidencia',
+      'Asistente con respaldo local',
+    ])
+    expect(screen.queryByText(/Modelo de IA local/)).toBeNull() // las reglas del sistema no se escriben en pantalla
   })
 })

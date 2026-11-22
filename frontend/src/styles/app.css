@@ -179,7 +179,7 @@
 .login-lema { display: flex; flex-direction: column; gap: var(--e-12); max-width: 580px; }
 .login-lema p { margin: 0; }
 .login-lema .grande { font-size: var(--fs-30); line-height: 1.2; font-weight: 300; letter-spacing: -0.01em; }
-.login-lema .grande b { font-weight: 700; }
+.login-lema .grande b { font-weight: 700; color: var(--oscuro-arena); }
 .login-lema .suave { font-size: 17px; line-height: var(--interlineado); color: var(--oscuro-texto-2); }
 .login-preguntas { display: flex; flex-direction: column; gap: var(--e-10); max-width: 560px; }
 .login-preguntas .mono { color: var(--oscuro-texto-3); }
@@ -192,8 +192,11 @@
 .seg-espacio { width: 10px; }
 .login-segmentos .mono { font-size: var(--fs-11); color: var(--oscuro-texto-3); }
 .login-acceso { position: relative; flex: 5 1 400px; display: flex; align-items: flex-start; justify-content: center; padding: 96px var(--e-48) 380px; }
-.login-form { width: 100%; max-width: var(--ancho-formulario); display: flex; flex-direction: column; gap: var(--e-20); background: var(--oscuro-fondo-2); border: var(--grosor-linea) solid var(--oscuro-linea); border-radius: var(--radio-4); padding: var(--e-32); }
-.login-form h2 { margin: 0; font-size: var(--fs-24); font-weight: 600; letter-spacing: -0.01em; color: var(--oscuro-texto); }
+.login-form { width: 100%; max-width: var(--ancho-formulario); display: flex; flex-direction: column; gap: var(--e-16); background: var(--oscuro-fondo-2); border: var(--grosor-linea) solid var(--oscuro-linea); border-radius: var(--radio-10); padding: 28px; }
+.login-form h2 { margin: 0; font-size: var(--fs-20); font-weight: 700; letter-spacing: -0.01em; color: var(--oscuro-texto); }
+.login-ayuda { margin: var(--e-4) 0 0; font-size: var(--fs-13); color: var(--oscuro-texto-2); }
+.login-etiquetas { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--e-8); flex-wrap: wrap; font-size: var(--fs-12); color: var(--oscuro-texto-2); }
+.login-etiquetas li { border: var(--grosor-linea) solid var(--oscuro-linea-2); border-radius: var(--radio-pildora); padding: var(--e-4) var(--e-10); }
 .login-form .etiqueta { color: var(--oscuro-texto-2); }
 .login-form .campo { background: var(--oscuro-fondo); color: var(--oscuro-texto); border-color: var(--oscuro-linea-2); border-radius: 3px; }
 .login-form .campo:focus { outline-color: var(--oscuro-punto); }
