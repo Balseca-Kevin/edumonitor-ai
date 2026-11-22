@@ -60,6 +60,14 @@ public sealed class SincronizacionService(
             pasosCorrectos++;
         }
 
+        // TA-22.A4 · Inicio y fin del curso para la semana del período; con un estudiante ya matriculado. Solo cuenta como paso
+        // correcto si leyó las fechas: sin estudiantes no llamó a Moodle.
+        var fechasLeidas = false;
+        if (await IntentarAsync(registro, async () => fechasLeidas = await matriculados.ImportarFechasCursoAsync(curso, ct)) && fechasLeidas)
+        {
+            pasosCorrectos++;
+        }
+
         if (await IntentarAsync(registro, async () =>
             {
                 var resultado = await calificaciones.ImportarAsync(curso, estructura, ct);

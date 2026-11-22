@@ -2,6 +2,7 @@ using EduMonitor.Api.Autorizacion;
 using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Herramientas;
+using EduMonitor.Application.Periodo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,7 +15,7 @@ namespace EduMonitor.Api.Controllers;
 [ApiController]
 [Route("api/tools")]
 [Authorize(Roles = "DOCENTE,ADMIN," + TokenAgente.Rol)]
-public sealed class ToolsController(CursoService cursos, HerramientasService herramientas, TimeProvider reloj, ILogger<ToolsController> logger) : ControllerBase
+public sealed class ToolsController(CursoService cursos, HerramientasService herramientas, PeriodoService periodo, TimeProvider reloj, ILogger<ToolsController> logger) : ControllerBase
 {
     [HttpGet("cursos-autorizados")]
     [ProducesResponseType<RespuestaCursosAutorizados>(StatusCodes.Status200OK)]
@@ -153,6 +154,48 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
         catch (Exception)
         {
             Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "ERROR", 0);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// TA-22.A4 · Estado del período para la herramienta consultar_estado_periodo: semana, unidad actual, vencidas con entregas que
+    /// faltan, lo que vence esta semana y la siguiente evaluación. 400 sin <c>cursoId</c>; 403 en un curso ajeno; 404 si no existe.
+    /// </summary>
+    [HttpGet("estado-periodo")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<RespuestaEstadoPeriodoHerramienta>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EstadoPeriodo([FromQuery] int? cursoId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
+        }
+
+        try
+        {
+            var respuesta = await periodo.HerramientaAsync(cursoId.Value, ct);
+            if (respuesta is null)
+            {
+                Registrar(PeriodoService.Herramienta, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El curso {cursoId} no existe.");
+            }
+
+            Registrar(PeriodoService.Herramienta, usuario.Id, cursoId, "OK", respuesta.Vencidas.Count + respuesta.VenceEstaSemana.Count);
+            return Ok(respuesta);
+        }
+        catch (Exception)
+        {
+            Registrar(PeriodoService.Herramienta, usuario.Id, cursoId, "ERROR", 0);
             throw;
         }
     }

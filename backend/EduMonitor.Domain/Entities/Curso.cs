@@ -14,5 +14,11 @@ public class Curso
     /// <summary>Periodo académico, p. ej. <c>2026-2</c>.</summary>
     public string Periodo { get; set; } = string.Empty;
 
+    /// <summary>TA-22.A4 · Inicio del curso en Moodle (<c>startdate</c>). Null si la sincronización todavía no lo leyó.</summary>
+    public DateTimeOffset? Inicio { get; set; }
+
+    /// <summary>TA-22.A4 · Fin del curso en Moodle (<c>enddate</c>). Null si Moodle lo tiene en 0: el período termina con la última fecha límite.</summary>
+    public DateTimeOffset? Fin { get; set; }
+
     public ICollection<CursoDocente> Docentes { get; set; } = new List<CursoDocente>();
 }

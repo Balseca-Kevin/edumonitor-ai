@@ -10,6 +10,7 @@ public interface IEduMonitorDbContext
     DbSet<Curso> Cursos { get; }
     DbSet<Unidad> Unidades { get; }
     DbSet<Tema> Temas { get; }
+    DbSet<ActividadTema> ActividadesTemas { get; }
     DbSet<CursoDocente> CursosDocentes { get; }
     DbSet<Estudiante> Estudiantes { get; }
     DbSet<Matricula> Matriculas { get; }

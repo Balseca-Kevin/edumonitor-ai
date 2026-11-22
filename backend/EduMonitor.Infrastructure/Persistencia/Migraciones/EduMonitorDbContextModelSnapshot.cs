@@ -302,6 +302,12 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset?>("Fin")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("Inicio")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<int>("MoodleCursoId")
                         .HasColumnType("int");
 

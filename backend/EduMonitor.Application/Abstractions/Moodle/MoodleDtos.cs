@@ -9,8 +9,8 @@ public sealed record InfoSitioMoodle(
     string UsuarioTecnico,
     IReadOnlyList<string> Funciones);
 
-/// <summary>Curso de <c>core_enrol_get_users_courses</c>.</summary>
-public sealed record CursoMoodle(int Id, string NombreCorto, string Nombre);
+/// <summary>Curso de <c>core_enrol_get_users_courses</c>, con su inicio y su fin (null si Moodle los tiene en 0).</summary>
+public sealed record CursoMoodle(int Id, string NombreCorto, string Nombre, DateTimeOffset? Inicio = null, DateTimeOffset? Fin = null);
 
 /// <summary>
 /// Sección de <c>core_course_get_contents</c>; en EduMonitor es una unidad. <see cref="Resumen"/> es el resumen HTML de la sección:
