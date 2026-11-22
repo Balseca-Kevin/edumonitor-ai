@@ -1,5 +1,5 @@
-/* Tokens globales de EduMonitor AI · diseño D (docs/sprint-2/diseno.md). Único lugar con colores, fuentes, espacios y tiempos.
-   Reemplaza al bloque .s2 del Sprint 2 y a la paleta «registro académico» del Sprint 1. */
+/* Tokens globales de EduMonitor AI · Sprint 3 (docs/sprint-3/diseno.md) sobre el diseño D (docs/sprint-2/diseno.md).
+   Único lugar con colores, fuentes, espacios y tiempos. */
 :root {
   /* Tipografía: Archivo (300 a 800) para todo; JetBrains Mono solo para códigos de curso y datos técnicos menores. */
   --fuente: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
@@ -15,50 +15,77 @@
   --fs-30: 30px;
   --fs-34: 34px;
   --fs-44: 44px;
+  --fs-46: 46px;
   --fs-60: 60px;
+  --fs-64: 64px;
   --fs-92: 92px;
   --interlineado: 1.5;
   --interlineado-titulo: 1.05;
 
-  /* Color de la app clara */
-  --fondo: #ffffff;
-  --fondo-2: #f6f7f9;
-  --fondo-3: #eef0f3;
-  --fondo-suave: #f3f4fa;
-  --tinta: #1e2026;
+  /* ---------- Color · Sprint 3 (docs/sprint-3/diseno.md) ---------- */
+  /* Oscuro del diseño D: inicio de sesión, barra lateral, cabecera del curso, pantalla de carga, aviso de sincronización. */
+  --oscuro-fondo: #16181d;
+  --oscuro-superficie: #1e2027;
+  --oscuro-hover: #262931;
+  --oscuro-linea: #2a2d35;
+  --oscuro-linea-2: #3a3d46;
+  --oscuro-texto: #e6e7ea;
+  --oscuro-texto-2: #9aa0ab;
+  --oscuro-texto-3: #8a8f9c;
+  --oscuro-texto-4: #c2c6ce;
+  --oscuro-punto: #aeb6c6;
+  --oscuro-arena: #c9a877;
+  --vivo: #8fd0a0;
+  /* Contenido: papel cálido, hojas blancas. */
+  --papel: #f4f2ed;
+  --hoja: #ffffff;
+  --hoja-2: #faf8f3;
+  --pista: #eeeae1;
+  --linea: #e4e0d6;
+  --linea-2: #d9d4c7;
+  --linea-fuerte: #b9b2a1;
+  --tinta: #1a1c22;
+  --tinta-hover: #33363f;
   --tinta-2: #6b7080;
   --tinta-3: #8a90a0;
-  --linea: #e6e8ec;
-  --linea-2: #d5d8e0;
-  --cabecera: #1e2026;
-  --cabecera-texto: #ffffff;
-  --cabecera-texto-2: #bdbdbd;
+  --tinta-4: #4a4e59;
+  /* Asistente y plan de refuerzo. */
+  --ia: #0e6e60;
+  --ia-hover: #0a5248;
+  --ia-fondo: #e3f1ee;
+  --ia-texto: #0a5248;
+  /* Gráficos y estados. */
   --grafico: #5b6170;
   --arena: #d2b48a;
-  --arena-texto: #8a5a1c;
+  --arena-texto: #7a4e14;
+  --bajo-fondo: #f3e7d3;
+  --bajo-texto: #7a4e14;
+  --sin-entrega-fondo: #f6ddd9;
+  --sin-entrega-texto: #8e2f28;
+  --descenso-fondo: #e5e7f3;
+  --descenso-texto: #2e3a8c;
+  --ok: #2f6b3a;
+  --ok-fondo: #ddebdd;
   --acento: #7b8bd6;
   --acento-texto: #3f51b5;
-  --ok: #2f6b3a;
-  --ok-fondo: #eef5ef;
-  --ok-punto: #7cd17f;
-  --atencion: #a35f00;
-  --neutro: #6b7080;
   --error: #b3463f;
   --error-fondo: #fbeeed;
 
-  /* Color de la pantalla oscura de inicio de sesión */
-  --oscuro-fondo: #16181d;
-  --oscuro-fondo-2: rgba(28, 31, 37, 0.92);
-  --oscuro-texto: #e6e7ea;
-  --oscuro-texto-2: #9aa0ab;
-  --oscuro-texto-3: #7d8390;
-  --oscuro-linea: #2a2e36;
-  --oscuro-linea-2: #343944;
-  --oscuro-linea-3: #3a3f49;
+  /* Nombres del diseño D que siguen usando las pantallas: apuntan a la paleta del Sprint 3. */
+  --fondo: var(--hoja);
+  --fondo-2: var(--hoja-2);
+  --fondo-3: var(--pista);
+  --fondo-suave: var(--hoja-2);
+  --cabecera: var(--oscuro-fondo);
+  --cabecera-texto: var(--oscuro-texto);
+  --cabecera-texto-2: var(--oscuro-texto-2);
+  --atencion: var(--bajo-texto);
+  --neutro: var(--tinta-2);
+  --ok-punto: var(--vivo);
+  --oscuro-fondo-2: rgba(30, 32, 39, 0.82);
+  --oscuro-linea-3: var(--oscuro-linea-2);
   --oscuro-segmento: #5b616d;
-  --oscuro-punto: #aeb6c6;
-  --oscuro-arena: #c9a877;
-  --oscuro-ok: #8fc79a;
+  --oscuro-ok: var(--vivo);
 
   /* Espacio y forma: base 8 px */
   --e-4: 4px;
@@ -77,13 +104,15 @@
   --e-64: 64px;
   --radio-2: 2px;
   --radio-4: 4px;
+  --radio-6: 6px;
   --radio-8: 8px;
   --radio-10: 10px;
   --radio-14: 14px;
   --radio-18: 18px;
   --radio-24: 24px;
   --radio-pildora: 999px;
-  --ancho-lateral: 240px;
+  --ancho-lateral: 236px;
+  --ancho-ficha: 440px;
   --ancho-lateral-chat: 288px;
   --ancho-conversacion: 760px;
   --ancho-formulario: 380px;
@@ -99,6 +128,7 @@
   --t-barra: 800ms;
   --t-cifra: 1100ms;
   --t-curva: 1600ms;
+  --t-ficha: 280ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -109,5 +139,6 @@
     --t-barra: 0ms;
     --t-cifra: 0ms;
     --t-curva: 0ms;
+    --t-ficha: 0ms;
   }
 }

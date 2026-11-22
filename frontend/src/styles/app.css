@@ -1,4 +1,4 @@
-/* Estilos de EduMonitor AI · diseño D (docs/sprint-2/diseno.md). Todo valor sale de tokens.css. */
+/* Estilos de EduMonitor AI · Sprint 3 (docs/sprint-3/diseno.md) sobre el diseño D. Todo valor sale de tokens.css. */
 
 /* ---------- Movimiento: una sola vez al entrar, menos de 3 s; quieto con prefers-reduced-motion ---------- */
 @keyframes subir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -86,7 +86,7 @@
 .tabla .fuerte { font-weight: 800; }
 
 /* ---------- Estructura: barra lateral clara + contenido ---------- */
-.app { min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--fondo); color: var(--tinta); }
+.app { min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--papel); color: var(--tinta); }
 .lateral { flex: 1 1 220px; max-width: var(--ancho-lateral); border-right: var(--grosor-linea) solid var(--linea); padding: var(--e-24) var(--e-20); display: flex; flex-direction: column; gap: var(--e-4); background: var(--fondo); }
 .lateral-cabecera { display: flex; align-items: center; justify-content: space-between; padding: var(--e-4) var(--e-4) var(--e-14); }
 .lateral-cabecera .mono { color: var(--tinta-2); white-space: nowrap; }
@@ -184,7 +184,7 @@
 .login-form .campo { background: var(--oscuro-fondo); color: var(--oscuro-texto); border-color: var(--oscuro-linea-2); border-radius: 3px; }
 .login-form .campo:focus { outline-color: var(--oscuro-punto); }
 .login-boton { height: 48px; border-radius: 3px; border: 0; background: var(--oscuro-texto); color: var(--oscuro-fondo); display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font: 700 var(--fs-15) var(--fuente); cursor: pointer; transition: background-color 200ms ease; }
-.login-boton:hover:not(:disabled) { background: #ffffff; }
+.login-boton:hover:not(:disabled) { background: var(--hoja); }
 .login-boton:hover:not(:disabled) .flecha { transform: translateX(5px); }
 .login-boton:disabled { opacity: 0.7; cursor: wait; }
 .flecha { transition: transform 200ms ease; }
@@ -273,13 +273,13 @@
 .msg { display: flex; flex-direction: column; gap: var(--e-10); animation: aparecer var(--t-medio) var(--curva-salida) both; }
 .msg-docente { align-self: flex-end; max-width: 78%; background: var(--fondo-3); border-radius: var(--radio-18) var(--radio-18) var(--radio-4) var(--radio-18); padding: var(--e-12) var(--e-16); font-size: var(--fs-15); line-height: 1.45; }
 .msg-asistente { display: flex; gap: var(--e-14); align-items: flex-start; }
-.msg-icono { flex: 0 0 auto; width: 28px; height: 28px; border-radius: var(--radio-8); background: #2b2e35; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 6px; }
+.msg-icono { flex: 0 0 auto; width: 28px; height: 28px; border-radius: var(--radio-8); background: var(--oscuro-superficie); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 6px; }
 .msg-icono span { background: var(--oscuro-punto); border-radius: 1px; }
 .msg-icono span:last-child { background: transparent; border: 1px solid var(--oscuro-punto); }
 .msg-cuerpo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--e-14); }
 .msg-texto { margin: 0; font-size: var(--fs-15); line-height: 1.55; padding-top: 3px; white-space: pre-wrap; }
 .pensando { display: flex; align-items: center; gap: var(--e-8); font-size: var(--fs-15); padding-top: var(--e-4); }
-.pensando-texto { font-weight: 500; background: linear-gradient(90deg, var(--tinta-3) 0%, #c9cdd6 50%, var(--tinta-3) 100%); background-size: 400px 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brillo 1.6s linear infinite; }
+.pensando-texto { font-weight: 500; background: linear-gradient(90deg, var(--tinta-3) 0%, var(--linea-2) 50%, var(--tinta-3) 100%); background-size: 400px 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: brillo 1.6s linear infinite; }
 .pensando-puntos { display: flex; gap: 3px; }
 .pensando-puntos span { width: 5px; height: 5px; border-radius: 50%; background: var(--tinta-3); animation: punto 1.2s infinite; }
 .pensando-puntos span:nth-child(2) { animation-delay: 0.2s; }
@@ -292,7 +292,7 @@
 .tarjeta-estudiante .nota { text-align: right; font-size: var(--fs-20); font-weight: 700; font-variant-numeric: tabular-nums; }
 .barra-nota { display: flex; flex-direction: column; gap: var(--e-6); }
 .barra-nota-pista { height: 6px; border-radius: 3px; background: var(--fondo-3); }
-.barra-nota-valor { height: 6px; border-radius: 3px; background: #c9cdd6; transform-origin: left; animation: trazar 700ms var(--curva-salida) 150ms both; }
+.barra-nota-valor { height: 6px; border-radius: 3px; background: var(--grafico); transform-origin: left; animation: trazar 700ms var(--curva-salida) 150ms both; }
 .barra-nota-valor--arena { background: var(--arena); }
 .barra-nota span { font-size: var(--fs-13); color: var(--tinta-2); }
 .chat-acciones { display: flex; flex-wrap: wrap; gap: var(--e-8); align-items: center; }
@@ -309,9 +309,9 @@
 .chat-seguimiento { display: flex; flex-wrap: wrap; gap: var(--e-8); }
 .chat-form { display: flex; align-items: center; gap: var(--e-10); border: var(--grosor-linea) solid var(--linea-2); border-radius: var(--radio-24); padding: var(--e-8) var(--e-8) var(--e-8) 18px; background: var(--fondo); }
 .chat-form:focus-within { border-color: var(--acento); }
-.chat-curso { padding: 4px var(--e-10); border-radius: var(--radio-pildora); background: var(--fondo-3); font-family: var(--fuente-mono); font-size: var(--fs-11); color: #4a4f5c; white-space: nowrap; }
+.chat-curso { padding: 4px var(--e-10); border-radius: var(--radio-pildora); background: var(--fondo-3); font-family: var(--fuente-mono); font-size: var(--fs-11); color: var(--tinta-4); white-space: nowrap; }
 .chat-input { flex: 1; min-width: 0; border: 0; font: 400 var(--fs-15) var(--fuente); padding: var(--e-10) 0; outline: none; background: transparent; color: var(--tinta); }
-.chat-enviar { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #2b2e35; color: var(--fondo); font-size: 18px; cursor: pointer; }
+.chat-enviar { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--ia); color: var(--hoja); font-size: 18px; cursor: pointer; }
 .chat-enviar:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-nota { text-align: center; font-size: var(--fs-12); color: var(--tinta-3); }
 .chat-aviso-curso { font-size: var(--fs-12); color: var(--tinta-2); }

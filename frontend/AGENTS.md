@@ -4,7 +4,7 @@ React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. La int
 
 ## Diseño
 
-- `docs/sprint-2/diseno.md` (diseño D, 12 nov 2026) manda. Todo color, tamaño de letra, espacio, radio y tiempo sale de `src/styles/tokens.css`; las clases de las pantallas están en `src/styles/app.css`.
+- `docs/sprint-3/diseno.md` manda, con el prototipo `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html` como referencia (sus datos son ficticios; no se copian). Lo que no cambia sigue en `docs/sprint-2/diseno.md` (diseño D). Todo color, tamaño de letra, espacio, radio y tiempo sale de `src/styles/tokens.css`; las clases de las pantallas están en `src/styles/app.css`.
 - Componentes base de Santiago en `src/components/ui/` (Button, Input, Card, Table, StatusBadge, Alert). Estructura en `src/components/Marco.jsx`, estados en `Estado.jsx`, páginas de 401 y 403 en `PaginaError.jsx`, tira del período en `TiraPeriodo.jsx`.
 - Textos en lenguaje docente en `src/components/lenguaje.js`: en pantalla no van términos estadísticos (z, desviación, tendencia), códigos de regla (R1, R2, R4) ni nombres de funciones del agente.
 - Movimiento una sola vez y en menos de 3 s, quieto con `prefers-reduced-motion` (`src/components/movimiento.js`).
@@ -30,18 +30,21 @@ Pantallas del Sprint 3 (rutas propuestas; se confirman con el contrato de cada H
 | `/cursos/:id/estudiantes/:eid` | `pages/curso/FichaEstudiante.jsx` | HU-10 |
 | `/cursos/:id/mapa` | `pages/curso/Mapa.jsx` | HU-22 |
 | `/cursos/:id/actividades/:aid` | `pages/curso/Actividad.jsx` | HU-22 |
-| `/cursos/:id/refuerzos` | `pages/curso/Refuerzos.jsx` | HU-15 |
+| `/cursos/:id/refuerzos` | `pages/curso/PlanRefuerzo.jsx` (plan, envío al asistente e historial) | HU-15 (TA-15.A3, TA-15.A4) |
 | `/cursos/:id/informe` | `pages/curso/Informe.jsx` | HU-16 |
 | `/admin/auditoria` | `pages/admin/Auditoria.jsx` | HU-17 |
 | `/admin/calidad-asistente` | `pages/admin/CalidadAsistente.jsx` | HU-18 (TA-18.A2) |
 
 Reglas nuevas del Sprint 3:
 
-- Barra lateral del curso en este orden: Libro, Panel, Mapa, Alertas, Asistente. El libro es la primera pantalla al abrir un curso.
+- Barra lateral oscura del curso en este orden: Libro de calificaciones, Panel del curso, Mapa del curso, Alertas, Plan de refuerzo, Asistente. El libro es la primera pantalla al abrir un curso.
+- Ninguna pantalla muestra datos fijos ni calcula fechas: semana, unidad actual, vencidas y siguiente vienen de `GET /api/cursos/{id}/periodo`; las celdas nuevas, de `GET /api/cursos/{id}/sync/{sid}/cambios`.
+- Se mantienen las animaciones del diseño D y las del prototipo (pantalla de carga, aviso de sincronización, línea de tiempo, ficha lateral), quietas con `prefers-reduced-motion`.
+- No se escriben en pantalla las reglas del sistema («Nada se envía…», códigos E-001). «Respondió: modelo …», herramientas, duración y cifras verificadas van en el desplegable cerrado «Cómo llegó a esta respuesta».
 - Toda cifra (promedio, alerta, desempeño por tema, nota necesaria) se puede abrir para ver de qué notas sale.
 - Cada panel tiene el botón «Analizar con el asistente», que abre el chat con el curso, la actividad o el estudiante cargados (por id).
 - Cero, sin entrega y pendiente se ven igual en todas las pantallas.
-- Cada respuesta del asistente muestra «Respondió: modelo externo» o «Respondió: modelo local (respaldo)», y sus cifras verificadas son enlaces.
+- Cada respuesta del asistente tiene «Respondió: modelo externo» o «Respondió: modelo local (respaldo)» dentro de «Cómo llegó a esta respuesta», y sus cifras verificadas son enlaces.
 - La nota necesaria lleva la leyenda «cálculo con las notas actuales». El diagnóstico por criterio dice «revisar», sin la palabra correlación.
 
 El router (`src/App.jsx`) tiene `/login`, `/cursos`, `/cursos/:id/panel`, `/cursos/:id/alertas`, `/cursos/:id/asistente`, `/admin/moodle` y `/admin/estado`. «Acceso no permitido» y «Tu sesión venció» se muestran en la misma ruta con `components/PaginaError.jsx`, sin rutas propias.
