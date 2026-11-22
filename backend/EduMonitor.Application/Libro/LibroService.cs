@@ -17,7 +17,11 @@ public sealed class LibroService(IEduMonitorDbContext db, IndicadorService indic
 
     private static readonly string[] FuncionesEntregas = { "mod_assign_get_assignments", "mod_assign_get_submissions" };
 
-    public async Task<ConsultaLibro> ConsultarAsync(int cursoId, string? busqueda, OrdenLibro orden, CancellationToken ct = default)
+    public async Task<ConsultaLibro> ConsultarAsync(int cursoId, string? busqueda, OrdenLibro orden, CancellationToken ct = default) =>
+        await ConsultarAsync(cursoId, busqueda, orden, Tramo.Todo, ct);
+
+    /// <summary>R.2 · Con un tramo, el libro trae solo las columnas de ese tramo y el promedio de esas notas, el mismo de los indicadores del tramo.</summary>
+    public async Task<ConsultaLibro> ConsultarAsync(int cursoId, string? busqueda, OrdenLibro orden, Tramo tramo, CancellationToken ct = default)
     {
         if (!await db.Cursos.AnyAsync(c => c.Id == cursoId, ct))
         {
@@ -31,6 +35,12 @@ public sealed class LibroService(IEduMonitorDbContext db, IndicadorService indic
             return new ConsultaLibro(EstadoConsultaLibro.SinSincronizar);
         }
 
+        if (!tramo.ExisteEn(datos))
+        {
+            return new ConsultaLibro(EstadoConsultaLibro.TramoInvalido, Detalle: tramo.NoExisteDetalle);
+        }
+
+        datos = tramo.Filtrar(datos);
         var parciales = Columnas(datos);
         var actividades = parciales.SelectMany(p => p.Unidades).SelectMany(u => u.Actividades).ToList();
         var porId = datos.Actividades.ToDictionary(a => a.Id);
@@ -72,7 +82,8 @@ public sealed class LibroService(IEduMonitorDbContext db, IndicadorService indic
                 new SincronizacionLibroDto(sincronizacion.Id, sincronizacion.Inicio, sincronizacion.Estado.ToString(), sincronizacion.Origen),
                 parciales,
                 ordenados.ToList(),
-                noDisponibles));
+                noDisponibles,
+                tramo.Codigo));
     }
 
     /// <summary>

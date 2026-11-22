@@ -12,7 +12,11 @@ const estilos = readFileSync(resolve(process.cwd(), 'src/styles/app.css'), 'utf8
 
 vi.mock('../../services/agente', () => ({ preguntarAlAsistente: vi.fn(), listarConversaciones: vi.fn(), obtenerConversacion: vi.fn() }))
 vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn() }))
-vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarAlertasActivas: vi.fn() }))
+vi.mock('../../services/indicadores', () => ({
+  obtenerIndicadores: vi.fn(),
+  contarAlertasActivas: vi.fn(),
+  contarEstudiantesConAlertas: vi.fn().mockResolvedValue(null),
+}))
 
 import { listarConversaciones, obtenerConversacion, preguntarAlAsistente } from '../../services/agente'
 import { obtenerCurso } from '../../services/cursos'

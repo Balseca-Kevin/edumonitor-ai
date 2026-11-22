@@ -87,7 +87,7 @@ TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kev
 Guía: `docs/sprint-3/diseno.md` y el prototipo `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html`, aprobados por Kevin. Reemplaza la propuesta anterior de índigo y slate. Este bloque va antes de las pantallas nuevas para no hacerlas dos veces. Se mantienen todas las animaciones del diseño D y las del prototipo.
 
 - R.1 Tokens del Sprint 3 en `tokens.css`: paleta oscura del diseño D para inicio, barra lateral, cabecera, carga y aviso; papel `#F4F2ED` para el contenido; verde petróleo `#0E6E60` para las acciones del asistente y del plan de refuerzo. Hizo: Kevin.
-- R.2 Barra lateral oscura con la navegación del curso y el contador de alertas; barra blanca con el control segmentado que filtra de verdad, «Sincronizar» y «Preguntar al asistente».
+- R.2 Barra lateral oscura con la navegación del curso y el contador de alertas; barra blanca con el control segmentado que filtra de verdad, «Sincronizar» y «Preguntar al asistente». Hizo: Kevin. El filtro llega al backend con el parámetro `tramo` (contrato «Tramo del período»); Libro, Mapa y Plan de refuerzo se suman a la barra cuando exista su pantalla.
 - R.3 Mis cursos en tarjetas con «Abrir curso» y «Sincronizar y abrir» (la pantalla de carga es TA-21.A2).
 - R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante».
 - R.5 Alertas en tarjetas con chips por regla, «Debe: …», «Armar plan de refuerzo», «Marcar revisada» y el modal «Umbrales de alerta».

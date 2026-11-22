@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTramo } from '../../components/tramo'
 import { useParams } from 'react-router-dom'
 import { formatearFecha } from '../../components/formato'
 import { DESCRIPCION_REGLA, textoEvidencia } from '../../components/lenguaje'
@@ -30,6 +31,7 @@ export default function Alertas() {
   const [guardando, setGuardando] = useState(false)
   const [marcando, setMarcando] = useState(null)
   const [aviso, setAviso] = useState(null)
+  const tramo = useTramo()
 
   useEffect(() => {
     let vigente = true
@@ -47,17 +49,17 @@ export default function Alertas() {
 
   useEffect(() => {
     let vigente = true
-    obtenerAlertas(id, filtro)
-      .then((datos) => vigente && setLista({ id, filtro, datos, error: null }))
-      .catch((e) => vigente && setLista({ id, filtro, datos: null, error: describirError(e) }))
+    obtenerAlertas(id, filtro, tramo)
+      .then((datos) => vigente && setLista({ id, filtro, tramo, datos, error: null }))
+      .catch((e) => vigente && setLista({ id, filtro, tramo, datos: null, error: describirError(e) }))
     return () => {
       vigente = false
     }
-  }, [id, filtro])
+  }, [id, filtro, tramo])
 
   // Estado vigente: si cambió el curso o el filtro, lo que llegó antes no cuenta y se ve «Cargando…».
   const reglasVigentes = reglas.id === id ? reglas : { id, datos: null, error: null }
-  const listaVigente = lista.id === id && lista.filtro === filtro ? lista : { id, datos: null, error: null }
+  const listaVigente = lista.id === id && lista.filtro === filtro && lista.tramo === tramo ? lista : { id, datos: null, error: null }
 
   const error = reglasVigentes.error ?? listaVigente.error
   if (error) {
@@ -90,10 +92,10 @@ export default function Alertas() {
     setAviso(null)
     try {
       await actualizarReglas(id, cambios)
-      const [nuevasReglas, nuevasAlertas] = await Promise.all([obtenerReglas(id), obtenerAlertas(id, filtro)])
+      const [nuevasReglas, nuevasAlertas] = await Promise.all([obtenerReglas(id), obtenerAlertas(id, filtro, tramo)])
       setReglas({ id, datos: nuevasReglas, error: null })
       setUmbrales(Object.fromEntries(nuevasReglas.map((r) => [r.codigo, String(r.umbral)])))
-      setLista({ id, filtro, datos: nuevasAlertas, error: null })
+      setLista({ id, filtro, tramo, datos: nuevasAlertas, error: null })
       setAviso({ tipo: 'ok', titulo: 'Umbrales guardados', detalle: 'Las alertas del curso se recalcularon.' })
     } catch (e) {
       setAviso({ tipo: 'error', ...describirError(e) })
@@ -107,8 +109,8 @@ export default function Alertas() {
     setAviso(null)
     try {
       await marcarAlerta(id, alerta.id, 'REVISADA')
-      const nuevasAlertas = await obtenerAlertas(id, filtro)
-      setLista({ id, filtro, datos: nuevasAlertas, error: null })
+      const nuevasAlertas = await obtenerAlertas(id, filtro, tramo)
+      setLista({ id, filtro, tramo, datos: nuevasAlertas, error: null })
       setAviso({ tipo: 'ok', titulo: 'Alerta marcada como revisada', detalle: 'Ya no aparece en las alertas activas.' })
     } catch (e) {
       setAviso({ tipo: 'error', ...describirError(e) })

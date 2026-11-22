@@ -1,4 +1,5 @@
 import api from './api'
+import { paramsTramo } from '../components/tramo'
 
 /**
  * HU-12 · Reglas configurables y alertas del curso (docs/contratos-api.md).
@@ -17,8 +18,8 @@ export async function actualizarReglas(cursoId, cambios) {
 }
 
 /** Alertas del curso en un estado: ACTIVA (por defecto) o REVISADA. Lista vacía si todavía no hay datos. */
-export async function obtenerAlertas(cursoId, estado = 'ACTIVA') {
-  const { data } = await api.get(`/api/cursos/${cursoId}/alertas`, { params: { estado } })
+export async function obtenerAlertas(cursoId, estado = 'ACTIVA', tramo) {
+  const { data } = await api.get(`/api/cursos/${cursoId}/alertas`, { params: { estado, ...paramsTramo(tramo) } })
   return data
 }
 

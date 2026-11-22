@@ -89,7 +89,14 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
     }
 
     /// <summary>TA-12.3 · Alertas del curso en un estado (ACTIVA por defecto). La lista viene vacía si el curso todavía no tiene datos.</summary>
-    public async Task<ConsultaAlertas> ObtenerAlertasAsync(int cursoId, string? estado, CancellationToken ct = default)
+    public async Task<ConsultaAlertas> ObtenerAlertasAsync(int cursoId, string? estado, CancellationToken ct = default) =>
+        await ObtenerAlertasAsync(cursoId, estado, Tramo.Todo, ct);
+
+    /// <summary>
+    /// R.2 · Con un tramo que no es «todo»: las alertas del curso cuya regla también se cumple con las actividades de ese tramo, con la
+    /// evidencia del tramo. Las reglas se evalúan con el mismo motor y los mismos umbrales; cada alerta conserva su id y su estado.
+    /// </summary>
+    public async Task<ConsultaAlertas> ObtenerAlertasAsync(int cursoId, string? estado, Tramo tramo, CancellationToken ct = default)
     {
         if (!await db.Cursos.AnyAsync(c => c.Id == cursoId, ct))
         {
@@ -118,7 +125,31 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
 
         // El orden va en memoria: SQLite (las pruebas) no admite ORDER BY sobre DateTimeOffset.
         var ordenadas = alertas.OrderByDescending(a => a.Generada).ThenByDescending(a => a.Id).ToList();
-        return new ConsultaAlertas(EstadoConsultaAlertas.Ok, ordenadas.Select(ADto).ToList());
+        if (tramo.EsTodo)
+        {
+            return new ConsultaAlertas(EstadoConsultaAlertas.Ok, ordenadas.Select(ADto).ToList());
+        }
+
+        var datos = await indicadores.CargarDatosAsync(cursoId, ct);
+        if (datos is null)
+        {
+            return new ConsultaAlertas(EstadoConsultaAlertas.Ok, Array.Empty<AlertaDto>());
+        }
+
+        if (!tramo.ExisteEn(datos))
+        {
+            return new ConsultaAlertas(EstadoConsultaAlertas.TramoInvalido, Array.Empty<AlertaDto>(), tramo.NoExisteDetalle);
+        }
+
+        var (evaluables, _) = await ReglasEvaluablesAsync(cursoId, ct);
+        var delTramo = MotorAlertas.Evaluar(tramo.Filtrar(datos), evaluables, reloj.GetLocalNow())
+            .GroupBy(d => (Codigo: d.CodigoRegla.ToUpperInvariant(), d.EstudianteId))
+            .ToDictionary(g => g.Key, g => g.First().EvidenciaJson);
+        var filtradas = ordenadas
+            .Where(a => delTramo.ContainsKey((a.Regla.Codigo.ToUpperInvariant(), a.EstudianteId)))
+            .Select(a => ADto(a) with { Evidencia = JsonDocument.Parse(delTramo[(a.Regla.Codigo.ToUpperInvariant(), a.EstudianteId)]).RootElement.Clone() })
+            .ToList();
+        return new ConsultaAlertas(EstadoConsultaAlertas.Ok, filtradas);
     }
 
     /// <summary>TA-12.3 · Marca una alerta como REVISADA con su fecha. 404 si la alerta no es de ese curso; 400 si el estado no es REVISADA.</summary>
@@ -178,19 +209,7 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
             return;
         }
 
-        var porCodigo = new Dictionary<string, ReglaAlerta>(StringComparer.OrdinalIgnoreCase);
-        var evaluables = new List<ReglaEvaluada>();
-        foreach (var regla in reglas)
-        {
-            var definicion = DefinicionesRegla.PorCodigo(regla.Codigo);
-            if (definicion is null)
-            {
-                continue; // códigos fuera del Sprint 2 (R3, G1): se ignoran hasta que existan sus clases.
-            }
-
-            porCodigo[regla.Codigo] = regla;
-            evaluables.Add(new ReglaEvaluada(definicion, regla.Umbral));
-        }
+        var (evaluables, porCodigo) = Evaluables(reglas);
 
         var detectadas = MotorAlertas.Evaluar(datos, evaluables, reloj.GetLocalNow());
         var existentes = new Dictionary<(int ReglaId, int EstudianteId), Alerta>();
@@ -238,6 +257,29 @@ public sealed class AlertasService(IEduMonitorDbContext db, IndicadorService ind
         }
 
         await db.SaveChangesAsync(ct);
+    }
+
+    private async Task<(List<ReglaEvaluada> Evaluables, Dictionary<string, ReglaAlerta> PorCodigo)> ReglasEvaluablesAsync(int cursoId, CancellationToken ct) =>
+        Evaluables(await db.ReglasAlerta.AsNoTracking().Where(r => r.CursoId == cursoId && r.Activa).ToListAsync(ct));
+
+    /// <summary>Reglas activas con su definición y umbral; los códigos fuera del Sprint 2 (R3, G1) se ignoran hasta que existan sus clases.</summary>
+    private static (List<ReglaEvaluada> Evaluables, Dictionary<string, ReglaAlerta> PorCodigo) Evaluables(IEnumerable<ReglaAlerta> reglas)
+    {
+        var porCodigo = new Dictionary<string, ReglaAlerta>(StringComparer.OrdinalIgnoreCase);
+        var evaluables = new List<ReglaEvaluada>();
+        foreach (var regla in reglas)
+        {
+            var definicion = DefinicionesRegla.PorCodigo(regla.Codigo);
+            if (definicion is null)
+            {
+                continue;
+            }
+
+            porCodigo[regla.Codigo] = regla;
+            evaluables.Add(new ReglaEvaluada(definicion, regla.Umbral));
+        }
+
+        return (evaluables, porCodigo);
     }
 
     /// <summary>Crea las tres reglas por defecto si el curso todavía no tiene ninguna. True si las creó.</summary>
