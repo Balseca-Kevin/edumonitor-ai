@@ -104,7 +104,9 @@ export default function FichaLateral({ cursoId, estudiante, requiereAtencion, ce
           <div>
             <span className="mono">FICHA DEL ESTUDIANTE</span>
             <h2>{nombre}</h2>
-            <span className={requiereAtencion ? 'chip-bajo' : 'chip-ok'}>{requiereAtencion ? 'Requiere atención' : 'Al día'}</span>
+            {requiereAtencion !== null && requiereAtencion !== undefined && (
+              <span className={requiereAtencion ? 'chip-bajo' : 'chip-ok'}>{requiereAtencion ? 'Requiere atención' : 'Al día'}</span>
+            )}
           </div>
           <button type="button" className="ficha-cerrar" aria-label="Cerrar ficha" onClick={onCerrar}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

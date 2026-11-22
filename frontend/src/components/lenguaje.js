@@ -106,9 +106,21 @@ export function datoUsado(herramienta, estudiantes) {
   return `${texto} · ${herramienta.duracionMs} ms${herramienta.estado === 'OK' ? '' : ' · no se pudo consultar'}`
 }
 
-/** Grupo del historial: «Hoy», «Esta semana» (últimos 7 días) o «Antes». */
-export function grupoDeFecha(fecha, ahora = new Date()) {
-  const f = new Date(fecha)
-  if (f.toDateString() === ahora.toDateString()) return 'Hoy'
-  return ahora - f < 7 * 24 * 60 * 60 * 1000 ? 'Esta semana' : 'Antes'
+/**
+ * Separa la respuesta en Hechos, Inferencia y Recomendación cuando el asistente las escribe con esos títulos (agent/AGENTS.md); si no,
+ * la respuesta va entera. No cambia ni resume el texto del modelo.
+ */
+export function separarRespuesta(texto) {
+  const titulos = /^\s*(hechos|inferencias?|recomendaci[oó]n(?:es)?)\s*:\s*/gim
+  const marcas = [...String(texto ?? '').matchAll(titulos)]
+  if (marcas.length < 2) return null
+  const bloques = {}
+  marcas.forEach((m, i) => {
+    const desde = m.index + m[0].length
+    const hasta = i + 1 < marcas.length ? marcas[i + 1].index : texto.length
+    const clave = m[1].toLowerCase().startsWith('hecho') ? 'hechos' : m[1].toLowerCase().startsWith('infer') ? 'inferencia' : 'recomendacion'
+    bloques[clave] = texto.slice(desde, hasta).trim()
+  })
+  const antes = texto.slice(0, marcas[0].index).trim()
+  return { antes, ...bloques }
 }
