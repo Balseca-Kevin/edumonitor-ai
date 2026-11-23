@@ -4,11 +4,13 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import CursoMarco from './CursoMarco'
 import { useTramo } from '../../components/tramo'
 
-vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn(), sincronizarCurso: vi.fn() }))
+vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn(), sincronizarCurso: vi.fn(), obtenerCambiosSincronizacion: vi.fn() }))
+vi.mock('../../services/libro', () => ({ obtenerLibro: vi.fn() }))
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarEstudiantesConAlertas: vi.fn() }))
 vi.mock('../../services/periodo', () => ({ obtenerPeriodo: vi.fn() }))
 
-import { obtenerCurso, sincronizarCurso } from '../../services/cursos'
+import { obtenerCambiosSincronizacion, obtenerCurso, sincronizarCurso } from '../../services/cursos'
+import { obtenerLibro } from '../../services/libro'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../../services/indicadores'
 import { obtenerPeriodo } from '../../services/periodo'
 
@@ -47,9 +49,9 @@ function PantallaDePrueba() {
   return <p data-testid="pantalla">tramo {tramo} · búsqueda «{search}»</p>
 }
 
-function renderCurso(ruta = '/cursos/1/panel') {
+function renderCurso(ruta = '/cursos/1/panel', estado) {
   return render(
-    <MemoryRouter initialEntries={[ruta]}>
+    <MemoryRouter initialEntries={[estado ? { pathname: ruta, state: estado } : ruta]}>
       <Routes>
         <Route path="/cursos/:id" element={<CursoMarco />}>
           <Route path="panel" element={<PantallaDePrueba />} />
@@ -70,6 +72,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  vi.clearAllMocks()
   sessionStorage.clear()
 })
 
@@ -158,5 +161,90 @@ describe('TA-22.A5 · Cabecera del curso en el marco', () => {
 
     expect(await screen.findByText(/El estado del período aparece cuando el curso se sincroniza/)).toBeInTheDocument()
     expect(screen.getByTestId('pantalla')).toBeInTheDocument()
+  })
+})
+
+// Forma de GET /api/cursos/{id}/sync/{sid}/cambios (docs/contratos-api.md, «Cambios entre sincronizaciones»).
+const cambios = {
+  sincronizacionId: 13,
+  cursoId: 1,
+  anteriorId: 12,
+  conteos: { total: 4, notasNuevas: 2, notasCambiadas: 1, entregasNuevas: 1, otros: 0 },
+  celdas: [],
+  noDisponibles: [],
+}
+
+describe('TA-21.A2 · Pantalla de carga y aviso de sincronización en el curso', () => {
+  it('«Abrir curso» muestra «Abriendo curso…» y cada paso termina cuando responde su consulta real', async () => {
+    let responderLibro
+    obtenerLibro.mockReturnValue(new Promise((listo) => (responderLibro = listo)))
+    renderCurso('/cursos/1/panel', { abrir: true })
+
+    const carga = screen.getByRole('dialog', { name: 'Abriendo curso…' })
+    expect(within(carga).getByText('Con los datos de la última sincronización.')).toBeInTheDocument()
+    await waitFor(() => expect(within(carga).getByText('Estado del período').closest('li')).toHaveClass('carga-paso--listo'))
+    expect(within(carga).getByText('Indicadores y alertas').closest('li')).toHaveClass('carga-paso--listo')
+    expect(within(carga).getByText('Libro de calificaciones').closest('li')).toHaveClass('carga-paso--girando')
+    expect(obtenerLibro).toHaveBeenCalledWith('1')
+
+    responderLibro({ parciales: [], estudiantes: [] })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Abriendo curso…' })).toBeNull())
+    expect(screen.getByTestId('pantalla')).toBeInTheDocument()
+  })
+
+  it('sin venir de «Abrir curso» no muestra la pantalla de carga ni pide el libro', async () => {
+    renderCurso()
+    expect(await screen.findByTestId('pantalla')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(obtenerLibro).not.toHaveBeenCalled()
+  })
+
+  it('al llegar desde «Sincronizar y abrir» baja el aviso con las cifras reales de los cambios', async () => {
+    obtenerCambiosSincronizacion.mockResolvedValue(cambios)
+    contarEstudiantesConAlertas.mockResolvedValue(5)
+    renderCurso('/cursos/1/panel', { sincronizacion: { id: 13, estado: 'COMPLETADA', errores: [] } })
+
+    const aviso = await screen.findByRole('status', { name: 'Resultado de la sincronización' })
+    expect(within(aviso).getByText('SINCRONIZACIÓN COMPLETADA')).toBeInTheDocument()
+    expect(await within(aviso).findByText('AGIL-4B tiene datos nuevos del aula virtual')).toBeInTheDocument()
+    expect(obtenerCambiosSincronizacion).toHaveBeenCalledWith('1', 13)
+    expect(within(aviso).getByText('notas nuevas').previousSibling).toHaveTextContent('2')
+    expect(within(aviso).getByText('entregas por calificar').previousSibling).toHaveTextContent('1')
+    await waitFor(() => expect(within(aviso).getByText('requieren atención').previousSibling).toHaveTextContent('5'))
+    expect(within(aviso).getByText('errores').previousSibling).toHaveTextContent('0')
+    expect(within(aviso).getByText('Además, 1 nota cambió frente a la sincronización anterior.')).toBeInTheDocument()
+
+    fireEvent.click(within(aviso).getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('status', { name: 'Resultado de la sincronización' })).toBeNull()
+  })
+
+  it('«Sincronizar» en la barra muestra la carga y después el aviso; si fue parcial nombra la función que falló', async () => {
+    obtenerCambiosSincronizacion.mockResolvedValue({ ...cambios, conteos: { total: 0, notasNuevas: 0, notasCambiadas: 0, entregasNuevas: 0, otros: 0 } })
+    sincronizarCurso.mockResolvedValue({
+      id: 14,
+      estado: 'PARCIAL',
+      errores: [{ funcion: 'core_completion_get_activities_completion_status', mensaje: 'Acceso denegado' }],
+    })
+    renderCurso()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sincronizar' }))
+    expect(screen.getByRole('dialog', { name: 'Sincronizando curso…' })).toBeInTheDocument()
+
+    const aviso = await screen.findByRole('status', { name: 'Resultado de la sincronización' }, { timeout: 2000 })
+    expect(screen.queryByRole('dialog', { name: 'Sincronizando curso…' })).toBeNull()
+    expect(aviso).toHaveClass('aviso-sync--parcial')
+    expect(within(aviso).getByText('SINCRONIZACIÓN PARCIAL')).toBeInTheDocument()
+    expect(within(aviso).getByText('Falló: core_completion_get_activities_completion_status')).toBeInTheDocument()
+    expect(await within(aviso).findByText('Sin cambios desde la sincronización anterior')).toBeInTheDocument()
+    expect(within(aviso).getByText('error').previousSibling).toHaveTextContent('1')
+  })
+
+  it('si los cambios no se pueden leer, las cifras dicen «no disponible», nunca 0', async () => {
+    obtenerCambiosSincronizacion.mockRejectedValue({ response: { status: 500 } })
+    renderCurso('/cursos/1/panel', { sincronizacion: { id: 13, estado: 'COMPLETADA', errores: [] } })
+
+    const aviso = await screen.findByRole('status', { name: 'Resultado de la sincronización' })
+    await waitFor(() => expect(within(aviso).getByText('notas nuevas').previousSibling).toHaveTextContent('no disponible'))
+    expect(within(aviso).getByText('entregas por calificar').previousSibling).toHaveTextContent('no disponible')
   })
 })

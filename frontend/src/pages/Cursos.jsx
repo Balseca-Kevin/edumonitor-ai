@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { obtenerCursos, obtenerHistorialSincronizaciones, sincronizarCurso } from '../services/cursos'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../services/indicadores'
 import { obtenerPeriodo } from '../services/periodo'
+import PantallaCarga from '../components/PantallaCarga'
+import { PAUSA_FINAL_MS, pasosDeSincronizacion } from '../components/sincronizacion'
 import Marco from '../components/Marco'
 import Table from '../components/ui/Table'
 import StatusBadge from '../components/ui/StatusBadge'
@@ -176,6 +178,7 @@ export default function Cursos() {
   const [cargandoHistorialId, setCargandoHistorialId] = useState(null)
   const [errorOperacion, setErrorOperacion] = useState('')
   const [resultadoPorCurso, setResultadoPorCurso] = useState({})
+  const [cargaSync, setCargaSync] = useState(null)
 
   useEffect(() => {
     let activo = true
@@ -212,8 +215,13 @@ export default function Cursos() {
     if (sincronizandoId !== null) return
     setSincronizandoId(curso.id)
     setErrorOperacion('')
+    setCargaSync({ curso, resultado: null })
     try {
       const resultado = await sincronizarCurso(curso.id)
+      // TA-21.A2 · Los pasos se marcan con la respuesta real y se dejan ver un momento antes de seguir.
+      setCargaSync({ curso, resultado })
+      await new Promise((listo) => setTimeout(listo, PAUSA_FINAL_MS))
+      setCargaSync(null)
       setResultadoPorCurso((anterior) => ({ ...anterior, [curso.id]: resultado }))
       const estado = String(resultado?.estado ?? '').toUpperCase()
       const actualizado = { ...curso, ultimaSincronizacion: { id: resultado?.id, fecha: resultado?.fin || resultado?.inicio, estado } }
@@ -224,8 +232,9 @@ export default function Cursos() {
         await cargarHistorial(curso)
         return
       }
-      navigate(`/cursos/${curso.id}/panel`)
+      navigate(`/cursos/${curso.id}/panel`, { state: { sincronizacion: resultado } })
     } catch (err) {
+      setCargaSync(null)
       setErrorOperacion(`No se pudo sincronizar "${curso.nombre || curso.nombreCorto}": ${mensajeError(err)}`)
     } finally {
       setSincronizandoId(null)
@@ -284,7 +293,7 @@ export default function Cursos() {
                 sincronizando={sincronizandoId === curso.id}
                 ocupado={sincronizandoId !== null}
                 historialAbierto={historialAbiertoId === curso.id}
-                onAbrir={() => navigate(`/cursos/${curso.id}/panel`)}
+                onAbrir={() => navigate(`/cursos/${curso.id}/panel`, { state: { abrir: true } })}
                 onSincronizar={() => sincronizarYAbrir(curso)}
                 onHistorial={() => alternarHistorial(curso)}
               >
@@ -301,6 +310,14 @@ export default function Cursos() {
           </div>
         )}
       </div>
+      {cargaSync && (
+        <PantallaCarga
+          titulo="Sincronizando curso…"
+          codigo={`${cargaSync.curso.nombreCorto} · AULA VIRTUAL`}
+          subtitulo="Leyendo matriculados, notas y entregas del aula virtual. Se guarda sin duplicar registros."
+          pasos={pasosDeSincronizacion(cargaSync.resultado)}
+        />
+      )}
     </Marco>
   )
 }
