@@ -21,6 +21,7 @@ public sealed class ToolsController(
     PeriodoService periodo,
     EduMonitor.Application.NotaNecesaria.NotaNecesariaService notaNecesaria,
     EduMonitor.Application.Tematicas.TematicaService tematicas,
+    EduMonitor.Application.Refuerzos.PlanRefuerzoService planes,
     TimeProvider reloj,
     ILogger<ToolsController> logger) : ControllerBase
 {
@@ -273,6 +274,35 @@ public sealed class ToolsController(
                 Registrar(herramienta, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
                 return Problem(statusCode: StatusCodes.Status404NotFound, detail: resultado.Detalle);
         }
+    }
+
+    /// <summary>TA-15.A4 · Herramienta obtener_plan_refuerzo: el plan con las notas, los criterios fallados y la nota necesaria de cada estudiante.</summary>
+    [HttpGet("plan-refuerzo")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<EduMonitor.Application.Refuerzos.RespuestaPlanHerramienta>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> PlanRefuerzo([FromQuery] int? cursoId, [FromQuery] int? refuerzoId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null || refuerzoId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Faltan los parámetros cursoId y refuerzoId.");
+        }
+
+        const string herramienta = EduMonitor.Application.Refuerzos.RespuestaPlanHerramienta.Nombre;
+        var respuesta = await planes.HerramientaAsync(cursoId.Value, refuerzoId.Value, ct);
+        if (respuesta is null)
+        {
+            Registrar(herramienta, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El plan {refuerzoId} no es del curso {cursoId}.");
+        }
+
+        Registrar(herramienta, usuario.Id, cursoId, "OK", respuesta.Estudiantes.Count);
+        return Ok(respuesta);
     }
 
     // Traza de cada llamada en el log de la API, sin el token. Las trazas que ve el docente se guardan con el chat (TRAZA_HERRAMIENTA, HU-14).

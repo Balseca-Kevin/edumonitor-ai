@@ -56,6 +56,11 @@ class ParametrosDesempenoTematico(ParametrosAlertas):
     actividadId: Optional[int] = Field(default=None, gt=0, strict=True)
 
 
+class ParametrosPlanRefuerzo(ParametrosAlertas):
+    """TA-15.A4 · Plan de refuerzo que el docente envió al asistente."""
+    refuerzoId: int = Field(gt=0, strict=True)
+
+
 class ChatPeticion(BaseModel):
     mensaje: str = Field(min_length=1)
     token: str = Field(min_length=1, repr=False)

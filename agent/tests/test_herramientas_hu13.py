@@ -231,3 +231,25 @@ def test_el_prompt_nombra_las_herramientas_nuevas_y_pide_decir_que_es_con_las_no
     assert "calcular_nota_necesaria" in graph.PROMPT_SISTEMA
     assert "obtener_desempeno_tematico" in graph.PROMPT_SISTEMA
     assert "notas actuales" in graph.HERRAMIENTAS["calcular_nota_necesaria"][2]
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_obtener_plan_refuerzo_lee_el_plan_del_backend_ta15a4(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/plan-refuerzo", params={"cursoId": "1", "refuerzoId": "7"}).respond(
+        json={"herramienta": "obtener_plan_refuerzo", "actividad": "Tarea 3",
+              "estudiantes": [{"nombre": "Diego", "criteriosFallados": [{"criterio": "Criterios de aceptación", "nivel": "En proceso"}]}]}
+    )
+
+    resultado = await graph.tool_node(estado(llamada("obtener_plan_refuerzo", {"cursoId": 1, "refuerzoId": 7})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].parametros == {"cursoId": 1, "refuerzoId": 7}
+    assert "Criterios de aceptación" in resultado["messages"][0].content
+
+
+def test_el_prompt_pide_leer_el_plan_cuando_hay_refuerzo_id():
+    assert "obtener_plan_refuerzo" in graph.PROMPT_SISTEMA
+    assert "refuerzoId" in graph.PROMPT_SISTEMA
+
