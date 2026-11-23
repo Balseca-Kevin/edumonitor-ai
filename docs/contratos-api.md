@@ -670,6 +670,50 @@ Códigos:
 - 400 si `tramo` no es un código válido (`semana`, `x1`, `u0`) o si el curso no tiene ese parcial o esa unidad (`u9`).
 - 401, 403, 404 y 409 como en el resto del bloque.
 
+## Cambios entre sincronizaciones (TA-21.A1)
+
+Cada sincronización compara las calificaciones y entregas del curso antes y después de importar, y guarda las celdas que cambiaron. La compara con lo que había en la base, que es lo que dejó la sincronización anterior.
+
+### GET /api/cursos/{id}/sync/{sid}/cambios · DOCENTE
+
+```json
+{
+  "sincronizacionId": 13,
+  "cursoId": 1,
+  "fecha": "2026-11-22T09:20:07-05:00",
+  "anteriorId": 12,
+  "conteos": { "total": 4, "notasNuevas": 2, "notasCambiadas": 1, "entregasNuevas": 1, "otros": 0 },
+  "celdas": [
+    {
+      "actividadId": 101, "actividad": "Tarea 1",
+      "estudiante": { "id": 5, "nombre": "Ana", "apellido": "Pérez" },
+      "tipo": "NOTA_CAMBIADA",
+      "antes": { "nota": 6.25, "estado": "CALIFICADO" },
+      "ahora": { "nota": 7.0, "estado": "CALIFICADO" }
+    }
+  ],
+  "noDisponibles": []
+}
+```
+
+`tipo` de cada celda:
+
+| Tipo | Antes | Ahora |
+|---|---|---|
+| `NOTA_NUEVA` | Sin nota (sin entrega, por calificar, sin dato o sin registro) | `CALIFICADO` |
+| `NOTA_CAMBIADA` | `CALIFICADO` | `CALIFICADO` con otra nota |
+| `ENTREGA_NUEVA` | Sin entrega, sin dato o sin registro | `PENDIENTE` (entregada, por calificar) |
+| `OTRO` | Cualquier otro cambio de estado (por ejemplo, una nota que Moodle ya no da) | |
+
+Reglas:
+- Pasar de «sin dato» a «sin entrega», o crearse una celda sin entrega (actividad o estudiante nuevos), no es un cambio: el docente no tiene nada nuevo que mirar.
+- `anteriorId` es la sincronización anterior del curso. En la primera, `anteriorId` va en `null`, `celdas` vacío y los conteos en 0: todo es nuevo y no se marca.
+- Las celdas van en el orden del libro: unidad, fecha límite y orden del ítem; dentro de la actividad, por apellido.
+- `noDisponibles` lleva `"cambios"` cuando la sincronización se hizo antes de que existiera este registro. En ese caso, conteos en 0 y `celdas` vacío: no se sabe, no es que no haya cambios.
+- Una sincronización `FALLIDA` no cambia nada y responde con conteos en 0.
+
+Códigos: 401 sin token, 403 en curso ajeno, 404 si el curso no existe o la sincronización `sid` no es de ese curso.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega

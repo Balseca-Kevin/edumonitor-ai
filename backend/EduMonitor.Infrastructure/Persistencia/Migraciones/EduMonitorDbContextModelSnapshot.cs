@@ -203,6 +203,55 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("Calificacion", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.CambioSincronizacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActividadId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EstadoAhora")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EstadoAntes")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("NotaAhora")
+                        .HasPrecision(9, 5)
+                        .HasColumnType("decimal(9,5)");
+
+                    b.Property<decimal?>("NotaAntes")
+                        .HasPrecision(9, 5)
+                        .HasColumnType("decimal(9,5)");
+
+                    b.Property<int>("SincronizacionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActividadId");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.HasIndex("SincronizacionId");
+
+                    b.ToTable("CambioSincronizacion", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.ConfiguracionMoodle", b =>
                 {
                     b.Property<int>("Id")
@@ -440,6 +489,9 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CambiosRegistrados")
+                        .HasColumnType("bit");
 
                     b.Property<int>("CursoId")
                         .HasColumnType("int");
@@ -744,6 +796,33 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Actividad");
 
                     b.Navigation("Estudiante");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.CambioSincronizacion", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Actividad", "Actividad")
+                        .WithMany()
+                        .HasForeignKey("ActividadId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Sincronizacion", "Sincronizacion")
+                        .WithMany()
+                        .HasForeignKey("SincronizacionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Actividad");
+
+                    b.Navigation("Estudiante");
+
+                    b.Navigation("Sincronizacion");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.ContenidoMinimo", b =>
