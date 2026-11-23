@@ -15,7 +15,14 @@ namespace EduMonitor.Api.Controllers;
 [ApiController]
 [Route("api/tools")]
 [Authorize(Roles = "DOCENTE,ADMIN," + TokenAgente.Rol)]
-public sealed class ToolsController(CursoService cursos, HerramientasService herramientas, PeriodoService periodo, TimeProvider reloj, ILogger<ToolsController> logger) : ControllerBase
+public sealed class ToolsController(
+    CursoService cursos,
+    HerramientasService herramientas,
+    PeriodoService periodo,
+    EduMonitor.Application.NotaNecesaria.NotaNecesariaService notaNecesaria,
+    EduMonitor.Application.Tematicas.TematicaService tematicas,
+    TimeProvider reloj,
+    ILogger<ToolsController> logger) : ControllerBase
 {
     [HttpGet("cursos-autorizados")]
     [ProducesResponseType<RespuestaCursosAutorizados>(StatusCodes.Status200OK)]
@@ -197,6 +204,74 @@ public sealed class ToolsController(CursoService cursos, HerramientasService her
         {
             Registrar(PeriodoService.Herramienta, usuario.Id, cursoId, "ERROR", 0);
             throw;
+        }
+    }
+
+    /// <summary>TA-10.A1 · Herramienta calcular_nota_necesaria del asistente. 400 sin cursoId o estudianteId; 404 si no existe o no está matriculado.</summary>
+    [HttpGet("nota-necesaria")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<EduMonitor.Application.NotaNecesaria.RespuestaNotaNecesariaHerramienta>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> NotaNecesaria([FromQuery] int? cursoId, [FromQuery] int? estudianteId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null || estudianteId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Faltan los parámetros cursoId y estudianteId.");
+        }
+
+        const string herramienta = EduMonitor.Application.NotaNecesaria.NotaNecesariaService.Herramienta;
+        var consulta = await notaNecesaria.ConsultarAsync(cursoId.Value, estudianteId.Value, ct);
+        switch (consulta.Estado)
+        {
+            case EduMonitor.Application.NotaNecesaria.EstadoConsultaNotaNecesaria.Calculada:
+                Registrar(herramienta, usuario.Id, cursoId, "OK", consulta.Resultado!.Pendientes);
+                return Ok(new EduMonitor.Application.NotaNecesaria.RespuestaNotaNecesariaHerramienta(
+                    herramienta, EduMonitor.Application.Periodo.CalculadoraPeriodo.EnEcuador(reloj.GetUtcNow()), consulta.Resultado));
+            case EduMonitor.Application.NotaNecesaria.EstadoConsultaNotaNecesaria.SinSincronizar:
+                Registrar(herramienta, usuario.Id, cursoId, "SIN_SINCRONIZAR", 0);
+                return Problem(statusCode: StatusCodes.Status409Conflict, title: "Curso sin sincronizar");
+            default:
+                Registrar(herramienta, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El estudiante {estudianteId} no está en el curso {cursoId}.");
+        }
+    }
+
+    /// <summary>HU-08 · Herramienta obtener_desempeno_tematico del asistente: desempeño por tema en forma corta.</summary>
+    [HttpGet("desempeno-tematico")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<EduMonitor.Application.Tematicas.RespuestaDesempenoHerramienta>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> DesempenoTematico([FromQuery] int? cursoId, [FromQuery] int? actividadId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
+        }
+
+        const string herramienta = EduMonitor.Application.Tematicas.RespuestaDesempenoHerramienta.Nombre;
+        var resultado = await tematicas.DesempenoAsync(cursoId.Value, actividadId, ct);
+        switch (resultado.Estado)
+        {
+            case EduMonitor.Application.Tematicas.EstadoConsultaTematica.Correcta:
+                Registrar(herramienta, usuario.Id, cursoId, "OK", resultado.Valor!.Temas.Count);
+                return Ok(EduMonitor.Application.Tematicas.RespuestaDesempenoHerramienta.Desde(
+                    resultado.Valor, EduMonitor.Application.Periodo.CalculadoraPeriodo.EnEcuador(reloj.GetUtcNow())));
+            case EduMonitor.Application.Tematicas.EstadoConsultaTematica.SinSincronizar:
+                Registrar(herramienta, usuario.Id, cursoId, "SIN_SINCRONIZAR", 0);
+                return Problem(statusCode: StatusCodes.Status409Conflict, title: "Curso sin sincronizar");
+            default:
+                Registrar(herramienta, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: resultado.Detalle);
         }
     }
 

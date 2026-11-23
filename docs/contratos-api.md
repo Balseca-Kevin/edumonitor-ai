@@ -823,6 +823,52 @@ Reglas del cálculo, todas en Application y con pruebas:
 
 Códigos: 401, 403, 404 (curso, o `actividadId` que no es del curso) y 409, como en el resto del bloque.
 
+## Nota necesaria (TA-10.A1)
+
+### GET /api/cursos/{id}/estudiantes/{eid}/nota-necesaria · DOCENTE
+
+Nota mínima que el estudiante necesita, la misma en todas sus actividades pendientes, para que su promedio 40/30/30 llegue a 7,0 con las notas actuales. Se calcula en el backend con lo que guardó la última sincronización y la fecha del servidor; no llama a Moodle. En pantalla va con la leyenda «cálculo con las notas actuales», nunca como «nota final».
+
+```json
+{
+  "cursoId": 1,
+  "estudiante": { "id": 8, "nombre": "Diego", "apellido": "Díaz" },
+  "aprobacion": 7.0,
+  "promedioActual": 6.6,
+  "parcial": false,
+  "estado": "NECESITA",
+  "notaNecesaria": 7.67,
+  "maximoPosible": 7.7,
+  "pendientes": 2,
+  "categorias": [
+    { "categoria": "Exámenes", "peso": 0.40, "calificadas": 1, "promedio": 6.0,
+      "pendientes": [ { "actividadId": 117, "nombre": "Examen Parcial 2", "fechaLimite": "2026-11-25T18:59:00-05:00", "estado": "AUN_NO_VENCE" } ] }
+  ]
+}
+```
+
+Reglas del cálculo, en Application y con pruebas de casos calculados a mano:
+
+- **Pendiente:** una actividad de una categoría ponderada sin nota calificada que todavía cuenta. Puede estar por calificar (`PENDIENTE`), no haber vencido (`AUN_NO_VENCE`) o no tener fecha límite (`SIN_FECHA`). Una vencida sin entrega no entra, igual que en el promedio.
+- **Cálculo:** el promedio final con la nota x en todas las pendientes es `Σ peso·(suma de notas + x·pendientes)/(notas + pendientes)`, con los pesos normalizados a las categorías que tienen notas o pendientes. `notaNecesaria` es la x que lo lleva a 7,0, redondeada hacia arriba a 2 decimales.
+- **`estado`:**
+  - `NECESITA`: con `notaNecesaria`.
+  - `YA_ALCANZA`: con 0 en las pendientes ya llega.
+  - `NO_ALCANZA`: ni con 10 llega.
+  - `SIN_PENDIENTES`: no quedan actividades por calificar.
+  - `SIN_DATOS`: sin notas ni pendientes.
+- **`maximoPosible`:** el promedio con 10 en todas las pendientes.
+- **`promedioActual`:** el mismo `promedioPonderado` de los indicadores.
+
+Códigos: 401, 403, 404 (curso, o estudiante que no está matriculado) y 409, como en el resto del bloque.
+
+## Herramientas de la nota necesaria y del desempeño por tema (TA-10.A1, HU-08)
+
+Las dos aceptan DOCENTE y AGENTE y registran cada llamada como las demás herramientas. Responden 400 sin sus parámetros, 403 en un curso ajeno, 404 si el curso o el estudiante no existen y 409 si el curso no está sincronizado.
+
+- `GET /api/tools/nota-necesaria?cursoId=1&estudianteId=8`: herramienta `calcular_nota_necesaria`. Devuelve `{ "herramienta": "calcular_nota_necesaria", "generado": "…", "resultado": { …la respuesta de la ruta anterior… } }`.
+- `GET /api/tools/desempeno-tematico?cursoId=1&actividadId=103`: herramienta `obtener_desempeno_tematico`; `actividadId` es opcional. Por tema devuelve `id`, `nombre`, `unidad` («U1 · …»), `domina`, `promedio`, `estudiantesConNota`, `evaluaciones` («Tarea 3 (criterio: …)»), `bajo6` y `proximas` («Tarea 9 (2026-11-28)»). También devuelve `sinTemas`. No lleva la lista completa de estudiantes, para no llenar el contexto del modelo.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega

@@ -197,6 +197,12 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .nota--no-disponible { color: var(--tinta-3); font-style: italic; }
 .nota--nueva { box-shadow: 0 0 0 2px var(--ia); background: var(--ia-fondo); color: var(--ia-texto); animation: aparecer var(--t-medio) var(--curva-salida) both; }
 
+.ficha-para-llegar { display: flex; flex-direction: column; gap: var(--e-6); }
+.ficha-necesita { margin: 0; font-size: var(--fs-14); font-weight: 600; }
+.ficha-necesita--no_alcanza { color: var(--arena-texto); }
+.ficha-necesita--ya_alcanza { color: var(--ok); }
+.ficha-pendientes { margin: var(--e-6) 0 0; padding-left: var(--e-16); font-size: var(--fs-13); color: var(--tinta-2); }
+
 /* ---------- Mapa del curso y mapeo temático (HU-08, HU-22) ---------- */
 .mapa { display: flex; flex-direction: column; gap: var(--e-16); }
 .mapa-parcial { display: flex; flex-direction: column; gap: var(--e-12); }
