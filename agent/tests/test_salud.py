@@ -15,7 +15,9 @@ def test_salud_con_ollama_disponible():
     respuesta = client.get("/salud")
 
     assert respuesta.status_code == 200
-    assert respuesta.json() == {"estado": "OK", "modelo": MODEL_NAME, "ollama": "OK"}
+    datos = respuesta.json()
+    assert {k: datos[k] for k in ("estado", "modelo", "ollama")} == {"estado": "OK", "modelo": MODEL_NAME, "ollama": "OK"}
+    assert "externo" in datos and "activo" in datos
 
 
 @respx.mock

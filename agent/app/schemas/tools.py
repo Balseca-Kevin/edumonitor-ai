@@ -61,12 +61,38 @@ class ParametrosPlanRefuerzo(ParametrosAlertas):
     refuerzoId: int = Field(gt=0, strict=True)
 
 
+class TurnoAnterior(BaseModel):
+    """HU-23 · Un turno guardado de la conversación (pregunta y respuesta, ya seudonimizadas por la API)."""
+    pregunta: str
+    respuesta: str
+
+
 class ChatPeticion(BaseModel):
     mensaje: str = Field(min_length=1)
     token: str = Field(min_length=1, repr=False)
+    cursoId: Optional[int] = None
+    # HU-23 · Últimos 4 turnos de la conversación, del más antiguo al más reciente.
+    historial: List[TurnoAnterior] = Field(default_factory=list, max_length=4)
+    # HU-23 · auto: externo con respaldo local; local: «Usar solo el modelo local»; externo: solo para la evaluación (TA-18.A1).
+    modo: Literal["auto", "local", "externo"] = "auto"
+
+
+class Cifra(BaseModel):
+    """TA-23.A1 · Una cifra de la respuesta, de dónde sale y si quedó verificada."""
+    valor: str
+    herramienta: Optional[str] = None
+    campo: Optional[str] = None
+    estudianteId: Optional[int] = None
+    actividadId: Optional[int] = None
+    verificada: bool
+
 
 class ChatRespuesta(BaseModel):
     respuesta: str
     herramientas: List[TrazaHerramienta]
     modelo: str
     duracionMs: int
+    # HU-23 · EXTERNO, LOCAL o NINGUNO (respuesta por reglas, sin modelo). respaldo: el local respondió por una falla del externo.
+    proveedor: Literal["EXTERNO", "LOCAL", "NINGUNO"] = "LOCAL"
+    respaldo: bool = False
+    cifras: List[Cifra] = Field(default_factory=list)
