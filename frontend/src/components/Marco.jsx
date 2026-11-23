@@ -26,6 +26,7 @@ export function Marca() {
  * Libro de calificaciones, Mapa del curso y Plan de refuerzo se suman cuando su pantalla esté lista.
  */
 const PANTALLAS_CURSO = [
+  { ruta: 'libro', texto: 'Libro de calificaciones' },
   { ruta: 'panel', texto: 'Panel del curso' },
   { ruta: 'alertas', texto: 'Alertas', contador: true },
   { ruta: 'asistente', texto: 'Asistente' },

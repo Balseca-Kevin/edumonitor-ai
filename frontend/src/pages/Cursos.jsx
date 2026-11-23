@@ -232,7 +232,7 @@ export default function Cursos() {
         await cargarHistorial(curso)
         return
       }
-      navigate(`/cursos/${curso.id}/panel`, { state: { sincronizacion: resultado } })
+      navigate(`/cursos/${curso.id}/libro`, { state: { sincronizacion: resultado } })
     } catch (err) {
       setCargaSync(null)
       setErrorOperacion(`No se pudo sincronizar "${curso.nombre || curso.nombreCorto}": ${mensajeError(err)}`)
@@ -293,7 +293,7 @@ export default function Cursos() {
                 sincronizando={sincronizandoId === curso.id}
                 ocupado={sincronizandoId !== null}
                 historialAbierto={historialAbiertoId === curso.id}
-                onAbrir={() => navigate(`/cursos/${curso.id}/panel`, { state: { abrir: true } })}
+                onAbrir={() => navigate(`/cursos/${curso.id}/libro`, { state: { abrir: true } })}
                 onSincronizar={() => sincronizarYAbrir(curso)}
                 onHistorial={() => alternarHistorial(curso)}
               >

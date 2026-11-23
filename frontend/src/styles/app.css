@@ -161,6 +161,42 @@
 .lt-sigla--proxima { color: var(--oscuro-texto-3) !important; }
 @keyframes anillo-vivo { 0%, 100% { box-shadow: 0 0 0 3px rgba(143, 208, 160, 0.35); } 50% { box-shadow: 0 0 0 8px rgba(143, 208, 160, 0); } }
 
+/* ---------- Libro de calificaciones (HU-21) ---------- */
+.libro { display: flex; flex-direction: column; gap: var(--e-14); }
+.libro-cabecera { display: flex; align-items: flex-end; gap: var(--e-16); flex-wrap: wrap; border-bottom: var(--grosor-regla) solid var(--tinta); padding-bottom: var(--e-12); }
+.libro-cabecera > div:first-child { flex: 1; min-width: 260px; }
+.libro-cabecera h2 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.03em; }
+.libro-cabecera .ayuda { margin: var(--e-4) 0 0; }
+.libro-leyenda { display: flex; gap: var(--e-8); flex-wrap: wrap; font-size: var(--fs-12); }
+.libro-filtros { display: flex; gap: var(--e-12); align-items: center; flex-wrap: wrap; }
+.libro-filtros input[type='search'] { min-width: 240px; padding: var(--e-8) var(--e-12); border: var(--grosor-linea) solid var(--linea); border-radius: 8px; background: var(--hoja); font: inherit; }
+.libro-orden { display: inline-flex; gap: var(--e-8); align-items: center; font-size: var(--fs-13); color: var(--tinta-2); }
+.libro-orden select { padding: var(--e-6) var(--e-10); border: var(--grosor-linea) solid var(--linea); border-radius: 8px; background: var(--hoja); font: inherit; color: var(--tinta); }
+.libro-nuevas { font-size: var(--fs-13); color: var(--ia-texto); background: var(--ia-fondo); border-radius: 999px; padding: var(--e-4) var(--e-10); }
+.libro-hoja { overflow-x: auto; }
+.libro-tabla { border-collapse: collapse; width: 100%; font-size: var(--fs-13); }
+.libro-tabla th, .libro-tabla td { border-bottom: var(--grosor-linea) solid var(--linea); }
+.libro-tabla thead th { background: var(--hoja-2); padding: var(--e-8); }
+.libro-fijo { position: sticky; left: 0; z-index: 1; text-align: left; padding: var(--e-10) var(--e-16) !important; min-width: 180px; background: var(--hoja); font-weight: 600; }
+thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
+.libro-unidad { border-left: var(--grosor-linea) solid var(--linea); font-size: var(--fs-12); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--tinta-2); }
+.libro-actividad { font-weight: 600; white-space: nowrap; min-width: 88px; }
+.libro-actividad .mono { display: block; font-size: 10px; color: var(--tinta-2); font-weight: 400; }
+.libro-tabla td { padding: var(--e-6); text-align: center; }
+.libro-promedio { border-left: var(--grosor-linea) solid var(--linea); padding: var(--e-10) var(--e-16) !important; font-weight: 700; }
+.libro-fila { cursor: pointer; }
+.libro-fila:hover td, .libro-fila:hover .libro-fijo { background: var(--hoja-2); }
+.enlace-fila { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+.enlace-fila:hover { text-decoration: underline; }
+.nota { display: inline-block; border-radius: 4px; padding: 3px var(--e-8); white-space: nowrap; }
+.nota--ok { color: var(--tinta); }
+.nota--bajo { background: var(--bajo-fondo); color: var(--bajo-texto); }
+.nota--sin-entrega { background: var(--sin-entrega-fondo); color: var(--sin-entrega-texto); }
+.nota--pendiente { background: var(--pista); color: var(--tinta-2); }
+.nota--aun-no-vence { border: 1px dashed var(--linea-2); color: var(--tinta-2); padding: 2px var(--e-8); }
+.nota--no-disponible { color: var(--tinta-3); font-style: italic; }
+.nota--nueva { box-shadow: 0 0 0 2px var(--ia); background: var(--ia-fondo); color: var(--ia-texto); animation: aparecer var(--t-medio) var(--curva-salida) both; }
+
 /* ---------- Pantalla de carga y aviso de sincronización (TA-21.A2) ---------- */
 .carga { position: fixed; inset: 0; z-index: 60; background: var(--oscuro-fondo); display: flex; align-items: center; justify-content: center; padding: var(--e-24); overflow: hidden; animation: velo-entra var(--t-ficha) ease both; }
 .carga .login-fondo { opacity: 0.55; }

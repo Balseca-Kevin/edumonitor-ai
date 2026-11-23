@@ -51,11 +51,12 @@ function PantallaDePrueba() {
 
 function renderCurso(ruta = '/cursos/1/panel', estado) {
   return render(
-    <MemoryRouter initialEntries={[estado ? { pathname: ruta, state: estado } : ruta]}>
+    <MemoryRouter initialEntries={[estado ? { pathname: ruta.split('?')[0], search: ruta.includes('?') ? `?${ruta.split('?')[1]}` : '', state: estado } : ruta]}>
       <Routes>
         <Route path="/cursos/:id" element={<CursoMarco />}>
           <Route path="panel" element={<PantallaDePrueba />} />
           <Route path="alertas" element={<PantallaDePrueba />} />
+          <Route path="libro" element={<PantallaDePrueba />} />
         </Route>
       </Routes>
     </MemoryRouter>,
@@ -81,7 +82,7 @@ describe('R.2 · Barra lateral oscura y barra del curso', () => {
     renderCurso()
 
     const nav = await screen.findByRole('navigation', { name: 'Curso AGIL-4B' })
-    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Panel del curso', 'Alertas3', 'Asistente'])
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Libro de calificaciones', 'Panel del curso', 'Alertas3', 'Asistente'])
     expect(within(nav).getByLabelText('3 estudiantes requieren atención')).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Panel del curso' })).toHaveClass('activo')
     const lateral = screen.getByRole('complementary', { name: 'Navegación' })
@@ -216,6 +217,18 @@ describe('TA-21.A2 · Pantalla de carga y aviso de sincronización en el curso',
 
     fireEvent.click(within(aviso).getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByRole('status', { name: 'Resultado de la sincronización' })).toBeNull()
+  })
+
+  it('«Ver cambios en el libro» cierra el aviso y abre el libro con el tramo elegido', async () => {
+    obtenerCambiosSincronizacion.mockResolvedValue(cambios)
+    renderCurso('/cursos/1/panel?tramo=u2', { sincronizacion: { id: 13, estado: 'COMPLETADA', errores: [] } })
+
+    const aviso = await screen.findByRole('status', { name: 'Resultado de la sincronización' })
+    fireEvent.click(await within(aviso).findByRole('button', { name: 'Ver cambios en el libro' }))
+
+    expect(screen.queryByRole('status', { name: 'Resultado de la sincronización' })).toBeNull()
+    expect(screen.getByTestId('pantalla')).toHaveTextContent('búsqueda «?tramo=u2»')
+    expect(within(screen.getByRole('navigation', { name: 'Curso AGIL-4B' })).getByRole('link', { name: 'Libro de calificaciones' })).toHaveClass('activo')
   })
 
   it('«Sincronizar» en la barra muestra la carga y después el aviso; si fue parcial nombra la función que falló', async () => {

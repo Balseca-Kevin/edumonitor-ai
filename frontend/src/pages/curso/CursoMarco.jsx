@@ -255,6 +255,10 @@ export default function CursoMarco() {
           cambios={aviso.cambios}
           atencion={aviso.atencion}
           onCerrar={cerrarAviso}
+          onVerCambios={() => {
+            cerrarAviso()
+            navigate(`/cursos/${id}/libro${busquedaTramo(tramo)}`)
+          }}
         />
       )}
     </Marco>

@@ -143,12 +143,12 @@ describe('R.3 · Mis cursos en tarjetas', () => {
     expect(within(tarjeta).queryByText(/requieren atención/)).toBeNull()
   })
 
-  it('«Abrir curso» lleva al panel del curso', async () => {
+  it('«Abrir curso» lleva al libro, primera pantalla del curso', async () => {
     obtenerCursos.mockResolvedValue([agil])
     renderCursos()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Abrir curso' }))
-    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/panel')
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/libro')
   })
 
   it('«Sincronizar y abrir» sincroniza y abre el curso', async () => {
@@ -159,7 +159,7 @@ describe('R.3 · Mis cursos en tarjetas', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Sincronizar y abrir' }))
 
     expect(sincronizarCurso).toHaveBeenCalledWith(1)
-    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/panel')
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/libro')
     // TA-21.A2 · El resultado viaja al curso para el aviso con las cifras de la sincronización.
     expect(JSON.parse(screen.getByTestId('estado').textContent).sincronizacion.id).toBe(6)
   })
@@ -194,7 +194,7 @@ describe('R.3 · Mis cursos en tarjetas', () => {
     expect(within(carga).getByText('Acceso denegado')).toBeInTheDocument()
     expect(within(carga).getByText('Finalización de actividades').closest('li')).toHaveClass('carga-paso--error')
     expect(within(carga).getByText('Matriculados').closest('li')).toHaveClass('carga-paso--listo')
-    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/panel')
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/libro')
   })
 
   it('una sincronización FALLIDA no abre el curso y muestra el historial con sus errores', async () => {

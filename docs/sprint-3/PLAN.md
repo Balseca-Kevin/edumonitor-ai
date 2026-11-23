@@ -22,7 +22,7 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 
 | HU | Historia | SP | Responsable | RF | Estado |
 |---|---|---|---|---|---|
-| HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint en PR #50; falta la pantalla |
+| HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint y pantalla hechos (pantalla adelantada por Kevin) |
 | HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Por hacer |
 | HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Rúbricas y funciones de Moodle en PR #49; falta backend y pantalla |
 | HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Por hacer |
@@ -54,9 +54,9 @@ Lo que pide el prototipo y no estaba en el plan entra como tareas de HU que ya e
 | TA-08.A1 | HU-08 | Sílabos en el Moodle de laboratorio (`docs/sprint-3/silabos.md`): nombre de cada sección y sus temas en los 3 cursos; sección 5 de BDD-4B; enunciados y criterios de rúbrica de AGIL-4B alineados con los temas de su unidad, sin cambiar las notas ni los casos de la demo (est04 falla el mismo tema en 3 actividades; casi todo el curso falla un criterio de Tarea 3). La sincronización importa el nombre de la sección y HU-08 toma los temas como temas iniciales de cada unidad | Kevin | Kevin |
 | TA-22.A3 | HU-22 | Actividades de AGIL-4B que vencen después de la Review, para que la línea de tiempo y el plan de refuerzo tengan evaluaciones futuras. Nombres, categorías y fechas límite los da Kevin antes de empezar; se crean con el script de carga y se mapean a temas | Kevin | Kevin (actividades en el aula virtual; el mapeo a temas queda para la pantalla de HU-08) |
 | TA-22.A4 | HU-22 | Estado del período: `GET /api/cursos/{id}/periodo` (semana actual y total, unidades con su nombre y fechas, actividades con fecha límite y estado, vencidas, entregas que faltan, vence esta semana, siguiente) y la herramienta del asistente `GET /api/tools/estado-periodo`, con pruebas | Kevin; Sebastián (cálculos) | Kevin |
-| TA-22.A5 | HU-22 | Cabecera del curso con la línea de tiempo, los tres bloques y la leyenda, según `diseno.md` | Kevin || Kevin (también la semana en las tarjetas de Mis cursos y en «Sabe: …» del asistente) |
-| TA-21.A1 | HU-21 | Diferencias entre sincronizaciones: la sincronización guarda qué calificaciones y entregas cambiaron frente a la anterior; `GET /api/cursos/{id}/sync/{sid}/cambios` con los conteos y las celdas | Kevin || Kevin (la pantalla que lo muestra es TA-21.A2) |
-| TA-21.A2 | HU-21 | Pantalla de carga («Abriendo curso…» y «Sincronizando curso…»), aviso grande al terminar con las cifras de TA-21.A1 y celdas nuevas marcadas en el libro | Santiago || Kevin (pantalla de carga y aviso; las celdas nuevas marcadas esperan la pantalla del libro, TA-21.2) |
+| TA-22.A5 | HU-22 | Cabecera del curso con la línea de tiempo, los tres bloques y la leyenda, según `diseno.md` | Kevin | Kevin (también la semana en las tarjetas de Mis cursos y en «Sabe: …» del asistente) |
+| TA-21.A1 | HU-21 | Diferencias entre sincronizaciones: la sincronización guarda qué calificaciones y entregas cambiaron frente a la anterior; `GET /api/cursos/{id}/sync/{sid}/cambios` con los conteos y las celdas | Kevin | Kevin (la pantalla que lo muestra es TA-21.A2) |
+| TA-21.A2 | HU-21 | Pantalla de carga («Abriendo curso…» y «Sincronizando curso…»), aviso grande al terminar con las cifras de TA-21.A1 y celdas nuevas marcadas en el libro | Santiago | Kevin (pantalla de carga, aviso y celdas nuevas marcadas en el libro) |
 | TA-15.A3 | HU-15 | Pantalla «Plan de refuerzo»: actividad evaluada, temáticas donde falló con el porcentaje que domina cada tema y quién quedó bajo 6,0, estudiantes, dónde se vuelven a evaluar esos temas, nota necesaria; «Enviar el plan al asistente» guarda el plan (`POST /api/cursos/{id}/refuerzos`) | Jeremy | |
 | TA-15.A4 | HU-15 | El asistente recibe el plan como foco, redacta el borrador por estudiante (tareas por tema, entrega sugerida antes de la próxima evaluación de esos temas, qué está en juego) en una conversación propia; «Aprobar borrador» habilita PDF y DOCX; «Historial de refuerzos» en el plan y en el asistente con su estado y el resultado de TA-15.A1 | Jeremy; Kevin (contrato del chat) | |
 
@@ -104,8 +104,8 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 ### Bloque 1 · Notas reales (Santiago)
 
-- TA-21.2 Pantalla `Libro.jsx`, primera del curso, con cero, sin entrega y pendiente diferenciados y «no disponible» cuando falta el dato.
-- TA-21.3 Prueba de interfaz del libro.
+- TA-21.2 Pantalla `Libro.jsx`, primera del curso, con cero, sin entrega y pendiente diferenciados y «no disponible» cuando falta el dato. Hizo: Kevin, con «aún no vence», el tramo, la búsqueda, el orden, la ficha al hacer clic y las celdas nuevas de TA-21.A2.
+- TA-21.3 Prueba de interfaz del libro. Hizo: Kevin (`Libro.test.jsx`).
 - HU-10 Ficha del estudiante (`GET /api/cursos/{id}/estudiantes/{eid}`; se detalla el contrato antes).
 - TA-10.A1 Cálculo de la nota necesaria para llegar a 7,0, con pruebas y herramienta del asistente (Kevin).
 - TA-10.A2 Bloque «Para llegar a 7,0» en la ficha (Santiago).
