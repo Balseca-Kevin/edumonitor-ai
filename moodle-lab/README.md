@@ -90,7 +90,7 @@ docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d
 |---|---|
 | Categorías | UTA › FISEI › Software |
 | Cursos | AGIL-4B «Metodologías Ágiles (lab)» (id 2) · BDD-4B «Bases de Datos (lab)» (id 3) · MCS-4B «Manejo y Configuración del Software (lab)» (id 4, desde el 12 nov 2026) |
-| Secciones | Parcial 1: Unidad 1, Unidad 2 · Parcial 2: Unidad 3, Unidad 4 |
+| Secciones | Parcial 1: unidades 1 y 2 · Parcial 2: unidades 3 y 4, con el nombre y los temas del sílabo (TA-08.A1); BDD-4B suma la unidad 5 sin actividades |
 | Libro | Exámenes 40 % · Tareas 30 % (incluye talleres) · APE 30 % |
 | Parcial 1 | U1: Tarea 1, Tarea 2, APE 1, Taller 1 · U2: Tarea 3, Tarea 4, APE 2, Examen P1 |
 | Parcial 2 | U3: Tarea 5, Tarea 6, APE 3, Taller 2 · U4: Tarea 7, Tarea 8, APE 4, Examen P2 |
@@ -157,6 +157,38 @@ Casos de prueba en AGIL-4B (uno por regla de alerta):
 | est17 | Temática crítica: bajo en toda la unidad 3 |
 
 Los demás estudiantes tienen notas entre 6 y 10 con alguna entrega faltante. Los datos se generan con una semilla fija, así que cada carga produce lo mismo.
+
+### Sílabos en las secciones (TA-08.A1)
+
+`scripts/cargar_silabos.php` pone en los tres cursos el nombre de cada unidad y sus temas, tomados de `docs/sprint-3/silabos.md`. Se corre al final, después de `cargar_datos_laboratorio.php` y `cargar_rubricas.php`:
+
+```powershell
+docker cp moodle-lab/scripts/cargar_silabos.php aula-virtual-moodle-1:/tmp/
+docker exec aula-virtual-moodle-1 php /tmp/cargar_silabos.php
+```
+
+- Cada sección recibe el nombre de la unidad del sílabo. Su resumen lleva los temas en una lista (`<ul><li>1.1 …</li></ul>`).
+- La sincronización de EduMonitor lee esa lista de `core_course_get_contents`. Si una unidad todavía no tiene temas, la lista queda como sus temas iniciales (HU-08); después los administra el docente.
+- BDD-4B suma la sección 5, «Procesos transaccionales con bloques PL/SQL», sin actividades. La aplicación la muestra como unidad sin actividades.
+- En AGIL-4B, las 5 tareas con rúbrica reciben un enunciado (y su archivo de instrucciones) alineado con los temas de su unidad. También cambian la descripción de los 4 criterios y el comentario del docente, que se rehace con el nivel que ya tenía cada criterio.
+
+No cambia ninguna nota: solo toca textos. Los niveles, los puntajes y las calificaciones siguen iguales, y los casos de la demo también:
+
+| Caso | Dónde |
+|---|---|
+| est04 falla el mismo tema en 3 actividades | Criterio 1 de Tarea 1, Tarea 3 y Tarea 5: valores del Manifiesto Ágil (tema 1.3), aplicados al tema de cada unidad |
+| Casi todo el curso falla un criterio | Tarea 3, «Comparación de enfoques ágiles» (tema 2.2) |
+| Un criterio no separa a quienes van bien del resto | «Formato y entrega» |
+
+| Tarea | Unidad | Criterios (tema del sílabo) |
+|---|---|---|
+| Tarea 1 | 1 | Valores y principios del Manifiesto Ágil (1.3) · Evolución del software (1.1) · Etapas del proceso de desarrollo de software (1.2) · Formato y entrega |
+| Tarea 2 | 1 | Concepto de agilidad (1.4) · Proceso tradicional frente a proceso ágil (1.2) · Ciclo iterativo e incremental (1.2) · Formato y entrega |
+| Tarea 3 | 2 | Valores del Manifiesto Ágil en la filosofía del equipo (1.3, 2.1) · Comparación de enfoques ágiles (2.2) · Filosofía ágil en un caso real (2.1) · Formato y entrega |
+| Tarea 5 | 3 | Valores del Manifiesto Ágil en las prácticas de Scrum (1.3, 3.2) · Tablero Kanban y límite WIP (3.3) · Prácticas de XP (3.1) · Formato y entrega |
+| Tarea 6 | 3 | Eventos y artefactos de Scrum (3.2) · Retrospectiva y mejora continua (3.2) · Otras metodologías ágiles (3.4) · Formato y entrega |
+
+El tema de cada criterio es una sugerencia para el mapeo de HU-08; quien lo decide es el docente, en EduMonitor.
 
 ## Respaldos (carpeta `backups/`)
 

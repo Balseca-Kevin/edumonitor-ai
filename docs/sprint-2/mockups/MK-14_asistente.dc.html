@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>D · Asistente</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Archivo',system-ui,sans-serif;color:#1E2026;background:#FFFFFF;font-variant-numeric:tabular-nums}
+a{color:#3F51B5}
+button{font-family:'Archivo',sans-serif}
+input:focus,button:focus-visible{outline:2px solid #7B8BD6;outline-offset:2px}
+@keyframes aparecer{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes brillo{0%{background-position:-200px 0}100%{background-position:200px 0}}
+@keyframes punto{0%,80%,100%{opacity:.25}40%{opacity:1}}
+@keyframes crecer{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.msg{animation:aparecer 400ms cubic-bezier(.16,1,.3,1) both}
+.barra{transform-origin:left;animation:crecer 700ms cubic-bezier(.16,1,.3,1) 150ms both}
+.pensando{background:linear-gradient(90deg,#8A90A0 0%,#C9CDD6 50%,#8A90A0 100%);background-size:400px 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:brillo 1.6s linear infinite}
+.p1{animation:punto 1.2s infinite}.p2{animation:punto 1.2s .2s infinite}.p3{animation:punto 1.2s .4s infinite}
+.chip{transition:background-color 150ms ease,border-color 150ms ease}
+.chip:hover{background-color:#F1F2F6;border-color:#C5C9D3}
+.hist{transition:background-color 150ms ease}
+.hist:hover{background-color:#ECEDF1}
+@media (prefers-reduced-motion: reduce){.msg,.barra,.pensando,.p1,.p2,.p3{animation:none}.pensando{color:#8A90A0}}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-wrap: wrap; background: #FFFFFF">
+  <aside style="flex: 1 1 260px; max-width: 288px; background: #F6F7F9; border-right: 1px solid #E6E8EC; padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box">
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 14px"><span style="font-size: 18px"><span style="font-weight: 300">Edu</span><b>Monitor</b></span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6B7080">AGIL-4B</span></div>
+    <a href="D-Login.dc.html" style="padding: 8px 10px; border-radius: 8px; color: #6B7080; text-decoration: none; font-size: 14px">← Mis cursos</a>
+    <a href="D-Panel.dc.html" style="padding: 8px 10px; border-radius: 8px; color: #1E2026; text-decoration: none; font-size: 14px">Panel</a>
+    <a href="D-Panel.dc.html" style="padding: 8px 10px; border-radius: 8px; color: #1E2026; text-decoration: none; font-size: 14px">Alertas</a>
+    <a href="D-Asistente.dc.html" style="padding: 8px 10px; border-radius: 8px; background: #E6E8EF; color: #1E2026; text-decoration: none; font-size: 14px; font-weight: 600">Asistente</a>
+    <button type="button" onClick="{{nueva}}" class="chip" style="margin: 18px 0 8px; height: 40px; border-radius: 10px; border: 1px solid #D5D8E0; background: #FFFFFF; font-size: 14px; font-weight: 600; color: #1E2026; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 0 12px"><span aria-hidden="true" style="font-size: 18px; line-height: 1">+</span> Nueva conversación</button>
+    <span style="padding: 10px 10px 4px; font-size: 12px; font-weight: 600; color: #6B7080">Hoy</span>
+    <button type="button" class="hist" style="text-align: left; border: 0; border-radius: 8px; background: #E6E8EF; padding: 9px 10px; font-size: 14px; color: #1E2026; cursor: pointer">Promedios más bajos del curso</button>
+    <button type="button" class="hist" style="text-align: left; border: 0; border-radius: 8px; background: transparent; padding: 9px 10px; font-size: 14px; color: #1E2026; cursor: pointer">Entregas pendientes de la Unidad 3</button>
+    <span style="padding: 14px 10px 4px; font-size: 12px; font-weight: 600; color: #6B7080">Esta semana</span>
+    <button type="button" class="hist" style="text-align: left; border: 0; border-radius: 8px; background: transparent; padding: 9px 10px; font-size: 14px; color: #1E2026; cursor: pointer">Notas en cero del Parcial 1</button>
+    <button type="button" class="hist" style="text-align: left; border: 0; border-radius: 8px; background: transparent; padding: 9px 10px; font-size: 14px; color: #1E2026; cursor: pointer">Cómo va est09</button>
+    <div style="margin-top: auto; padding: 14px 10px 0; border-top: 1px solid #E6E8EC; font-size: 13px; color: #6B7080">Docente Uno</div>
+  </aside>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; min-height: 1000px">
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-bottom: 1px solid #EEF0F3; flex-wrap: wrap; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Promedios más bajos del curso</span><span style="font-size: 12px; color: #6B7080">Metodologías Ágiles (lab) · datos del 30/10/2026, 16:59</span></div>
+      <span style="padding: 6px 12px; border-radius: 999px; background: #EEF5EF; color: #2F6B3A; font-size: 12px; font-weight: 600">Solo lectura · modelo local</span>
+    </header>
+    <div style="flex: 1; overflow-y: auto; padding: 32px 24px 24px; display: flex; justify-content: center">
+      <div style="width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 28px">
+        <sc-if value="{{vacio}}" hint-placeholder-val="{{ false }}">
+          <div class="msg" style="display: flex; flex-direction: column; gap: 18px; padding-top: 60px">
+            <h1 style="margin: 0; font-size: 34px; font-weight: 300; letter-spacing: -0.02em">Hola, <b style="font-weight: 700">Docente Uno</b>. ¿Qué quieres saber de AGIL-4B?</h1>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+              <sc-for list="{{sugerencias}}" as="s" hint-placeholder-count="4">
+                <button type="button" onClick="{{s.elegir}}" class="chip" style="text-align: left; border: 1px solid #E1E4EA; border-radius: 14px; background: #FFFFFF; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 14px; font-weight: 600; color: #1E2026">{{s.texto}}</span><span style="font-size: 12px; color: #6B7080">{{s.ayuda}}</span></button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-for list="{{mensajes}}" as="m" hint-placeholder-count="2">
+          <div class="msg" style="display: flex; flex-direction: column; gap: 10px">
+            <sc-if value="{{m.esDocente}}" hint-placeholder-val="{{ true }}">
+              <div style="align-self: flex-end; max-width: 78%; background: #EEF0F5; border-radius: 18px 18px 6px 18px; padding: 12px 16px; font-size: 15px; line-height: 1.45">{{m.texto}}</div>
+            </sc-if>
+            <sc-if value="{{m.esAsistente}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 14px; align-items: flex-start">
+                <div aria-hidden="true" style="flex: 0 0 auto; width: 28px; height: 28px; border-radius: 8px; background: #2B2E35; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 6px; box-sizing: border-box"><span style="background: #AEB6C6; border-radius: 1px"></span><span style="background: #AEB6C6; border-radius: 1px"></span><span style="background: #AEB6C6; border-radius: 1px"></span><span style="border: 1px solid #AEB6C6; border-radius: 1px"></span></div>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+                  <sc-if value="{{m.cargando}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 8px; font-size: 15px; padding-top: 4px"><span class="pensando" style="font-weight: 500">{{m.estado}}</span><span aria-hidden="true" style="display: flex; gap: 3px"><span class="p1" style="width: 5px; height: 5px; border-radius: 50%; background: #8A90A0"></span><span class="p2" style="width: 5px; height: 5px; border-radius: 50%; background: #8A90A0"></span><span class="p3" style="width: 5px; height: 5px; border-radius: 50%; background: #8A90A0"></span></span></div>
+                  </sc-if>
+                  <sc-if value="{{m.listo}}" hint-placeholder-val="{{ true }}">
+                    <p style="margin: 0; font-size: 15px; line-height: 1.55; padding-top: 3px">{{m.texto}}</p>
+                    <sc-if value="{{m.hayFilas}}" hint-placeholder-val="{{ true }}">
+                      <div style="display: flex; flex-direction: column; border: 1px solid #E6E8EC; border-radius: 14px; overflow: hidden">
+                        <sc-for list="{{m.filas}}" as="f" hint-placeholder-count="3">
+                          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) 120px; gap: 16px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #EEF0F3">
+                            <b style="font-size: 14px">{{f.nombre}}</b>
+                            <div style="display: flex; flex-direction: column; gap: 6px"><div style="height: 6px; border-radius: 3px; background: #EEF0F3"><div class="barra" style="{{f.barra}}"></div></div><span style="font-size: 13px; color: #6B7080">{{f.detalle}}</span></div>
+                            <span style="text-align: right; font-size: 20px; font-weight: 700">{{f.nota}}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{m.haySugerencia}}" hint-placeholder-val="{{ true }}">
+                      <p style="margin: 0; font-size: 15px; line-height: 1.55; padding: 12px 14px; border-radius: 12px; background: #F3F4FA"><b style="font-weight: 600">Sugerencia: </b>{{m.sugerencia}}</p>
+                    </sc-if>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                      <a href="D-Panel.dc.html" class="chip" style="padding: 7px 12px; border-radius: 999px; border: 1px solid #E1E4EA; font-size: 13px; color: #1E2026; text-decoration: none">Abrir en el panel</a>
+                      <button type="button" class="chip" style="padding: 7px 12px; border-radius: 999px; border: 1px solid #E1E4EA; background: #FFFFFF; font-size: 13px; color: #1E2026; cursor: pointer">Copiar</button>
+                      <button type="button" onClick="{{m.alternarFuentes}}" class="chip" style="padding: 7px 12px; border-radius: 999px; border: 1px solid #E1E4EA; background: #FFFFFF; font-size: 13px; color: #6B7080; cursor: pointer">{{m.etiquetaFuentes}}</button>
+                    </div>
+                    <sc-if value="{{m.verFuentes}}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: 13px; line-height: 1.6; color: #6B7080; padding-left: 12px; border-left: 2px solid #E1E4EA">{{m.fuentes}}</div>
+                    </sc-if>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="padding: 0 24px 24px; display: flex; justify-content: center">
+      <div style="width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{seguimiento}}" as="s" hint-placeholder-count="3">
+            <button type="button" onClick="{{s.elegir}}" class="chip" style="padding: 7px 12px; border-radius: 999px; border: 1px solid #E1E4EA; background: #FFFFFF; font-size: 13px; color: #1E2026; cursor: pointer">{{s.texto}}</button>
+          </sc-for>
+        </div>
+        <form style="display: flex; align-items: center; gap: 10px; border: 1px solid #D5D8E0; border-radius: 24px; padding: 8px 8px 8px 18px; box-shadow: 0 2px 12px rgba(30,32,38,0.06)">
+          <span style="padding: 4px 10px; border-radius: 999px; background: #EEF0F5; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4A4F5C; white-space: nowrap">AGIL-4B</span>
+          <label for="pregunta-d" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Escribe tu pregunta</label>
+          <input id="pregunta-d" type="text" placeholder="Pregunta sobre notas, entregas o alertas del curso" style="flex: 1; min-width: 0; border: 0; font: 400 15px 'Archivo', sans-serif; padding: 10px 0; outline: none; background: transparent">
+          <button type="button" aria-label="Enviar pregunta" style="flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 0; background: #2B2E35; color: #FFFFFF; font-size: 18px; cursor: pointer">↑</button>
+        </form>
+        <span style="text-align: center; font-size: 12px; color: #8A90A0">El asistente lee los datos del aula virtual y no modifica notas. Revisa antes de decidir.</span>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { mensajes: [this.docente('¿Quiénes tienen los promedios más bajos en AGIL-4B?'), this.respuesta('bajos')], abiertas: {} };
+  }
+  docente(texto) { return { id: Math.random().toString(36).slice(2), tipo: 'docente', texto: texto }; }
+  respuesta(clave) {
+    const r = {
+      bajos: { texto: 'Tres estudiantes están por debajo de 7,0 y sus últimas notas van bajando.', filas: [
+        { nombre: 'est05', nota: '5,92', detalle: 'Una nota en cero · bajó 1,8 en sus últimas tres notas', pct: 59, color: '#D2B48A' },
+        { nombre: 'est07', nota: '6,40', detalle: 'Dos actividades sin entregar', pct: 64, color: '#D2B48A' },
+        { nombre: 'est13', nota: '6,95', detalle: 'Sin ceros ni entregas pendientes', pct: 69.5, color: '#C9CDD6' }],
+        sugerencia: 'conversar con est05 sobre la Unidad 2 y recordar a est07 sus dos entregas antes del cierre de la Unidad 3.',
+        fuentes: 'Calificaciones del curso (32 estudiantes) · 96 ms. Notas de est05 · 41 ms. Sincronización del 30/10/2026, 16:59.' },
+      entregas: { texto: 'Tres estudiantes tienen actividades de la Unidad 3 sin entregar.', filas: [
+        { nombre: 'est07', nota: '2', detalle: 'Tarea 5 y APE 3 sin entregar', pct: 50, color: '#D2B48A' },
+        { nombre: 'est14', nota: '1', detalle: 'Tarea 5 sin entregar', pct: 25, color: '#C9CDD6' },
+        { nombre: 'est21', nota: '1', detalle: 'APE 3 sin entregar', pct: 25, color: '#C9CDD6' }],
+        sugerencia: 'la Tarea 5 vence pronto; un recordatorio general al curso cubre a la mayoría.',
+        fuentes: 'Calificaciones del curso (32 estudiantes) · 88 ms. Sincronización del 30/10/2026, 16:59.' },
+      atencion: { texto: 'Cuatro estudiantes requieren atención. Estos dos son los más urgentes:', filas: [
+        { nombre: 'est05', nota: '5,92', detalle: 'Promedio bajo el mínimo de 7,0 y bajando', pct: 59, color: '#D2B48A' },
+        { nombre: 'est07', nota: '6,40', detalle: 'Dos actividades vencidas sin entregar', pct: 64, color: '#D2B48A' }],
+        sugerencia: 'revisa primero a est05: tiene la tendencia más baja del curso.',
+        fuentes: 'Alertas activas del curso · 72 ms. Sincronización del 30/10/2026, 16:59.' }
+    }[clave];
+    return Object.assign({ id: Math.random().toString(36).slice(2), tipo: 'asistente', cargando: false }, r);
+  }
+  preguntar(texto, clave) {
+    const carga = { id: Math.random().toString(36).slice(2), tipo: 'asistente', cargando: true, estado: 'Consultando calificaciones del curso' };
+    this.setState({ mensajes: this.state.mensajes.concat([this.docente(texto), carga]) });
+    clearTimeout(this.t);
+    this.t = setTimeout(() => {
+      const lista = this.state.mensajes.slice(0, -1).concat([this.respuesta(clave)]);
+      this.setState({ mensajes: lista });
+    }, 1400);
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    const preguntas = [
+      { texto: '¿Quién no ha entregado tareas de la Unidad 3?', ayuda: 'Entregas pendientes por estudiante', clave: 'entregas' },
+      { texto: '¿Qué estudiantes requieren atención?', ayuda: 'Alertas activas con su motivo', clave: 'atencion' },
+      { texto: '¿Quiénes tienen los promedios más bajos?', ayuda: 'Promedio ponderado 40 / 30 / 30', clave: 'bajos' },
+      { texto: '¿Cómo va el curso en el Parcial 2?', ayuda: 'Resumen de U3 y U4', clave: 'bajos' }
+    ];
+    const conElegir = (p) => Object.assign({}, p, { elegir: () => this.preguntar(p.texto, p.clave) });
+    const mensajes = this.state.mensajes.map((m) => {
+      const abierta = !!this.state.abiertas[m.id];
+      return Object.assign({}, m, {
+        esDocente: m.tipo === 'docente',
+        esAsistente: m.tipo === 'asistente',
+        listo: m.tipo === 'asistente' && !m.cargando,
+        hayFilas: !!(m.filas && m.filas.length),
+        haySugerencia: !!m.sugerencia,
+        filas: (m.filas || []).map((f) => Object.assign({}, f, { barra: 'height: 6px; border-radius: 3px; width: ' + f.pct + '%; background: ' + f.color })),
+        verFuentes: abierta,
+        etiquetaFuentes: abierta ? 'Ocultar datos usados' : 'Datos usados',
+        alternarFuentes: () => { const a = Object.assign({}, this.state.abiertas); a[m.id] = !abierta; this.setState({ abiertas: a }); }
+      });
+    });
+    return {
+      mensajes: mensajes,
+      vacio: this.state.mensajes.length === 0,
+      sugerencias: preguntas.map(conElegir),
+      seguimiento: preguntas.slice(0, 3).map(conElegir),
+      nueva: () => this.setState({ mensajes: [], abiertas: {} })
+    };
+  }
+}
+</script>
+</body>
+</html>

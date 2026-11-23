@@ -158,6 +158,8 @@ public class MoodleClientTests
         Assert.Equal((2, 1, "Unidad 1"), (secciones[1].Id, secciones[1].Numero, secciones[1].Nombre));
         var modulo = Assert.Single(secciones[1].Modulos);
         Assert.Equal((1, 1, "Tarea 1", "assign"), (modulo.Id, modulo.Instancia, modulo.Nombre, modulo.TipoModulo));
+        Assert.Equal("Parcial 1", secciones[1].Resumen); // TA-08.A1: el resumen lleva los temas del sílabo
+        Assert.Null(secciones[0].Resumen);
     }
 
     [Fact]

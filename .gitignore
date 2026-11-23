@@ -18,6 +18,7 @@ appsettings.Development.local.json
 
 # Node / Vite
 node_modules/
+.vite/
 dist/
 coverage/
 *.local
