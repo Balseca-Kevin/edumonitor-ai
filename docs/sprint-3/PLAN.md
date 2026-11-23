@@ -24,7 +24,7 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 |---|---|---|---|---|---|
 | HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint y pantalla hechos (pantalla adelantada por Kevin) |
 | HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Por hacer |
-| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Rúbricas y funciones de Moodle en PR #49; falta backend y pantalla |
+| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Hecha: rúbricas en la sincronización, mapeo, desempeño por tema y «Mapa del curso» (adelantada por Kevin) |
 | HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Por hacer |
 | HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Por hacer |
 | HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Filtros en PR #51; falta el resto |
@@ -114,7 +114,7 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 ### Bloque 2 · Rúbricas y temas (Kevin, Sebastián)
 
 - Kevin: tres métodos nuevos en `IMoodleClient` (rúbricas, calificación por criterio, estado de cada entrega con el comentario del docente), entidad y migración de los criterios de rúbrica, importación en la sincronización. Hizo: Kevin.
-- Sebastián, HU-08: temas y contenidos mínimos por unidad, mapeo actividad → tema y criterio → tema, desempeño por tema con pruebas, pantalla de mapeo.
+- Sebastián, HU-08: temas y contenidos mínimos por unidad, mapeo actividad → tema y criterio → tema, desempeño por tema con pruebas, pantalla de mapeo. Hizo: Kevin, por pedido de Kevin (temas, mapeo, desempeño por tema y la pantalla «Mapa del curso»; los contenidos mínimos no entran).
 
 ### Bloque 3 · Asistente con contexto y respaldo (Kevin, Jeremy)
 

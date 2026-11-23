@@ -197,6 +197,37 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .nota--no-disponible { color: var(--tinta-3); font-style: italic; }
 .nota--nueva { box-shadow: 0 0 0 2px var(--ia); background: var(--ia-fondo); color: var(--ia-texto); animation: aparecer var(--t-medio) var(--curva-salida) both; }
 
+/* ---------- Mapa del curso y mapeo temático (HU-08, HU-22) ---------- */
+.mapa { display: flex; flex-direction: column; gap: var(--e-16); }
+.mapa-parcial { display: flex; flex-direction: column; gap: var(--e-12); }
+.mapa-parcial > h3 { margin: 0; font-size: var(--fs-12); letter-spacing: 0.08em; color: var(--tinta-2); }
+.mapa-unidad { padding: var(--e-16) var(--e-20); display: flex; flex-direction: column; gap: var(--e-12); }
+.mapa-unidad-cabeza { display: flex; justify-content: space-between; align-items: baseline; gap: var(--e-12); flex-wrap: wrap; }
+.mapa-unidad-cabeza h4 { margin: 0; font-size: var(--fs-16); font-weight: 800; }
+.mapa-temas-unidad { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-8); }
+.mapa-temas-unidad > li { display: flex; flex-wrap: wrap; gap: var(--e-6) var(--e-12); align-items: baseline; padding: var(--e-8) var(--e-12); background: var(--hoja-2); border-radius: 8px; }
+.mapa-desempeno { flex: 1; min-width: 240px; }
+.mapa-detalle { margin-top: var(--e-8); display: flex; flex-direction: column; gap: var(--e-8); }
+.mapa-notas { width: 100%; font-size: var(--fs-13); }
+.mapa-nuevo-tema { display: flex; gap: var(--e-8); align-items: center; flex-wrap: wrap; }
+.mapa-nuevo-tema input { padding: var(--e-6) var(--e-10); border: var(--grosor-linea) solid var(--linea); border-radius: 8px; font: inherit; min-width: 220px; background: var(--hoja); }
+.mapa-actividades { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-8); border-top: var(--grosor-linea) solid var(--linea); padding-top: var(--e-12); }
+.mapa-actividad { display: flex; flex-direction: column; gap: var(--e-8); padding: var(--e-10) 0; border-bottom: var(--grosor-linea) solid var(--linea); }
+.mapa-actividad:last-child { border-bottom: 0; }
+.mapa-actividad-cabeza { display: flex; justify-content: space-between; align-items: center; gap: var(--e-12); flex-wrap: wrap; }
+.mapa-actividad-cabeza > div { display: flex; flex-direction: column; gap: 2px; }
+.mapa-actividad-cabeza .mono { font-size: var(--fs-11); color: var(--tinta-2); }
+.mapa-temas { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--e-6); }
+.mapa-chip { display: inline-flex; align-items: center; gap: var(--e-6); padding: var(--e-4) var(--e-10); border: var(--grosor-linea) solid var(--linea); border-radius: 999px; font-size: var(--fs-13); cursor: pointer; }
+.mapa-chip:has(input:checked) { border-color: var(--ia); background: var(--ia-fondo); color: var(--ia-texto); }
+.mapa-chip input { accent-color: var(--ia); }
+.mapa-criterios { display: flex; flex-direction: column; gap: var(--e-6); padding-left: var(--e-12); border-left: 3px solid var(--linea); }
+.mapa-criterios > .mono { font-size: var(--fs-11); color: var(--tinta-2); letter-spacing: 0.06em; }
+.mapa-criterio { display: flex; gap: var(--e-12); align-items: center; flex-wrap: wrap; font-size: var(--fs-13); }
+.mapa-criterio > span { flex: 1; min-width: 200px; }
+.mapa-criterio select { padding: var(--e-4) var(--e-8); border: var(--grosor-linea) solid var(--linea); border-radius: 6px; font: inherit; background: var(--hoja); max-width: 100%; }
+.mapa-error { color: var(--error); }
+
 /* ---------- Pantalla de carga y aviso de sincronización (TA-21.A2) ---------- */
 .carga { position: fixed; inset: 0; z-index: 60; background: var(--oscuro-fondo); display: flex; align-items: center; justify-content: center; padding: var(--e-24); overflow: hidden; animation: velo-entra var(--t-ficha) ease both; }
 .carga .login-fondo { opacity: 0.55; }
