@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IndicadorService>();
         services.AddScoped<LibroService>();
         services.AddScoped<PeriodoService>();
+        services.AddScoped<EduMonitor.Application.Tematicas.TematicaService>();
         services.AddScoped<AlertasService>();
         services.AddScoped<HerramientasService>();
         services.AddScoped<AgenteService>();
