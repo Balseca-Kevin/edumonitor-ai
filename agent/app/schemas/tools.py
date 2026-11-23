@@ -56,6 +56,15 @@ class ParametrosDesempenoTematico(ParametrosAlertas):
     actividadId: Optional[int] = Field(default=None, gt=0, strict=True)
 
 
+class ParametrosDetalleActividad(ParametrosAlertas):
+    """HU-22 · Panel de una actividad: entregas, criterios de rúbrica, temas y quién requiere atención."""
+    actividadId: int = Field(gt=0, strict=True)
+
+
+class ParametrosRefuerzosAplicados(ParametrosAlertas):
+    """TA-15.A2 · Refuerzos aprobados del curso con la nota del tema antes y después."""
+
+
 class ParametrosPlanRefuerzo(ParametrosAlertas):
     """TA-15.A4 · Plan de refuerzo que el docente envió al asistente."""
     refuerzoId: int = Field(gt=0, strict=True)
