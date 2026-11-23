@@ -10,10 +10,12 @@ vi.mock('../services/cursos', () => ({
 }))
 vi.mock('../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarEstudiantesConAlertas: vi.fn() }))
 vi.mock('../services/auth', () => ({ cerrarSesion: vi.fn() }))
+vi.mock('../services/periodo', () => ({ obtenerPeriodo: vi.fn() }))
 
 import { obtenerCursos, obtenerHistorialSincronizaciones, sincronizarCurso } from '../services/cursos'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../services/indicadores'
 import { cerrarSesion } from '../services/auth'
+import { obtenerPeriodo } from '../services/periodo'
 
 // Formas de GET /api/cursos y de GET /api/cursos/{id}/indicadores (docs/contratos-api.md).
 const agil = {
@@ -29,6 +31,20 @@ const mcs = { id: 3, moodleId: 4, nombreCorto: 'MCS-4B', nombre: 'Manejo y Confi
 const indicadores = {
   curso: { promedio: 7.42 },
   estudiantes: [{ notas: { calificadas: 12 } }, { notas: { calificadas: 10 } }],
+}
+
+// Forma de GET /api/cursos/{id}/periodo (docs/contratos-api.md, «Estado del período»).
+const periodo = {
+  cursoId: 1,
+  semana: { actual: 12, total: 15 },
+  estado: 'EN_CURSO',
+  unidadActual: { numero: 4, nombre: 'Herramientas ágiles del mercado', parcial: 2 },
+  unidades: [],
+  actividades: [],
+  vencidas: { actividades: 0, entregasQueFaltan: 0, conFaltas: [] },
+  venceEstaSemana: [{ id: 117, nombre: 'Examen Parcial 2', fechaLimite: '2026-11-25T18:59:00-05:00', entregaron: 0, matriculados: 32 }],
+  siguiente: null,
+  noDisponibles: [],
 }
 
 function Ubicacion() {
@@ -50,6 +66,7 @@ beforeEach(() => {
   obtenerIndicadores.mockResolvedValue(indicadores)
   contarEstudiantesConAlertas.mockResolvedValue(4)
   obtenerHistorialSincronizaciones.mockResolvedValue([])
+  obtenerPeriodo.mockResolvedValue(periodo)
 })
 
 afterEach(() => {
@@ -71,6 +88,31 @@ describe('R.3 · Mis cursos en tarjetas', () => {
     expect(within(tarjeta).getByRole('button', { name: 'Abrir curso' })).toBeInTheDocument()
     expect(within(tarjeta).getByRole('button', { name: 'Sincronizar y abrir' })).toBeInTheDocument()
     expect(obtenerIndicadores).toHaveBeenCalledWith(1)
+  })
+
+  it('TA-22.A5 · la tarjeta muestra la semana, la unidad actual y lo que vence esta semana del backend', async () => {
+    obtenerCursos.mockResolvedValue([agil])
+    renderCursos()
+
+    const tarjeta = await screen.findByRole('article', { name: /AGIL-4B/ })
+    expect(await within(tarjeta).findByText('Semana 12 de 15')).toBeInTheDocument()
+    expect(within(tarjeta).getByText('U4 · Herramientas ágiles del mercado')).toBeInTheDocument()
+    expect(within(tarjeta).getByRole('progressbar', { name: 'Avance del período' })).toHaveAttribute('aria-valuenow', '12')
+    expect(within(tarjeta).getByText('Vence esta semana: Examen Parcial 2')).toBeInTheDocument()
+    expect(obtenerPeriodo).toHaveBeenCalledWith(1)
+  })
+
+  it('TA-22.A5 · sin nada que venza lo dice y, si el período falla, la tarjeta sigue sin la línea', async () => {
+    obtenerCursos.mockResolvedValue([agil])
+    obtenerPeriodo.mockResolvedValueOnce({ ...periodo, venceEstaSemana: [] })
+    const { unmount } = renderCursos()
+    expect(await screen.findByText('Nada vence esta semana')).toBeInTheDocument()
+    unmount()
+
+    obtenerPeriodo.mockRejectedValueOnce({ response: { status: 500 } })
+    renderCursos()
+    expect(await screen.findByText('7,42')).toBeInTheDocument()
+    expect(screen.queryByText(/Semana \d+ de/)).toBeNull()
   })
 
   it('un curso sin sincronizar lo dice y no muestra cifras en 0', async () => {

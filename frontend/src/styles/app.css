@@ -5,7 +5,6 @@
 @keyframes aparecer { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes crecer-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes trazar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes llenar-unidad { from { background-color: transparent; color: var(--cabecera-texto); } to { background-color: var(--cabecera-texto); color: var(--cabecera); } }
 @keyframes anillo { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); } 50% { box-shadow: 0 0 0 6px rgba(255, 255, 255, 0); } }
 @keyframes respirar { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 @keyframes posarse { from { transform: translateY(var(--d)); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -118,21 +117,66 @@
 .seccion-cabecera { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: var(--e-12); }
 .seccion-titulo { margin: 0; font-size: var(--fs-20); font-weight: 800; }
 
-/* ---------- Cabecera oscura del curso con la tira del período ---------- */
-.cabecera-curso { background: var(--oscuro-fondo); color: var(--oscuro-texto); padding: 26px var(--e-32) 22px; display: flex; flex-wrap: wrap; gap: var(--e-32); align-items: flex-end; justify-content: space-between; width: 100%; }
+/* ---------- Cabecera oscura del curso con la línea de tiempo del período (TA-22.A5) ---------- */
+.cabecera-curso { background: var(--oscuro-fondo); color: var(--oscuro-texto); padding: 26px var(--e-32) 22px; width: 100%; }
 .cabecera-curso .mono { color: var(--cabecera-texto-2); }
-.cabecera-curso h1 { margin: 0; font-size: var(--fs-44); font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: var(--cabecera-texto); }
-.cabecera-curso-derecha { display: flex; gap: var(--e-28); align-items: flex-end; flex-wrap: wrap; }
-.tira { display: flex; gap: var(--e-14); align-items: flex-end; }
-.tira-parcial { display: flex; flex-direction: column; gap: var(--e-6); }
-.tira-etiqueta { font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.08em; color: var(--cabecera-texto-2); }
-.tira-unidades { display: flex; gap: var(--e-4); }
-.tira-unidad { width: 72px; height: 38px; border: var(--grosor-linea) solid var(--cabecera-texto); display: flex; flex-direction: column; justify-content: center; padding: 0 var(--e-8); color: var(--cabecera-texto); animation: aparecer var(--t-medio) var(--curva-salida) both; }
-.tira-unidad b { font-size: var(--fs-13); }
-.tira-unidad span { font-size: var(--fs-11); }
-.tira-unidad--completa { background: var(--cabecera-texto); color: var(--cabecera); animation: llenar-unidad var(--t-medio) ease-out both; }
-.tira-unidad--actual { animation: anillo 2.2s ease-in-out 1.4s infinite; background: linear-gradient(90deg, rgba(255, 255, 255, 0.22) var(--avance, 50%), transparent var(--avance, 50%)); }
-.tira-unidad--futura, .tira-unidad--sin-datos { border-color: var(--oscuro-segmento); color: var(--cabecera-texto-2); }
+.cabecera-curso h1 { margin: var(--e-6) 0 0; font-size: 46px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: var(--cabecera-texto); }
+.cabecera-s3 { display: flex; flex-direction: column; gap: 22px; }
+.cabecera-fila { display: flex; justify-content: space-between; align-items: flex-end; gap: var(--e-32); flex-wrap: wrap; }
+.cabecera-titulo { min-width: 0; }
+.cabecera-semana { display: flex; flex-direction: column; align-items: flex-end; gap: var(--e-4); text-align: right; }
+.cifra-semana { font-size: 64px; font-weight: 900; letter-spacing: -0.04em; line-height: 0.95; color: var(--oscuro-texto); }
+.cifra-semana small { font-size: 26px; font-weight: 700; color: var(--oscuro-texto-2); letter-spacing: -0.02em; }
+.cifra-semana--no-disponible { font-size: var(--fs-15); font-weight: 600; color: var(--oscuro-texto-2); letter-spacing: 0; }
+.cabecera-unidad { font-size: var(--fs-13); color: var(--oscuro-texto-4); max-width: 320px; }
+.cabecera-sin-periodo { margin: 0; font-size: var(--fs-13); color: var(--oscuro-texto-2); }
+.vivo-punto { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--vivo); vertical-align: middle; animation: respirar 2.4s ease-in-out infinite; }
+
+.linea-tiempo { position: relative; height: 108px; }
+.lt-parcial { position: absolute; top: 0; font-size: var(--fs-11) !important; font-weight: 700; letter-spacing: 0.08em; color: var(--oscuro-texto-3) !important; }
+.lt-corte-parcial { position: absolute; top: 0; bottom: 0; border-left: 1px dashed var(--oscuro-linea-2); }
+.lt-unidad { position: absolute; top: 20px; padding: 0 var(--e-6); font-size: var(--fs-12); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; animation: aparecer var(--t-medio) var(--curva-salida) both; }
+.lt-unidad--pasada { color: var(--oscuro-texto-3); }
+.lt-unidad--actual { color: var(--oscuro-texto); font-weight: 700; }
+.lt-unidad--futura { color: var(--oscuro-texto-3); opacity: 0.7; }
+.lt-pista { position: absolute; left: 0; right: 0; top: 50px; height: 8px; border-radius: 4px; background: var(--oscuro-linea); }
+.lt-relleno { position: absolute; left: 0; top: 50px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--oscuro-linea-2), var(--oscuro-punto)); transform-origin: left; animation: trazar 1.2s var(--curva-suave) both; }
+.lt-corte { position: absolute; top: 44px; width: 2px; height: 20px; margin-left: -1px; background: var(--oscuro-fondo); }
+.marcador { position: absolute; top: 45px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; box-sizing: border-box; animation: posarse var(--t-medio) var(--curva-salida) both; --d: -8px; }
+.marcador--rombo { width: 16px; height: 16px; margin-left: -8px; top: 46px; border-radius: 2px; transform: rotate(45deg); animation: none; }
+.marcador--completa { background: var(--oscuro-texto); }
+.marcador--faltan { background: var(--oscuro-arena); }
+.marcador--esta-semana { background: var(--vivo); box-shadow: 0 0 0 3px rgba(143, 208, 160, 0.35); animation: anillo-vivo 2.2s ease-in-out 1s infinite; }
+.marcador--proxima { background: var(--oscuro-fondo); border: 3px solid var(--oscuro-segmento); }
+.lt-semana { position: absolute; top: 72px; transform: translateX(-50%); font-size: var(--fs-11) !important; color: var(--oscuro-texto-3) !important; }
+.lt-semana--hoy { padding: 1px var(--e-6); border-radius: 999px; background: var(--oscuro-texto); color: var(--oscuro-fondo) !important; font-weight: 800; }
+.lt-sigla { position: absolute; top: 90px; transform: translateX(-50%); font-size: var(--fs-11) !important; font-weight: 700; white-space: nowrap; }
+.lt-sigla--completa { color: var(--oscuro-texto-4) !important; }
+.lt-sigla--faltan { color: var(--oscuro-arena) !important; }
+.lt-sigla--esta-semana { color: var(--vivo) !important; }
+.lt-sigla--proxima { color: var(--oscuro-texto-3) !important; }
+@keyframes anillo-vivo { 0%, 100% { box-shadow: 0 0 0 3px rgba(143, 208, 160, 0.35); } 50% { box-shadow: 0 0 0 8px rgba(143, 208, 160, 0); } }
+
+.tarjeta-curso-periodo { display: flex; flex-direction: column; gap: var(--e-6); padding-top: var(--e-10); border-top: var(--grosor-linea) solid var(--linea); }
+.tarjeta-curso-periodo-fila { display: flex; gap: var(--e-10); align-items: baseline; flex-wrap: wrap; }
+.tarjeta-curso-unidad { font-size: var(--fs-13); color: var(--tinta-2); }
+.tarjeta-curso-avance { height: 4px; border-radius: 2px; background: var(--fondo-3); overflow: hidden; }
+.tarjeta-curso-avance > div { height: 100%; background: var(--tinta); transform-origin: left; animation: trazar var(--t-barra) var(--curva-suave) both; }
+
+.lt-bloques { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--e-12); }
+.lt-bloque { display: flex; flex-direction: column; gap: var(--e-6); padding: var(--e-14) var(--e-16); background: var(--oscuro-superficie); border: 1px solid var(--oscuro-linea); border-radius: 10px; font-size: var(--fs-13); color: var(--oscuro-texto-4); animation: subir var(--t-entrada) var(--curva-suave) both; }
+.lt-bloque:nth-child(2) { animation-delay: 80ms; }
+.lt-bloque:nth-child(3) { animation-delay: 160ms; }
+.lt-bloque > .mono { font-size: var(--fs-11); font-weight: 700; letter-spacing: 0.08em; }
+.lt-bloque b { font-size: var(--fs-15); color: var(--oscuro-texto); }
+.lt-esta-semana { display: flex; flex-direction: column; gap: var(--e-4); }
+.lt-barra { height: 4px; border-radius: 2px; background: var(--oscuro-linea-2); overflow: hidden; }
+.lt-barra > div { height: 100%; background: var(--vivo); transform-origin: left; animation: trazar 1s var(--curva-suave) both; }
+.lt-leyenda { display: flex; flex-wrap: wrap; gap: var(--e-16); font-size: var(--fs-12); color: var(--oscuro-texto-3); }
+.lt-leyenda span { display: inline-flex; align-items: center; gap: var(--e-6); }
+.marcador-muestra { display: inline-block; width: 10px; height: 10px; border-radius: 50%; box-sizing: border-box; }
+.marcador-muestra--rombo { border-radius: 1px; transform: rotate(45deg); background: var(--oscuro-texto-3); }
+.marcador-muestra.marcador--proxima { border-width: 2px; }
 .sincronizacion { display: flex; flex-direction: column; gap: var(--e-4); font-size: var(--fs-13); color: var(--linea); text-align: right; }
 .sincronizacion .estado { justify-content: flex-end; }
 .sincronizacion .estado--ok { color: var(--ok-punto); }
@@ -490,6 +534,10 @@
   .lateral { max-width: none; }
   .cabecera-curso { padding: var(--e-24) var(--e-16); }
   .cabecera-curso h1 { font-size: var(--fs-30); }
+  .cifra-semana { font-size: 44px; }
+  .cabecera-semana { align-items: flex-start; text-align: left; }
+  .lt-bloques { grid-template-columns: 1fr; }
+  .lt-unidad, .lt-sigla { font-size: 10px !important; }
   .chat-sugerencias { grid-template-columns: 1fr; }
   .tarjeta-estudiante { grid-template-columns: minmax(0, 1fr) 70px; }
   .tarjeta-estudiante .barra-nota { grid-column: 1 / -1; }

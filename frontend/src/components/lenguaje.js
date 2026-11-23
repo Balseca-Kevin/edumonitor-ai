@@ -20,19 +20,6 @@ export function ultimasNotas(tendencia) {
   return valor < 0 ? `↓ bajando ${formatearNumero(-valor, 1)}` : `↑ subiendo ${formatearNumero(valor, 1)}`
 }
 
-export const valida = (u) =>
-  Number.isInteger(u?.actividades) && Number.isInteger(u?.calificadas) && u.actividades >= 0 && u.calificadas >= 0 && u.calificadas <= u.actividades
-
-/**
- * Unidad «actual» (regla documentada en docs/sprint-2/diseno.md): la primera unidad, en orden, con menos actividades
- * calificadas que actividades. Si todas están completas, ninguna es la actual. Se calcula aquí, con `unidades` del endpoint
- * de indicadores; el backend no la envía.
- */
-export function unidadActual(unidades) {
-  const ordenadas = [...(unidades ?? [])].filter(valida).sort((a, b) => a.numero - b.numero)
-  return ordenadas.find((u) => u.calificadas < u.actividades)?.numero ?? null
-}
-
 /** Qué vigila cada regla, en palabras del docente. El código (R1, R2, R4) es interno y no se muestra. */
 export const DESCRIPCION_REGLA = {
   R1: 'Avisa cuando las últimas 3 notas bajan al menos estos puntos frente a las anteriores.',
