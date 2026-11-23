@@ -40,6 +40,7 @@ public class SincronizacionServiceTests : IDisposable
             new ImportadorMatriculados(_moodle, db),
             new ImportadorCalificaciones(_moodle, db),
             new ImportadorEntregas(_moodle, db),
+            new ImportadorRubricas(_moodle, db),
             new ConfiguracionMoodleEnMemoria(Options.Create(new MoodleOptions { Url = "http://localhost:8080" }), TimeProvider.System),
             TimeProvider.System,
             new AlertasService(db, new IndicadorService(db), TimeProvider.System),

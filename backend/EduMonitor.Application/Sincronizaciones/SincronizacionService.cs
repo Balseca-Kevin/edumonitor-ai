@@ -20,6 +20,7 @@ public sealed class SincronizacionService(
     ImportadorMatriculados matriculados,
     ImportadorCalificaciones calificaciones,
     ImportadorEntregas entregas,
+    ImportadorRubricas rubricas,
     IConfiguracionMoodle moodle,
     TimeProvider reloj,
     AlertasService alertas,
@@ -85,6 +86,14 @@ public sealed class SincronizacionService(
 
         // Entregas va después de las notas: deriva SIN_ENTREGA y PENDIENTE sobre las calificaciones sin nota.
         if (await IntentarAsync(registro, () => entregas.ImportarEntregasAsync(curso, ct)))
+        {
+            pasosCorrectos++;
+        }
+
+        // HU-08 · Rúbricas, niveles por criterio y comentario del docente: después de las notas, porque solo se leen las calificadas.
+        // Solo cuenta como paso correcto si leyó Moodle: sin tareas no hay nada que leer.
+        int? nivelesLeidos = null;
+        if (await IntentarAsync(registro, async () => nivelesLeidos = await rubricas.ImportarAsync(curso, ct)) && nivelesLeidos is not null)
         {
             pasosCorrectos++;
         }

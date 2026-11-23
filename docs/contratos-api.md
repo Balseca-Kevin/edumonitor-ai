@@ -714,6 +714,23 @@ Reglas:
 
 Códigos: 401 sin token, 403 en curso ajeno, 404 si el curso no existe o la sincronización `sid` no es de ese curso.
 
+## Rúbricas y comentarios en la sincronización (HU-08, bloque 2)
+
+`POST /api/cursos/{id}/sync` suma un paso después de las notas. La forma de la respuesta no cambia.
+
+1. `mod_assign_get_assignments` da el cmid de cada tarea.
+2. `core_grading_get_definitions` (`cmids`, `areaname=submissions`, `activeonly=0`) da las rúbricas. Solo cuentan las áreas con `activemethod: "rubric"`; con `activeonly=1` Moodle responde `invalid_method_name` en las tareas sin método avanzado.
+3. `core_grading_get_gradingform_instances` (`definitionid`, `since=0`) da los niveles elegidos en cada nota. Vale la instancia activa (`status: 1`) más reciente de cada `itemid`.
+4. `mod_assign_get_submission_status` (`assignid`, `userid`), solo para los estudiantes con nota en una tarea con rúbrica, enlaza `feedback.grade.id` (el `itemid`) con el estudiante y trae el comentario del docente.
+
+Se guarda:
+
+- `CriterioRubrica`: actividad, id del criterio en Moodle, orden, descripción en texto y puntaje máximo. El `TemaId` lo asocia el docente (HU-08) y la sincronización no lo cambia.
+- `CalificacionCriterio`: criterio, estudiante, puntaje y nombre del nivel.
+- `Calificacion.Comentario`: el comentario del docente en texto; cada elemento de lista empieza con «• » en su propia línea.
+
+Si una de estas funciones falla, la sincronización queda `PARCIAL` con su error. Las notas y entregas se guardan igual, y los criterios quedan como estaban.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega

@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<ImportadorCalificaciones>();
         services.AddScoped<ImportadorEntregas>();
         services.AddScoped<SincronizacionService>();
+        services.AddScoped<ImportadorRubricas>();
         services.AddScoped<CambiosSincronizacionService>();
         services.AddScoped<ConfiguracionMoodleService>();
         return services;

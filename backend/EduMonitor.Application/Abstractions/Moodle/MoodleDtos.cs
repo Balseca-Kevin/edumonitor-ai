@@ -52,3 +52,24 @@ public sealed record EntregaMoodle(int TareaId, int UsuarioId, string Estado, st
 
 /// <summary>Estado de finalización de <c>core_completion_get_activities_completion_status</c> (0 incompleta, 1 completa, 2 aprobada, 3 reprobada).</summary>
 public sealed record FinalizacionActividadMoodle(int ModuloCursoId, int Estado);
+
+/// <summary>Nivel de un criterio de rúbrica (<c>core_grading_get_definitions</c>): puntaje y texto del nivel.</summary>
+public sealed record NivelRubricaMoodle(int Id, decimal Puntaje, string Definicion);
+
+/// <summary>Criterio de una rúbrica con sus niveles, en el orden de Moodle.</summary>
+public sealed record CriterioRubricaMoodle(int Id, int Orden, string Descripcion, IReadOnlyList<NivelRubricaMoodle> Niveles);
+
+/// <summary>Rúbrica activa de una tarea. <see cref="ModuloCursoId"/> es el cmid de la tarea.</summary>
+public sealed record RubricaMoodle(int ModuloCursoId, int DefinicionId, IReadOnlyList<CriterioRubricaMoodle> Criterios);
+
+/// <summary>Nivel elegido en un criterio al calificar con la rúbrica.</summary>
+public sealed record NivelElegidoMoodle(int CriterioId, int NivelId);
+
+/// <summary>
+/// Calificación con rúbrica (<c>core_grading_get_gradingform_instances</c>). <see cref="ItemId"/> es el id de la nota de la tarea
+/// (assign_grades), que <c>mod_assign_get_submission_status</c> enlaza con el estudiante. <see cref="Estado"/> 1 es la activa.
+/// </summary>
+public sealed record InstanciaRubricaMoodle(int Id, int ItemId, int Estado, IReadOnlyList<NivelElegidoMoodle> Niveles);
+
+/// <summary>Nota de la tarea de un estudiante y comentario del docente (<c>mod_assign_get_submission_status</c>), en texto.</summary>
+public sealed record EstadoEntregaMoodle(int? CalificacionId, string? Comentario);

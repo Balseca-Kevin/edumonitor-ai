@@ -113,7 +113,7 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 ### Bloque 2 · Rúbricas y temas (Kevin, Sebastián)
 
-- Kevin: tres métodos nuevos en `IMoodleClient` (rúbricas, calificación por criterio, estado de cada entrega con el comentario del docente), entidad y migración de los criterios de rúbrica, importación en la sincronización.
+- Kevin: tres métodos nuevos en `IMoodleClient` (rúbricas, calificación por criterio, estado de cada entrega con el comentario del docente), entidad y migración de los criterios de rúbrica, importación en la sincronización. Hizo: Kevin.
 - Sebastián, HU-08: temas y contenidos mínimos por unidad, mapeo actividad → tema y criterio → tema, desempeño por tema con pruebas, pantalla de mapeo.
 
 ### Bloque 3 · Asistente con contexto y respaldo (Kevin, Jeremy)
