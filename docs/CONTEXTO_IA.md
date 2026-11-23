@@ -6,22 +6,20 @@ Pega este archivo al inicio de cualquier conversación con una IA que no lea el 
 
 EduMonitor AI es una aplicación web separada de Moodle. Lee cursos, matriculados, actividades, calificaciones y estados de entrega de un Moodle de laboratorio por servicios web REST oficiales, los guarda en SQL Server, calcula indicadores en código determinista en el backend y ofrece al docente un agente de IA que consulta esos datos llamando a herramientas del backend.
 
-Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «B», julio–diciembre 2026). Docente y Product Owner: Ing. Hernán Fabricio Naranjo Ávalos. Scrum con 3 sprints (19 oct – 27 nov 2026). Los documentos fuente están en `docs/planificacion/` y el plan del sprint activo en `docs/sprint-3/PLAN.md`.
+Proyecto final de Metodologías Ágiles (UTA, FISEI, carrera de Software, 4to «B», julio–diciembre 2026). Docente y Product Owner: Ing. Hernán Fabricio Naranjo Ávalos. Scrum con 3 sprints. Los documentos fuente están en `docs/planificacion/` y el plan del sprint activo en `docs/sprint-3/PLAN.md`.
 
 ## Fechas
 
-| Sprint | Período | Review |
-|---|---|---|
-| 1 | 19 oct – 30 oct 2026 | 29 oct 2026 |
-| 2 | 2 nov – 12 nov 2026 (re-planificación: domingo 8 nov 2026) | jueves 12 nov 2026 |
-| 3 | 16 nov – 27 nov 2026 | viernes 27 nov 2026 (final) |
+Las fechas, horas y tiempos del proyecto y del informe los define Kevin. Ningún asistente las escribe, las calcula ni las propone. Sprint activo: 3, el último.
 
-Sprint activo: 3, del lunes 16 al viernes 27 nov 2026. Es el último.
+## Entrega
+
+El Product Owner revisa el proyecto como carpeta (OneDrive o copia local), no en GitHub: no mira commits, PR ni ramas. El README, las evidencias y la demostración tienen que funcionar desde esa carpeta.
 
 ## Lo que pidió el Product Owner en la Review del Sprint 1
 
 - «TODO debe estar en el Software, nada por consola o archivos». Toda HU se demuestra en una pantalla de la aplicación.
-- El inicio de sesión se veía genérico. La interfaz se rehace con el sistema de diseño de `docs/sprint-2/diseno.md`.
+- El inicio de sesión se veía genérico. La interfaz se rehizo con el diseño D (`docs/sprint-2/diseno.md`); en el Sprint 3 la guía es `docs/sprint-3/diseno.md`.
 - Las historias de usuario no van en primera persona y deben coincidir entre planificación, Jira e informe.
 
 ## Lo que pidió el Product Owner en la Review del Sprint 2
@@ -58,7 +56,7 @@ No se cambia sin acuerdo del equipo.
 - Moodle 4.5 en Docker (`erseco/alpine-moodle:v4.5.15`), datos ficticios. Lectura solo por servicios web REST con el servicio externo `edumonitor_ws` y un token de solo lectura.
 - Backend: ASP.NET Core Web API sobre .NET 8 (`net8.0`), controladores, Entity Framework Core 8 con SQL Server, JWT, Swagger, xUnit. Paquetes `Microsoft.*` siempre en versión 8.0.x.
 - Base de datos: SQL Server 2022 en Docker, base `EduMonitorDB`, migraciones de EF Core versionadas.
-- Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Diseño D (`docs/sprint-2/diseno.md`): Archivo y JetBrains Mono para códigos de curso.
+- Frontend: React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. Diseño del Sprint 3 (`docs/sprint-3/diseno.md`, prototipo en `docs/sprint-3/prototipo/`), que sigue al diseño D: Archivo y JetBrains Mono para códigos de curso.
 - Agente: Python 3.11, FastAPI, LangGraph, Pydantic, pytest. Modelo: proveedor externo autorizado por el Product Owner en la Review del Sprint 2 (por confirmar con la prueba de las 10 preguntas), con Ollama (`qwen2.5:7b`, alternativa `llama3.2:3b`) como respaldo local.
 - Entorno: dos entornos Docker separados. EduMonitor (web, api, sqlserver, agent, ollama y moodle-puente) en `docker-compose.yml` de la raíz, proyecto `edumonitor`. La API usa la red de `moodle-puente`, que lleva su `localhost:8080` al Moodle publicado en el host, porque Moodle solo acepta su `SITE_URL`; el puente es el dueño de esa red para que un reinicio de la API no lo rompa. Aula virtual (moodle, moodle-db) en `moodle-lab/docker-compose.yml`, proyecto `aula-virtual`. La especificación pide una aplicación independiente de Moodle; el Moodle de laboratorio ocupa el lugar del institucional.
 - Gestión: Git + GitHub con Git Flow, GitHub Actions, Jira (tablero: Por hacer, En curso, En revisión, Finalizada).
@@ -135,6 +133,9 @@ Dependencias permitidas: Api → Application, Infrastructure · Infrastructure �
 
 ## Reglas del dominio
 
+- Datos reales: todo lo que se ve en la aplicación sale de Moodle o de lo que el docente registra en EduMonitor. Nada de ejemplo ni de adorno, salvo los puntos y las preguntas decorativas del inicio de sesión. Si falta un dato en el aula virtual, se agrega en Moodle con `moodle-lab/scripts/`. Origen de cada dato: `docs/sprint-3/diseno.md`.
+- Las unidades y sus temas siguen los sílabos de la carrera (`docs/sprint-3/silabos.md`).
+
 - Moodle es solo lectura. El sistema nunca escribe en Moodle ni modifica calificaciones.
 - `CALIFICACION.estado` distingue `SIN_ENTREGA`, `PENDIENTE` y `CALIFICADO`. Una nota 0 calificada es distinta de sin entrega. Solo las notas `CALIFICADO` entran a los promedios.
 - Sincronización manual, idempotente. Cada ejecución queda registrada con estado `COMPLETADA`, `PARCIAL` o `FALLIDA`, fecha, origen, cantidad de registros y errores.
@@ -177,9 +178,9 @@ Solo estas. Ninguna otra. Las tres últimas se agregan a `edumonitor_ws` en el S
 
 ## Alcance por sprint
 
-Estado al inicio del Sprint 3 (16 nov 2026). Detalle del Sprint 2 por tarea en `docs/sprint-2/PLAN.md`; del Sprint 3 en `docs/sprint-3/PLAN.md`.
+Estado del Sprint 3. Detalle del Sprint 2 por tarea en `docs/sprint-2/PLAN.md`; del Sprint 3 en `docs/sprint-3/PLAN.md`.
 
-| HU | Historia | Sprint | Responsable | Estado al cierre del Sprint 2 |
+| HU | Historia | Sprint | Responsable | Estado |
 |---|---|---|---|---|
 | HU-01 a HU-07 | Moodle de laboratorio, conexión, modelo de datos, autenticación, sincronización, pantallas iniciales, spike del agente | 1 | varios | Hechas en el Sprint 1 (#1 a #18) |
 | HU-20 | Entorno único de ejecución con Docker Compose | 2 | Kevin | Hecha (#27, #29) |
@@ -188,18 +189,18 @@ Estado al inicio del Sprint 3 (16 nov 2026). Detalle del Sprint 2 por tarea en `
 | HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | Hecha (#38) |
 | HU-13 | Herramientas del agente con trazas | 2 | Jeremy | Hecha (#21, #24, #28, #37, #39, #40) |
 | HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25, #36, #35) |
-| HU-21 | Libro de calificaciones (nueva, por la Review del Sprint 2) | 3 | Santiago; endpoint de Kevin | Por hacer |
+| HU-21 | Libro de calificaciones (nueva, por la Review del Sprint 2) | 3 | Santiago; endpoint de Kevin | Endpoint en PR #50 |
 | HU-10 | Ficha del estudiante | 3 | Santiago | Por hacer |
-| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 3 | Sebastián | Por hacer |
+| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 3 | Sebastián | Rúbricas en Moodle en PR #49 |
 | HU-22 | Mapa del curso y panel de actividad (nueva, absorbe HU-11) | 3 | Kevin; cálculos de Sebastián | Por hacer |
 | HU-11 | Desempeño por tema y temas críticos | 3 | — | Fusionada en HU-22 |
 | HU-15 | Retroalimentación y refuerzo descargables | 3 | Jeremy; generador de documentos de Kevin | Por hacer |
-| HU-23 | Asistente con contexto, memoria, verificación de cifras y respaldo local (nueva) | 3 | Kevin; nodos del grafo de Jeremy | Por hacer |
+| HU-23 | Asistente con contexto, memoria, verificación de cifras y respaldo local (nueva) | 3 | Kevin; nodos del grafo de Jeremy | Filtros en PR #51 |
 | HU-16 | Informe del curso | 3 | Santiago | Por hacer |
 | HU-17 | Trazas visibles y auditoría | 3 | Kevin | Por hacer |
 | HU-18 | Pruebas, documentación y demostración final | 3 | Todo el equipo | Por hacer |
 
-Los agregados del Sprint 3 (refuerzo antes y después, diagnóstico por criterio, nota necesaria, cifras enlazadas, «Calidad del asistente», preguntas fuera de alcance) son tareas TA-xx.A dentro de esas HU. El sábado 21 nov 2026 se decide si entran tres más (TA-xx.B), según `docs/sprint-3/PLAN.md`.
+Los agregados del Sprint 3 (refuerzo antes y después, diagnóstico por criterio, nota necesaria, cifras enlazadas, «Calidad del asistente», preguntas fuera de alcance) son tareas TA-xx.A dentro de esas HU. Se activó la línea de corte: salen TA-22.A1 y TA-22.A2 y no entra ningún agregado TA-xx.B. El rediseño suma TA-08.A1, TA-21.A1, TA-21.A2, TA-22.A3, TA-22.A4, TA-22.A5, TA-15.A3 y TA-15.A4. Detalle en `docs/sprint-3/PLAN.md`.
 
 ## Convenciones
 

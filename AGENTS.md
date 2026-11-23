@@ -20,5 +20,5 @@ Reglas que no se negocian:
 - Secretos solo en variables de entorno. Nunca leer, crear ni modificar `.env`.
 - Cada cambio de comportamiento con pruebas (xUnit, Vitest o pytest).
 - Commits: Conventional Commits en español, `tipo(ámbito): descripción`, pie `Refs: SCRUM-n`.
-- Sprint activo: 3, del 16 al 27 nov 2026 (Review final el viernes 27). HU del sprint: HU-21, HU-10, HU-08, HU-22 (absorbe HU-11), HU-15, HU-23, HU-16, HU-17 y HU-18. Los agregados son tareas dentro de esas HU, no HU nuevas.
+- Sprint activo: 3, el último. Las fechas las define Kevin; no las escribas ni las calcules. El trabajo va por bloques en `docs/sprint-3/PLAN.md`. HU del sprint: HU-21, HU-10, HU-08, HU-22 (absorbe HU-11), HU-15, HU-23, HU-16, HU-17 y HU-18. Los agregados son tareas dentro de esas HU, no HU nuevas.
 - Fuera de alcance: entrenar modelos propios, multiagentes, microservicios, escribir en Moodle o modificar notas, mensajes automáticos a estudiantes y predicción clínica o psicológica.

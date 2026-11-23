@@ -4,12 +4,16 @@
 @docs/contratos-api.md
 @docs/sprint-3/PLAN.md
 
-Sprint activo: Sprint 3, del lunes 16 al viernes 27 nov 2026. Sprint Review final: viernes 27 nov 2026. Es el último sprint. Sprint 2 cerrado con las 6 HU hechas (v0.2.1, 12 nov 2026).
+Sprint activo: Sprint 3, el último. Sprint 2 cerrado con las 6 HU hechas (v0.2.1).
+
+Fechas: no las escribas, no las calcules ni las propongas en planes, commits, PR, daily ni documentos. Las fechas, horas y tiempos del informe los define Kevin.
 
 ## Documentos fuente
 
-- `docs/sprint-3/PLAN.md`: Sprint Goal, HU del Sprint 3, tareas TA con responsable y horas, agregados, decisión del sábado 21, dependencias y calendario. Léelo antes de empezar una tarea.
-- `docs/sprint-2/diseno.md`: sistema de diseño de la interfaz (diseño D). Obligatorio para cualquier cambio en `frontend/`.
+- `docs/sprint-3/PLAN.md`: Sprint Goal, HU del Sprint 3, bloques de trabajo con responsable, decisión de la línea de corte y Definition of Done. Léelo antes de empezar una tarea.
+- `docs/sprint-3/diseno.md`: sistema de diseño del Sprint 3, obligatorio para cualquier cambio en `frontend/`. Reemplaza a `docs/sprint-2/diseno.md`, que sigue valiendo en lo que el nuevo no cambia.
+- `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html`: prototipo navegable aprobado por Kevin. Es referencia visual y de comportamiento; sus datos son ficticios y no se copian.
+- `docs/sprint-3/silabos.md`: unidades y temas de los sílabos de AGIL-4B, MCS-4B y BDD-4B.
 - `docs/sprint-2/PLAN.md`: Definition of Done base y lo hecho en el Sprint 2.
 - `docs/planificacion/Planificacion_Proyecto_Scrum_Sprint1.pdf`: requisitos RF y RNF, indicadores (tabla 5), reglas de alerta (tabla 6), herramientas del agente (tabla 3) y endpoints (tabla 4).
 - `docs/planificacion/Proyecto_EduMonitor_AI_Especificacion.pdf`: especificación del docente.
@@ -27,6 +31,10 @@ En la Review del Sprint 2 el Product Owner señaló que la aplicación no muestr
 - Toda cifra que se muestra (promedio, alerta, desempeño por tema, nota necesaria) se puede abrir para ver de qué notas sale.
 - El libro de calificaciones (HU-21) es la primera pantalla del curso.
 
+## Datos reales
+
+Todo dato que se ve en la aplicación es real: fechas, semanas, unidades, temas, notas, entregas, cambios entre sincronizaciones, historial de refuerzos. Sale de Moodle o de lo que el docente registra en EduMonitor, con el origen que da `docs/sprint-3/diseno.md`. No pongas valores de ejemplo, constantes que parezcan datos ni cálculos de fechas en el frontend. Si la pantalla necesita un dato que el Moodle de laboratorio no tiene, propón el cambio en `moodle-lab/scripts/` y pide confirmación. Las fechas límite nuevas en Moodle las da Kevin; no las inventes.
+
 ## Cómo trabajar en este repositorio
 
 1. Una tarea TA por sesión. Antes de escribir código, presenta un plan con los archivos que vas a crear o modificar y espera confirmación.
@@ -39,4 +47,6 @@ En la Review del Sprint 2 el Product Owner señaló que la aplicación no muestr
 8. Paquetes NuGet `Microsoft.*` en versión 8.0.x. No subas el proyecto a .NET 9 o 10.
 9. Hay dos entornos Docker separados, como pide la especificación (EduMonitor es independiente de Moodle). EduMonitor con su agente: `docker compose up -d` en la raíz, todo en una sola dirección (`http://localhost:5173`). Aula virtual: `docker compose -f moodle-lab/docker-compose.yml --env-file .env up -d`. EduMonitor solo conoce Moodle por su URL y su token; ningún servicio de la raíz depende de un servicio de `moodle-lab/`. Si cambias un puerto, una variable o un servicio, actualiza el compose afectado, `.env.example` y el README en el mismo commit. Nunca `docker compose down -v` ni `docker volume rm`: borran Moodle y su token.
 10. Fuera de alcance según la especificación: entrenar modelos propios, multiagentes, microservicios, escribir en Moodle o modificar notas, mensajes automáticos a estudiantes y predicción clínica o psicológica. Si una tarea parece pedir algo de esto, detente y pregunta.
-11. Al terminar una tarea, resume: archivos cambiados, cómo verlo en la aplicación (pantalla y pasos), qué captura guardar en `docs/evidencias/sprint-3/HU-xx/` y la línea para `docs/sprint-3/daily.md`.
+11. El trabajo va por bloques (`docs/sprint-3/PLAN.md`). Kevin puede pedirte una tarea de cualquier bloque aunque su responsable sea otro integrante; hazla y deja escrito en «Hizo» quién la hizo.
+12. El Product Owner revisa el proyecto como carpeta (OneDrive o copia local), no en GitHub. Lo que se demuestra tiene que funcionar desde esa carpeta siguiendo el README, sin depender de GitHub.
+13. Al terminar una tarea, resume: archivos cambiados, cómo verlo en la aplicación (pantalla y pasos) y qué captura guardar en `docs/evidencias/sprint-3/HU-xx/`.
