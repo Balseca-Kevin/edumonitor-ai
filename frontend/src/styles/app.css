@@ -234,6 +234,40 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .mapa-criterio select { padding: var(--e-4) var(--e-8); border: var(--grosor-linea) solid var(--linea); border-radius: 6px; font: inherit; background: var(--hoja); max-width: 100%; }
 .mapa-error { color: var(--error); }
 
+/* ---------- Plan de refuerzo y su borrador en el asistente (HU-15) ---------- */
+.plan { display: flex; flex-direction: column; gap: var(--e-16); }
+.plan-grilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--e-16); align-items: start; }
+.plan-paso { padding: var(--e-16) var(--e-20); display: flex; flex-direction: column; gap: var(--e-14); }
+.plan-paso .mono, .plan-donde .mono { font-size: var(--fs-11); letter-spacing: 0.08em; color: var(--tinta-2); }
+.plan-actividad { display: flex; flex-direction: column; gap: var(--e-6); }
+.plan-actividad select { padding: var(--e-8) var(--e-10); border: var(--grosor-linea) solid var(--linea); border-radius: 8px; font: inherit; background: var(--hoja); }
+.plan-temas, .plan-estudiantes { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-8); }
+.plan-tema, .plan-estudiante { display: flex; gap: var(--e-10); align-items: flex-start; padding: var(--e-8) var(--e-10); border-radius: 8px; background: var(--hoja-2); cursor: pointer; }
+.plan-tema:has(input:checked), .plan-estudiante:has(input:checked) { background: var(--ia-fondo); box-shadow: inset 0 0 0 1px var(--ia); }
+.plan-tema input, .plan-estudiante input { accent-color: var(--ia); margin-top: 3px; }
+.plan-tema-texto, .plan-estudiante > span { display: flex; flex-direction: column; gap: 2px; }
+.plan-donde ul { margin: var(--e-4) 0 0; padding-left: var(--e-16); font-size: var(--fs-13); }
+.plan-historial-seccion h3 { margin: 0 0 var(--e-8); font-size: var(--fs-16); }
+.plan-historial { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-8); }
+.plan-historial-item { padding: var(--e-12) var(--e-16); display: flex; flex-direction: column; gap: var(--e-6); }
+.plan-historial-cabeza { display: flex; justify-content: space-between; gap: var(--e-12); align-items: baseline; flex-wrap: wrap; }
+.plan-resultados { margin: 0; padding-left: var(--e-16); font-size: var(--fs-13); display: flex; flex-direction: column; gap: 2px; }
+.plan-resultado--subio { color: var(--ok); }
+.plan-resultado--bajo { color: var(--arena-texto); }
+.chip-estado { font-size: var(--fs-11); font-weight: 700; border-radius: 999px; padding: 2px var(--e-8); white-space: nowrap; background: var(--pista); color: var(--tinta-2); }
+.chip-estado--borrador { background: var(--bajo-fondo); color: var(--bajo-texto); }
+.chip-estado--aprobado { background: var(--ia-fondo); color: var(--ia-texto); }
+.plan-borrador { border: 1px solid var(--ia); background: var(--ia-fondo); border-radius: 12px; padding: var(--e-16); display: flex; flex-direction: column; gap: var(--e-12); animation: subir var(--t-entrada) var(--curva-suave) both; }
+.plan-borrador-cabeza { display: flex; justify-content: space-between; gap: var(--e-12); align-items: flex-start; }
+.plan-borrador-cabeza > div { display: flex; flex-direction: column; gap: 2px; }
+.plan-borrador-cabeza .mono { font-size: var(--fs-11); color: var(--ia-texto); letter-spacing: 0.06em; }
+.plan-borrador-texto { display: flex; flex-direction: column; gap: var(--e-6); }
+.plan-borrador-texto .mono { font-size: var(--fs-11); color: var(--ia-texto); }
+.plan-borrador-texto textarea { width: 100%; box-sizing: border-box; padding: var(--e-10) var(--e-12); border: var(--grosor-linea) solid var(--linea); border-radius: 8px; font: inherit; font-size: var(--fs-14); background: var(--hoja); resize: vertical; }
+.plan-borrador-aprobado { white-space: pre-wrap; background: var(--hoja); border-radius: 8px; padding: var(--e-12); font-size: var(--fs-14); }
+.plan-borrador-acciones { display: flex; gap: var(--e-8); flex-wrap: wrap; align-items: center; }
+.plan-borrador-vacio { display: flex; gap: var(--e-12); align-items: center; flex-wrap: wrap; }
+
 /* ---------- Pantalla de carga y aviso de sincronización (TA-21.A2) ---------- */
 .carga { position: fixed; inset: 0; z-index: 60; background: var(--oscuro-fondo); display: flex; align-items: center; justify-content: center; padding: var(--e-24); overflow: hidden; animation: velo-entra var(--t-ficha) ease both; }
 .carga .login-fondo { opacity: 0.55; }
@@ -656,6 +690,7 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
   .cabecera-curso h1 { font-size: var(--fs-30); }
   .cifra-semana { font-size: 44px; }
   .aviso-sync-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .plan-grilla { grid-template-columns: 1fr; }
   .carga-titulo h2 { font-size: var(--fs-30); }
   .cabecera-semana { align-items: flex-start; text-align: left; }
   .lt-bloques { grid-template-columns: 1fr; }

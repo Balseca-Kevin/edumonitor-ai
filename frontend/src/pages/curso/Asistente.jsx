@@ -5,6 +5,8 @@ import { formatearFecha, formatearNumero } from '../../components/formato'
 import { nombreTramo, useTramo } from '../../components/tramo'
 import { datoUsado, estudiantesMencionados, motivo, separarRespuesta } from '../../components/lenguaje'
 import { listarConversaciones, obtenerConversacion, preguntarAlAsistente } from '../../services/agente'
+import { ESTADO_PLAN, listarPlanes, obtenerPlan } from '../../services/refuerzos'
+import PlanBorrador from '../../components/PlanBorrador'
 import { obtenerIndicadores } from '../../services/indicadores'
 import { obtenerAlertas } from '../../services/alertas'
 import { actividadesDelLibro, obtenerLibro } from '../../services/libro'
@@ -162,15 +164,35 @@ function Turno({ turno, estudiantes, sincronizacion, onAbrir }) {
 }
 
 /**
- * Historial del asistente: «Planes de refuerzo» (TA-15.A4, cuando existan) y «Conversaciones» guardadas en la base
- * (GET /api/agente/conversaciones), de la más reciente a la más antigua, con su fecha.
+ * Historial del asistente: «Planes de refuerzo» con su estado (TA-15.A4, GET /api/cursos/{id}/refuerzos) y «Conversaciones»
+ * guardadas en la base (GET /api/agente/conversaciones), de la más reciente a la más antigua, con su fecha.
  */
-function Historial({ conversaciones, activa, abrir, nueva, consultando }) {
+function Historial({ conversaciones, planes, planActivo, abrirPlan, activa, abrir, nueva, consultando }) {
   return (
     <aside className="asistente-historial" aria-label="Historial del asistente">
       <button type="button" className="boton boton--ia" onClick={nueva} disabled={consultando}>
         Nueva conversación
       </button>
+      {planes.length > 0 && (
+        <nav aria-label="Planes de refuerzo">
+          <span className="asistente-grupo mono">Planes de refuerzo</span>
+          {planes.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="asistente-item"
+              aria-current={planActivo === p.id ? 'true' : undefined}
+              onClick={() => abrirPlan(p.id)}
+              disabled={consultando}
+            >
+              <span>
+                Refuerzo de {p.actividad.nombre}: {p.temas.map((t) => t.nombre).join(', ')}
+              </span>
+              <span className={`chip-estado chip-estado--${p.estado.toLowerCase()}`}>{ESTADO_PLAN[p.estado] ?? p.estado}</span>
+            </button>
+          ))}
+        </nav>
+      )}
       <nav aria-label="Conversaciones">
         <span className="asistente-grupo mono">Conversaciones</span>
         {conversaciones.length === 0 ? (
@@ -204,7 +226,7 @@ function Historial({ conversaciones, activa, abrir, nueva, consultando }) {
 export default function Asistente() {
   const { id } = useParams()
   const tramo = useTramo()
-  const [parametros] = useSearchParams()
+  const [parametros, setParametros] = useSearchParams()
   const { curso, periodo } = useOutletContext() ?? {}
   const usuario = usuarioActual()
   const [mensaje, setMensaje] = useState('')
@@ -214,6 +236,10 @@ export default function Asistente() {
   const [indicadores, setIndicadores] = useState(null)
   const [conAlertas, setConAlertas] = useState(null)
   const [ficha, setFicha] = useState({ id: null, libro: null })
+  const [planes, setPlanes] = useState([])
+  const [plan, setPlan] = useState({ id: null, datos: null })
+  const redactados = useRef(new Set())
+  const refuerzoId = Number(parametros.get('refuerzo')) || null
   const cuerpo = useRef(null)
   const consultando = turnos.some((t) => t.cargando)
   const estudiantes = indicadores?.estudiantes ?? []
@@ -224,6 +250,9 @@ export default function Asistente() {
     listarConversaciones(id)
       .then((lista) => vigente && setHistorial(lista))
       .catch(() => vigente && setHistorial([]))
+    listarPlanes(id)
+      .then((lista) => vigente && setPlanes(lista))
+      .catch(() => vigente && setPlanes([]))
     const pedido = Number(parametros.get('estudiante'))
     obtenerIndicadores(id, tramo)
       .then((datos) => {
@@ -247,6 +276,60 @@ export default function Asistente() {
     const caja = cuerpo.current
     if (caja && typeof caja.scrollTo === 'function') caja.scrollTo({ top: caja.scrollHeight, behavior: 'smooth' })
   }, [turnos])
+
+  // TA-15.A4 · Con ?refuerzo= el plan es el foco: se carga y, si todavía no tiene borrador, el asistente lo redacta una vez.
+  useEffect(() => {
+    if (!refuerzoId) return
+    let vigente = true
+    obtenerPlan(id, refuerzoId)
+      .then((datos) => vigente && setPlan({ id: refuerzoId, datos }))
+      .catch(() => vigente && setPlan({ id: refuerzoId, datos: null }))
+    return () => {
+      vigente = false
+    }
+  }, [id, refuerzoId])
+
+  const planActual = plan.id === refuerzoId ? plan.datos : null
+
+  async function redactar(planId) {
+    if (consultando) return
+    redactados.current.add(planId)
+    const pregunta = 'Redacta el borrador del plan de refuerzo.'
+    setTurnos([{ pregunta, cargando: true }])
+    try {
+      const respuesta = await preguntarAlAsistente(id, '', { refuerzoId: planId })
+      setTurnos([{ pregunta, respuesta }])
+      setActiva(respuesta.conversacionId)
+      setHistorial((h) => [{ id: respuesta.conversacionId, fecha: respuesta.fecha, pregunta }, ...h.filter((c) => c.id !== respuesta.conversacionId)])
+      const actualizado = await obtenerPlan(id, planId)
+      setPlan({ id: planId, datos: actualizado })
+      setPlanes((lista) => lista.map((p) => (p.id === planId ? actualizado : p)))
+    } catch (error) {
+      setTurnos([{ pregunta, error: describirError(error) }])
+    }
+  }
+
+  useEffect(() => {
+    if (planActual && planActual.estado === 'ENVIADO' && !planActual.texto && !redactados.current.has(planActual.id)) {
+      redactar(planActual.id)
+    }
+    // Solo cuando llega un plan nuevo sin borrador.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planActual])
+
+  function abrirPlan(planId) {
+    const siguientes = new URLSearchParams(parametros)
+    siguientes.set('refuerzo', String(planId))
+    siguientes.delete('estudiante')
+    setParametros(siguientes)
+    setTurnos([])
+    setActiva(null)
+  }
+
+  function cambioPlan(actualizado) {
+    setPlan({ id: actualizado.id, datos: actualizado })
+    setPlanes((lista) => lista.map((p) => (p.id === actualizado.id ? actualizado : p)))
+  }
 
   async function enviar(texto) {
     const pregunta = texto.trim()
@@ -285,6 +368,11 @@ export default function Asistente() {
     setTurnos([])
     setActiva(null)
     setMensaje('')
+    if (refuerzoId) {
+      const siguientes = new URLSearchParams(parametros)
+      siguientes.delete('refuerzo')
+      setParametros(siguientes)
+    }
   }
 
   const abrirFicha = useCallback(
@@ -300,7 +388,14 @@ export default function Asistente() {
   const seguimiento = SUGERENCIAS.filter((s) => !preguntadas.has(s.texto)).slice(0, 3)
   const codigo = curso?.nombreCorto ?? 'este curso'
   const semanaPeriodo = periodo?.semana ? `semana ${periodo.semana.actual} de ${periodo.semana.total}` : null
-  const sabe = [semanaPeriodo, nombreTramo(tramo, indicadores?.unidades), enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null].filter(Boolean).join(' · ')
+  const sabe = [
+    semanaPeriodo,
+    nombreTramo(tramo, indicadores?.unidades),
+    enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null,
+    planActual ? `plan de refuerzo de ${planActual.actividad.nombre}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const estudianteFicha = estudiantes.find((e) => e.id === ficha.id) ?? null
   const columnas = actividadesDelLibro(ficha.libro)
   const filaLibro = ficha.libro?.estudiantes.find((e) => e.id === ficha.id)
@@ -308,7 +403,16 @@ export default function Asistente() {
 
   return (
     <div className="asistente">
-      <Historial conversaciones={historial} activa={activa} abrir={abrir} nueva={nueva} consultando={consultando} />
+      <Historial
+        conversaciones={historial}
+        planes={planes}
+        planActivo={refuerzoId}
+        abrirPlan={abrirPlan}
+        activa={activa}
+        abrir={abrir}
+        nueva={nueva}
+        consultando={consultando}
+      />
 
       <section className="asistente-chat hoja" aria-label="Conversación con el asistente">
         <header className="asistente-cabecera">
@@ -318,7 +422,17 @@ export default function Asistente() {
 
         <div className="chat-cuerpo" ref={cuerpo}>
           <div className="chat-hilo" aria-live="polite">
-            {turnos.length === 0 && (
+            {planActual && (
+              <PlanBorrador
+                key={`${planActual.id}|${planActual.estado}|${planActual.texto ?? ''}`}
+                cursoId={id}
+                plan={planActual}
+                consultando={consultando}
+                onRedactar={() => redactar(planActual.id)}
+                onCambio={cambioPlan}
+              />
+            )}
+            {turnos.length === 0 && !planActual && (
               <div className="chat-bienvenida">
                 <h1>
                   Hola, <b>{usuario?.nombre ?? 'docente'}</b>. ¿Qué quieres saber de {codigo}?
