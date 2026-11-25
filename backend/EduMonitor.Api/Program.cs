@@ -43,7 +43,7 @@ builder.Services.AddAuthorization(opciones =>
 builder.Services.AddScoped<IAuthorizationHandler, CursoAutorizadoHandler>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacionProblemDetails>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(opciones => opciones.Filters.Add<EduMonitor.Api.Autorizacion.AuditoriaFilter>());
 builder.Services.AddProblemDetails(opciones => opciones.CustomizeProblemDetails = TitulosProblemDetails.Aplicar);
 builder.Services.AddExceptionHandler<ManejadorExcepciones>();
 

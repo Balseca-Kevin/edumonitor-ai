@@ -24,11 +24,31 @@ public sealed class RespuestaAutorizacionProblemDetails(IProblemDetailsService p
             var motivo = authorizeResult.AuthorizationFailure?.FailureReasons.Select(r => r.Message).FirstOrDefault()
                 ?? "No tienes permiso para este recurso.";
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            await RegistrarAccesoDenegadoAsync(context, motivo);
             await Escribir(context, StatusCodes.Status403Forbidden, motivo);
             return;
         }
 
         await _porDefecto.HandleAsync(next, context, policy, authorizeResult);
+    }
+
+    /// <summary>HU-17 · Cada 403 queda en la auditoría con el usuario, la ruta y el motivo. Si falla, la respuesta sigue.</summary>
+    private static async Task RegistrarAccesoDenegadoAsync(HttpContext context, string motivo)
+    {
+        try
+        {
+            var auditoria = context.RequestServices.GetService<EduMonitor.Application.Auditorias.AuditoriaService>();
+            if (auditoria is not null)
+            {
+                await auditoria.RegistrarAsync(new EduMonitor.Application.Auditorias.RegistroAuditoria(
+                    AuditoriaFilter.UsuarioId(context.User), "ACCESO_DENEGADO", context.Request.Path.Value ?? string.Empty, null, motivo, "403"),
+                    context.RequestAborted);
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            context.RequestServices.GetService<ILogger<RespuestaAutorizacionProblemDetails>>()?.LogWarning(e, "No se pudo auditar el acceso denegado");
+        }
     }
 
     private Task Escribir(HttpContext context, int status, string detalle) =>

@@ -12,6 +12,8 @@ from app.schemas.tools import (
     ParametrosAlertas,
     ParametrosCalificaciones,
     ParametrosDesempenoTematico,
+    ParametrosDetalleActividad,
+    ParametrosRefuerzosAplicados,
     ParametrosNotaNecesaria,
     ParametrosPlanRefuerzo,
     TrazaHerramienta,
@@ -30,7 +32,8 @@ PROMPT_SISTEMA = (
     "Antes de responder sobre datos académicos, llama a la herramienta pertinente: "
     "listar_cursos_autorizados para cursos asignados, obtener_calificaciones para notas "
     "identificar_alertas para estudiantes que requieren atención y consultar_estado_periodo para la semana del período, "
-    "lo que vence y la siguiente evaluación; no calcules fechas ni semanas. calcular_nota_necesaria para lo que necesita "
+    "lo que vence y la siguiente evaluación; no calcules fechas ni semanas. obtener_detalle_actividad para una actividad, "
+    "consultar_refuerzos_aplicados para los refuerzos aprobados, calcular_nota_necesaria para lo que necesita "
     "un estudiante para llegar a 7,0, obtener_desempeno_tematico para los temas donde falla y obtener_plan_refuerzo "
     "cuando el mensaje trae un refuerzoId. "
     "Usa los identificadores del contexto o de las herramientas. Si falta un identificador "
@@ -97,6 +100,18 @@ HERRAMIENTAS = {
         "Desempeño por tema calculado por el backend: cuánto domina el curso cada tema (domina de 0 a 1), promedio, quiénes "
         "quedaron bajo 6,0, de qué actividades y criterios de rúbrica sale y dónde se vuelve a evaluar. Con actividadId, solo "
         "esa actividad. Úsala si preguntan en qué temas falla el curso o un estudiante."
+    ),
+    "obtener_detalle_actividad": (
+        "actividad", ParametrosDetalleActividad,
+        "Panel de una actividad calculado por el backend: enunciado, entregas (calificadas, ceros, por calificar, sin entrega, aún no "
+        "vence), promedio, cuántos llegan a 7,0 y cuántos quedan bajo 6,0, dominio de cada criterio de la rúbrica (domina de 0 a 1), "
+        "temas que evalúa y quiénes requieren atención en esa actividad. Úsala cuando el foco trae un actividadId o preguntan por una "
+        "actividad concreta."
+    ),
+    "consultar_refuerzos_aplicados": (
+        "refuerzos-aplicados", ParametrosRefuerzosAplicados,
+        "Refuerzos que el docente aprobó en el curso, con la nota de cada estudiante en el tema antes del refuerzo y ahora, y si subió, "
+        "quedó igual, bajó o no tiene notas nuevas. Di el cambio, no que el refuerzo lo causó."
     ),
     "obtener_plan_refuerzo": (
         "plan-refuerzo", ParametrosPlanRefuerzo,

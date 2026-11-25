@@ -15,6 +15,8 @@ namespace EduMonitor.Api.Controllers;
 [ApiController]
 [Route("api/tools")]
 [Authorize(Roles = "DOCENTE,ADMIN," + TokenAgente.Rol)]
+[TypeFilter(typeof(SeudonimizarParaAgenteFilter))]
+[Auditar("HERRAMIENTA")]
 public sealed class ToolsController(
     CursoService cursos,
     HerramientasService herramientas,
@@ -22,6 +24,8 @@ public sealed class ToolsController(
     EduMonitor.Application.NotaNecesaria.NotaNecesariaService notaNecesaria,
     EduMonitor.Application.Tematicas.TematicaService tematicas,
     EduMonitor.Application.Refuerzos.PlanRefuerzoService planes,
+    EduMonitor.Application.Agente.Seudonimizador seudonimizador,
+    EduMonitor.Application.Actividades.ActividadService actividades,
     TimeProvider reloj,
     ILogger<ToolsController> logger) : ControllerBase
 {
@@ -93,6 +97,20 @@ public sealed class ToolsController(
                 break;
             default:
                 return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El parámetro orden solo acepta «promedio» o «sinEntrega».");
+        }
+
+        // HU-23 · El agente nombra a los estudiantes por su código (E-005): se busca por ese código, no por nombre.
+        if (nombre is not null && System.Text.RegularExpressions.Regex.IsMatch(nombre.Trim(), @"^E-\d{3}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+        {
+            var porCodigo = (await seudonimizador.MapaAsync(cursoId.Value, ct)).PorCodigo(nombre);
+            if (porCodigo is null)
+            {
+                Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"Ningún estudiante del curso {cursoId} tiene el código {nombre.Trim()}.");
+            }
+
+            estudianteId = porCodigo.EstudianteId;
+            nombre = null;
         }
 
         try
@@ -303,6 +321,65 @@ public sealed class ToolsController(
 
         Registrar(herramienta, usuario.Id, cursoId, "OK", respuesta.Estudiantes.Count);
         return Ok(respuesta);
+    }
+
+    /// <summary>HU-22 · Herramienta obtener_detalle_actividad: el panel de actividad en forma corta. 400 sin parámetros; 404 si no es del curso.</summary>
+    [HttpGet("actividad")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<EduMonitor.Application.Actividades.RespuestaActividadHerramienta>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Actividad([FromQuery] int? cursoId, [FromQuery] int? actividadId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null || actividadId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Faltan los parámetros cursoId y actividadId.");
+        }
+
+        const string herramienta = EduMonitor.Application.Actividades.ActividadService.Herramienta;
+        var (estado, respuesta) = await actividades.HerramientaAsync(cursoId.Value, actividadId.Value, EduMonitor.Application.Periodo.CalculadoraPeriodo.EnEcuador(reloj.GetUtcNow()), ct);
+        switch (estado)
+        {
+            case EduMonitor.Application.Actividades.EstadoConsultaActividad.Encontrada:
+                Registrar(herramienta, usuario.Id, cursoId, "OK", respuesta!.RequierenAtencion.Count);
+                return Ok(respuesta);
+            case EduMonitor.Application.Actividades.EstadoConsultaActividad.SinSincronizar:
+                Registrar(herramienta, usuario.Id, cursoId, "SIN_SINCRONIZAR", 0);
+                return Problem(statusCode: StatusCodes.Status409Conflict, title: "Curso sin sincronizar");
+            default:
+                Registrar(herramienta, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+                return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"La actividad {actividadId} no es del curso {cursoId}.");
+        }
+    }
+
+    /// <summary>TA-15.A2 · Herramienta consultar_refuerzos_aplicados: refuerzos aprobados con la nota del tema antes y después.</summary>
+    [HttpGet("refuerzos-aplicados")]
+    [Authorize(Policy = CursoAutorizadoRequirement.PoliticaHerramientas)]
+    [ProducesResponseType<EduMonitor.Application.Refuerzos.RespuestaRefuerzosAplicadosHerramienta>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> RefuerzosAplicados([FromQuery] int? cursoId, CancellationToken ct)
+    {
+        var usuario = await User.ResolverUsuarioAsync(cursos, ct);
+        if (usuario is null)
+        {
+            return Unauthorized();
+        }
+
+        if (cursoId is null)
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
+        }
+
+        var aplicados = await planes.AplicadosAsync(cursoId.Value, ct);
+        Registrar(EduMonitor.Application.Refuerzos.RespuestaRefuerzosAplicadosHerramienta.Nombre, usuario.Id, cursoId, "OK", aplicados.Filas.Count);
+        return Ok(new EduMonitor.Application.Refuerzos.RespuestaRefuerzosAplicadosHerramienta(
+            EduMonitor.Application.Refuerzos.RespuestaRefuerzosAplicadosHerramienta.Nombre,
+            EduMonitor.Application.Periodo.CalculadoraPeriodo.EnEcuador(reloj.GetUtcNow()),
+            aplicados.Conteos,
+            aplicados.Filas));
     }
 
     // Traza de cada llamada en el log de la API, sin el token. Las trazas que ve el docente se guardan con el chat (TRAZA_HERRAMIENTA, HU-14).

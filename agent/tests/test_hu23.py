@@ -219,3 +219,37 @@ def test_salud_informa_los_dos_modelos(monkeypatch):
     assert datos["modelo"] == graph.MODEL_NAME
     assert datos["externo"]["estado"] in {"NO_CONFIGURADO", "OK", "EN_PAUSA"}
     assert datos["activo"] in {"EXTERNO", "LOCAL"}
+
+
+# --- Herramientas nuevas (HU-22, TA-15.A2) ---
+
+import pytest
+import respx
+
+from app.tools import backend_tools
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_detalle_de_actividad_y_refuerzos_aplicados_llaman_a_su_ruta(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    actividad = respx.get("http://backend.test/api/tools/actividad?cursoId=1&actividadId=103").respond(json={"herramienta": "obtener_detalle_actividad"})
+    aplicados = respx.get("http://backend.test/api/tools/refuerzos-aplicados?cursoId=1").respond(json={"herramienta": "consultar_refuerzos_aplicados"})
+    estado = {
+        "messages": [AIMessage(content="", tool_calls=[
+            {"name": "obtener_detalle_actividad", "args": {"cursoId": 1, "actividadId": 103}, "id": "a"},
+            {"name": "consultar_refuerzos_aplicados", "args": {"cursoId": 1}, "id": "b"},
+        ])],
+        "token": "t", "iterations": 1, "trazas": [], "error": None,
+    }
+
+    resultado = await graph.tool_node(estado)
+
+    assert actividad.called and aplicados.called
+    assert [t.estado for t in resultado["trazas"]] == ["OK", "OK"]
+    assert {r["herramienta"] for r in resultado["resultados"]} == {"obtener_detalle_actividad", "consultar_refuerzos_aplicados"}
+
+
+def test_detalle_de_actividad_exige_la_actividad():
+    with pytest.raises(Exception):
+        graph.HERRAMIENTAS["obtener_detalle_actividad"][1].model_validate({"cursoId": 1})

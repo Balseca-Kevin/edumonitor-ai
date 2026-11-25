@@ -16,6 +16,7 @@ public sealed class AgenteController(AgenteService agente) : ControllerBase
     /// (el agente no se llama); 404 si el curso no existe; 503 «Asistente no disponible» si el agente no responde en 60 s.
     /// </summary>
     [HttpPost("chat")]
+    [Auditar("CONSULTAR_ASISTENTE")]
     [ProducesResponseType<RespuestaChatDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -29,7 +30,7 @@ public sealed class AgenteController(AgenteService agente) : ControllerBase
             return Unauthorized();
         }
 
-        var resultado = await agente.PreguntarAsync(usuario, pregunta.CursoId, pregunta.Mensaje, ct, pregunta.Foco?.RefuerzoId);
+        var resultado = await agente.PreguntarAsync(usuario, pregunta, ct);
         return resultado.Estado switch
         {
             EstadoChat.Respondido => Ok(resultado.Respuesta),

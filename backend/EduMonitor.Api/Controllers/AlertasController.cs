@@ -27,6 +27,7 @@ public sealed class AlertasController(AlertasService alertas) : ControllerBase
 
     /// <summary>204 y recálculo de las alertas; 400 si el umbral sale de rango o el código no existe; 404 si el curso no existe.</summary>
     [HttpPut("reglas")]
+    [Auditar("CAMBIAR_REGLAS")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -64,6 +65,7 @@ public sealed class AlertasController(AlertasService alertas) : ControllerBase
 
     /// <summary>200 con la alerta actualizada; 404 si la alerta no es de ese curso; 400 si el estado no es REVISADA.</summary>
     [HttpPatch("alertas/{alertaId:int}")]
+    [Auditar("REVISAR_ALERTA")]
     [ProducesResponseType<AlertaDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
