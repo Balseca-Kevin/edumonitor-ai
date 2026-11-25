@@ -29,7 +29,7 @@ public sealed class AgenteController(AgenteService agente) : ControllerBase
             return Unauthorized();
         }
 
-        var resultado = await agente.PreguntarAsync(usuario, pregunta.CursoId, pregunta.Mensaje, ct);
+        var resultado = await agente.PreguntarAsync(usuario, pregunta.CursoId, pregunta.Mensaje, ct, pregunta.Foco?.RefuerzoId);
         return resultado.Estado switch
         {
             EstadoChat.Respondido => Ok(resultado.Respuesta),

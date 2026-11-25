@@ -11,13 +11,31 @@ namespace EduMonitor.Application.Agente;
 /// TA-14.1 · Proxy del chat del asistente. Valida la pregunta y el curso, emite el token de servicio (rol AGENTE, 2 minutos),
 /// llama al agente y guarda la conversación con sus trazas. El agente solo se llama si el curso es del docente.
 /// </summary>
-public sealed class AgenteService(IEduMonitorDbContext db, CursoService cursos, IJwtService jwt, IAgenteClient agente, TimeProvider reloj)
+public sealed class AgenteService(
+    IEduMonitorDbContext db,
+    CursoService cursos,
+    IJwtService jwt,
+    IAgenteClient agente,
+    TimeProvider reloj,
+    EduMonitor.Application.Refuerzos.PlanRefuerzoService planes)
 {
     public const int LargoMaximoMensaje = 500;
 
-    public async Task<ResultadoChat> PreguntarAsync(UsuarioActual usuario, int cursoId, string? mensaje, CancellationToken ct = default)
+    /// <summary>Pregunta que se guarda cuando el docente envía el plan sin escribir nada.</summary>
+    public const string TextoBorrador = "Redacta el borrador del plan de refuerzo.";
+
+    /// <summary>
+    /// Con <paramref name="refuerzoId"/> (TA-15.A4) el plan de refuerzo es el foco: el agente lee el plan con obtener_plan_refuerzo,
+    /// redacta el borrador por estudiante y el borrador queda guardado en el plan, en esta conversación.
+    /// </summary>
+    public async Task<ResultadoChat> PreguntarAsync(UsuarioActual usuario, int cursoId, string? mensaje, CancellationToken ct = default, int? refuerzoId = null)
     {
         var pregunta = mensaje?.Trim() ?? string.Empty;
+        if (pregunta.Length == 0 && refuerzoId is not null)
+        {
+            pregunta = TextoBorrador;
+        }
+
         if (pregunta.Length == 0)
         {
             return ResultadoChat.Invalido("Escribe una pregunta.");
@@ -51,9 +69,31 @@ public sealed class AgenteService(IEduMonitorDbContext db, CursoService cursos, 
             return new ResultadoChat(EstadoChat.Respondido, await GuardarAsync(usuario, cursoId, pregunta, aviso, ModeloSinAgente, 0, Array.Empty<TrazaAgente>(), ct));
         }
 
+        string? focoPlan = null;
+        if (refuerzoId is int rid)
+        {
+            var plan = (await planes.ObtenerAsync(cursoId, rid, ct)).Valor;
+            if (plan is null)
+            {
+                return ResultadoChat.Invalido($"El plan de refuerzo {rid} no es del curso {cursoId}.");
+            }
+
+            if (plan.Estado == Domain.Entities.PlanRefuerzo.Aprobado)
+            {
+                return ResultadoChat.Invalido("El plan ya está aprobado: su borrador no cambia.");
+            }
+
+            focoPlan = $"Foco: plan de refuerzo (refuerzoId {rid}) de {plan.Actividad.Nombre}, temas {string.Join(", ", plan.Temas.Select(t => t.Nombre))}. "
+                + "Llama a obtener_plan_refuerzo con cursoId y refuerzoId y redacta un borrador por estudiante: qué repasar en cada tema según "
+                + "sus criterios fallados y el comentario del docente, una entrega sugerida antes de la próxima evaluación de esos temas y qué "
+                + "está en juego según su nota necesaria. Usa solo las notas y criterios que devuelve la herramienta.";
+        }
+
         var token = jwt.EmitirTokenAgente(usuario.Id, cursoId);
         // El agente de develop recibe el curso en el texto; cursoId va también en el cuerpo, como pide el contrato v2.
-        var mensajeAgente = $"Curso: {curso.NombreCorto} (cursoId {curso.Id})\n{pregunta}";
+        var mensajeAgente = focoPlan is null
+            ? $"Curso: {curso.NombreCorto} (cursoId {curso.Id})\n{pregunta}"
+            : $"Curso: {curso.NombreCorto} (cursoId {curso.Id})\n{focoPlan}\n{pregunta}";
 
         var inicio = reloj.GetTimestamp();
         RespuestaAgente respuesta;
@@ -67,7 +107,14 @@ public sealed class AgenteService(IEduMonitorDbContext db, CursoService cursos, 
         }
 
         var duracion = (int)reloj.GetElapsedTime(inicio).TotalMilliseconds;
-        return new ResultadoChat(EstadoChat.Respondido, await GuardarAsync(usuario, cursoId, pregunta, respuesta.Respuesta, respuesta.Modelo, duracion, respuesta.Herramientas, ct));
+        var guardada = await GuardarAsync(usuario, cursoId, pregunta, respuesta.Respuesta, respuesta.Modelo, duracion, respuesta.Herramientas, ct);
+        if (refuerzoId is int planId)
+        {
+            await planes.GuardarBorradorAsync(planId, guardada.ConversacionId, respuesta.Respuesta, ct);
+            guardada = guardada with { RefuerzoId = planId };
+        }
+
+        return new ResultadoChat(EstadoChat.Respondido, guardada);
     }
 
     /// <summary>
@@ -186,10 +233,17 @@ public sealed class AgenteService(IEduMonitorDbContext db, CursoService cursos, 
 }
 
 /// <summary>Cuerpo de <c>POST /api/agente/chat</c>.</summary>
-public sealed record PreguntaChatDto(int CursoId, string? Mensaje);
+public sealed record PreguntaChatDto(int CursoId, string? Mensaje, FocoChatDto? Foco = null);
+
+/// <summary>Foco de la pantalla (TA-15.A4): el plan de refuerzo que el asistente redacta.</summary>
+public sealed record FocoChatDto(int? RefuerzoId);
 
 /// <summary>Respuesta de <c>POST /api/agente/chat</c> (docs/contratos-api.md, HU-14).</summary>
-public sealed record RespuestaChatDto(int ConversacionId, string Respuesta, IReadOnlyList<HerramientaUsadaDto> Herramientas, string Modelo, int DuracionMs);
+public sealed record RespuestaChatDto(int ConversacionId, string Respuesta, IReadOnlyList<HerramientaUsadaDto> Herramientas, string Modelo, int DuracionMs)
+{
+    /// <summary>TA-15.A4 · Plan de refuerzo cuyo borrador se redactó en esta respuesta; null en una pregunta común.</summary>
+    public int? RefuerzoId { get; init; }
+}
 
 public sealed record HerramientaUsadaDto(string Nombre, JsonElement Parametros, string Estado, int DuracionMs);
 

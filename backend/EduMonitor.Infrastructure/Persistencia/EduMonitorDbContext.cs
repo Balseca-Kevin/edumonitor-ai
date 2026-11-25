@@ -18,6 +18,7 @@ public class EduMonitorDbContext(DbContextOptions<EduMonitorDbContext> options) 
     public DbSet<CambioSincronizacion> CambiosSincronizacion => Set<CambioSincronizacion>();
     public DbSet<CriterioRubrica> CriteriosRubrica => Set<CriterioRubrica>();
     public DbSet<CalificacionCriterio> CalificacionesCriterio => Set<CalificacionCriterio>();
+    public DbSet<PlanRefuerzo> PlanesRefuerzo => Set<PlanRefuerzo>();
 
     // Tablas del Diagrama 5 que se usan desde el Sprint 2 (mapeo temático, alertas, agente y auditoría).
     public DbSet<Tema> Temas => Set<Tema>();

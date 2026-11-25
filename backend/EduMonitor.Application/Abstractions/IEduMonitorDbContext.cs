@@ -20,6 +20,8 @@ public interface IEduMonitorDbContext
     DbSet<CambioSincronizacion> CambiosSincronizacion { get; }
     DbSet<CriterioRubrica> CriteriosRubrica { get; }
     DbSet<CalificacionCriterio> CalificacionesCriterio { get; }
+    DbSet<PlanRefuerzo> PlanesRefuerzo { get; }
+    DbSet<TareaRefuerzo> TareasRefuerzo { get; }
     DbSet<ReglaAlerta> ReglasAlerta { get; }
     DbSet<Alerta> Alertas { get; }
     DbSet<Conversacion> Conversaciones { get; }

@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<IJwtService, JwtService>();
         services.AddSingleton<IHasherContrasenas, HasherContrasenas>();
+        services.AddSingleton<EduMonitor.Application.Documentos.IGeneradorDocumentos, Documentos.GeneradorDocumentos>();
 
         services.AddDbContext<EduMonitorDbContext>(opciones =>
             opciones.UseSqlServer(configuration.GetConnectionString("EduMonitorDB")));

@@ -869,6 +869,103 @@ Las dos aceptan DOCENTE y AGENTE y registran cada llamada como las demás herram
 - `GET /api/tools/nota-necesaria?cursoId=1&estudianteId=8`: herramienta `calcular_nota_necesaria`. Devuelve `{ "herramienta": "calcular_nota_necesaria", "generado": "…", "resultado": { …la respuesta de la ruta anterior… } }`.
 - `GET /api/tools/desempeno-tematico?cursoId=1&actividadId=103`: herramienta `obtener_desempeno_tematico`; `actividadId` es opcional. Por tema devuelve `id`, `nombre`, `unidad` («U1 · …»), `domina`, `promedio`, `estudiantesConNota`, `evaluaciones` («Tarea 3 (criterio: …)»), `bajo6` y `proximas` («Tarea 9 (2026-11-28)»). También devuelve `sinTemas`. No lleva la lista completa de estudiantes, para no llenar el contexto del modelo.
 
+## Plan de refuerzo (TA-15.A3, TA-15.A4, TA-15.A1)
+
+El docente arma el plan con una actividad evaluada, los temas que marca y los estudiantes. El asistente redacta el borrador en una conversación propia; el docente lo edita, lo aprueba y lo descarga. Nada se envía al estudiante ni a Moodle.
+
+### POST /api/cursos/{id}/refuerzos · DOCENTE
+
+Petición:
+```json
+{ "actividadId": 103, "temas": [30], "estudiantes": [8, 12] }
+```
+
+Respuesta 201 con el plan:
+```json
+{
+  "id": 7, "cursoId": 1, "creado": "2026-11-23T10:00:00-05:00", "estado": "ENVIADO",
+  "actividad": { "id": 103, "nombre": "Tarea 3" },
+  "temas": [ { "id": 30, "nombre": "Historias de usuario" } ],
+  "estudiantes": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz" } ],
+  "conversacionId": null, "texto": null, "aprobadoEn": null,
+  "resultados": []
+}
+```
+
+- 400 si faltan temas o estudiantes, si hay más de 40 estudiantes, si un tema no está asociado a la actividad (mapeo de HU-08) o si un estudiante no está matriculado.
+- 404 si la actividad no es del curso.
+
+`estado` vale:
+
+- `ENVIADO`: el plan todavía no tiene borrador.
+- `BORRADOR`: el asistente lo redactó o el docente lo editó.
+- `APROBADO`: el docente lo aprobó; ya no cambia.
+
+### GET /api/cursos/{id}/refuerzos · DOCENTE
+
+El historial del curso, del plan más reciente al más antiguo, con la forma de arriba.
+
+### GET /api/cursos/{id}/refuerzos/{rid} · DOCENTE
+
+Un plan. Responde 404 si el plan no es del curso.
+
+### PATCH /api/cursos/{id}/refuerzos/{rid} · DOCENTE
+
+Petición: `{ "texto": "…" }` para editar el borrador, `{ "estado": "APROBADO" }` para aprobarlo, o los dos juntos.
+
+- Al aprobar se guarda, por estudiante y tema, la nota del tema y cuántas notas tenía (TA-15.A1). También se crea una `TareaRefuerzo` por estudiante y tema con estado `APROBADA`.
+- Responde 200 con el plan.
+- 400 si el texto queda vacío, pasa de 20 000 caracteres, el estado no es `APROBADO` o se aprueba sin borrador.
+- 404 si el plan no es del curso.
+- 409 si el plan ya estaba aprobado.
+
+### GET /api/cursos/{id}/refuerzos/{rid}/documento?formato=pdf|docx · DOCENTE
+
+El plan aprobado como archivo: PDF con QuestPDF o DOCX con DocumentFormat.OpenXml. Lleva el curso, la actividad, los temas, los estudiantes, la fecha de aprobación y el texto aprobado. El nombre del archivo es `plan-refuerzo-<curso>-<id>.<formato>`.
+
+- 400 si el formato no es `pdf` ni `docx`.
+- 404 si el plan no es del curso.
+- 409 si todavía no está aprobado.
+
+### Resultado del refuerzo (TA-15.A1)
+
+`resultados` lleva una fila por estudiante y tema de un plan aprobado: `{ "estudianteId", "estudiante", "temaId", "tema", "antes", "ahora", "estado" }`. `antes` es la nota del tema al aprobar y `ahora` es la de hoy, con el cálculo de «Desempeño por tema».
+
+`estado` vale:
+
+- `SIN_NOTAS_NUEVAS`: el estudiante no tiene más notas en el tema que al aprobar.
+- `SUBIO`, `IGUAL` o `BAJO`: si tiene notas nuevas, según cómo cambió la nota del tema.
+
+En pantalla se dice el cambio («subió de 5,2 a 7,1 en el tema después del refuerzo»), no que el refuerzo lo causó.
+
+### Foco del plan en el chat (TA-15.A4)
+
+`POST /api/agente/chat` acepta `foco`:
+```json
+{ "cursoId": 1, "mensaje": "", "foco": { "refuerzoId": 7 } }
+```
+
+- Con `refuerzoId`, el mensaje puede ir vacío: se guarda como «Redacta el borrador del plan de refuerzo.».
+- La API le dice al agente que lea el plan con `obtener_plan_refuerzo` y que redacte un borrador por estudiante con:
+  - qué repasar en cada tema;
+  - una entrega sugerida antes de la próxima evaluación de esos temas;
+  - qué está en juego según su nota necesaria.
+- La respuesta suma `"refuerzoId": 7`. Su texto queda como borrador del plan, con estado `BORRADOR` y la conversación enlazada.
+- 400 si el plan no es del curso o ya está aprobado.
+
+### GET /api/tools/plan-refuerzo?cursoId=1&refuerzoId=7 · DOCENTE, AGENTE
+
+Herramienta `obtener_plan_refuerzo`. Devuelve:
+
+- `actividad`, `temas` y `seVuelvenAEvaluar` («Tarea 9 (2026-11-28)»);
+- por estudiante:
+  - `notasPorTema`;
+  - `criteriosFallados`: los criterios de la actividad asociados a esos temas, cuyo puntaje queda bajo el 70 % del máximo, con su nivel;
+  - `comentarioDocente`;
+  - `notaNecesariaEstado`, `notaNecesaria` y `promedioActual`.
+
+Códigos: 400 sin sus parámetros, 403 en un curso ajeno y 404 si el plan no es del curso.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega

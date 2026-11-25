@@ -39,11 +39,12 @@ Rutas y JSON en el bloque «Sprint 3» de `docs/contratos-api.md`. Ninguna se pr
 |---|---|---|
 | `obtener_calificaciones` con `promedioMenorA` y orden por `sinEntrega` | HU-23 | Filtro y orden hechos en el backend (corrigen las preguntas 5, 6 y 9 de TA-13.7) |
 | `obtener_detalle_actividad` | HU-22 | Enunciado, entregas, distribución y dominio por criterio de una actividad |
-| `obtener_desempeno_tematico` | HU-08, HU-15 | Promedio por tema de un estudiante o del curso |
+| `obtener_desempeno_tematico` | HU-08, HU-15 | Cuánto domina el curso cada tema, quién quedó bajo 6,0, de qué actividades y criterios sale y dónde se vuelve a evaluar (`GET /api/tools/desempeno-tematico`) |
 | `obtener_retroalimentacion` | HU-15 | Criterios de la rúbrica con el nivel obtenido y el comentario del docente |
 | `guardar_tarea_refuerzo` | HU-15 | Borrador de refuerzo en estado BORRADOR (lo aprueba el docente) |
 | `consultar_refuerzos_aplicados` | HU-15 (TA-15.A2) | Refuerzos aprobados con el promedio del tema antes y después |
-| `calcular_nota_necesaria` | HU-10 (TA-10.A1) | Nota mínima para llegar a 7,0 con las notas actuales |
+| `calcular_nota_necesaria` | HU-10 (TA-10.A1) | Nota mínima para llegar a 7,0 con las notas actuales (`GET /api/tools/nota-necesaria`) |
+| `obtener_plan_refuerzo` | HU-15 (TA-15.A4) | El plan que envió el docente con la nota por tema, los criterios fallados, el comentario del docente y la nota necesaria de cada estudiante (`GET /api/tools/plan-refuerzo`); el borrador que redacta el asistente queda en el plan |
 | `consultar_estado_periodo` | HU-22 (TA-22.A4) | Semana del período, unidad actual, vencidas con entregas que faltan, lo que vence esta semana y la siguiente evaluación (`GET /api/tools/estado-periodo`) |
 
 ### Grafo
