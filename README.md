@@ -200,6 +200,21 @@ docker compose -f docker-compose.yml -f docker-compose.cpu.yml up -d --wait
 
 En la CPU las respuestas son lentas; `OLLAMA_MODEL=llama3.2:3b` en `.env` responde más rápido que `qwen2.5:7b`. Si una respuesta pasa de 60 s, la pantalla del asistente muestra «El asistente no está disponible».
 
+### Modelo externo con respaldo local (HU-23)
+
+El asistente usa primero un modelo externo y, si falla, el modelo local de Ollama. Se configura en `.env`:
+
+| Variable | Valor |
+|---|---|
+| `MODELO_EXTERNO_PROVEEDOR` | `anthropic` |
+| `MODELO_EXTERNO` | Nombre del modelo del proveedor, por ejemplo `claude-sonnet-5-5` |
+| `MODELO_EXTERNO_API_KEY` | Clave del proveedor. Es un secreto: solo va en `.env` |
+| `MODELO_EXTERNO_TIEMPO_SEGUNDOS` | Límite de cada llamada al externo (20 por defecto) |
+
+Sin clave, el asistente responde solo con el modelo local. El asistente pasa al modelo local si el externo da un error, tarda más de 20 s, responde 429 o responde sin el formato esperado. Con 3 fallos en 5 minutos, usa el local durante 5 minutos. Antes de llamar al modelo, la API cambia el nombre de cada estudiante por un código (E-001, E-002…) y la pantalla vuelve a mostrar los nombres.
+
+En «Estado del sistema» (ADMIN) se ven los dos modelos, cuál responde ahora y el interruptor «Usar solo el modelo local». Cada respuesta dice «Respondió: modelo externo» o «Respondió: modelo local (respaldo)».
+
 ### Pruebas
 
 ```powershell

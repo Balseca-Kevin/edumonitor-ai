@@ -4,10 +4,16 @@ import api from './api'
  * HU-14 · Pregunta al asistente de un curso. La API valida el curso y llama al agente;
  * el navegador nunca habla con el agente. Respuestas: 200, 400, 403, 404 y 503 (docs/contratos-api.md).
  */
-export async function preguntarAlAsistente(cursoId, mensaje, foco) {
+export async function preguntarAlAsistente(cursoId, mensaje, foco, conversacionId) {
   const cuerpo = { cursoId: Number(cursoId), mensaje }
   // TA-15.A4 · Con { refuerzoId } el plan de refuerzo es el foco: el asistente redacta su borrador.
-  if (foco?.refuerzoId) cuerpo.foco = { refuerzoId: Number(foco.refuerzoId) }
+  // HU-23 · { estudianteId, actividadId } es lo que la pantalla tiene abierto; conversacionId sigue el hilo con su memoria.
+  const elegido = {}
+  for (const clave of ['refuerzoId', 'estudianteId', 'actividadId']) {
+    if (foco?.[clave]) elegido[clave] = Number(foco[clave])
+  }
+  if (Object.keys(elegido).length) cuerpo.foco = elegido
+  if (conversacionId) cuerpo.conversacionId = Number(conversacionId)
   const { data } = await api.post('/api/agente/chat', cuerpo)
   return data
 }

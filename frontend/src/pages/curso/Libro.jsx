@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useOutletContext, useParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import FichaLateral from '../../components/FichaLateral'
 import Estado from '../../components/Estado'
 import { formatearFecha, formatearNumero } from '../../components/formato'
@@ -13,7 +13,7 @@ const NO_DISPONIBLE = 'no disponible'
 const APROBACION = 7
 
 /** Texto y clase de cada celda: cero, sin entrega, por calificar y «aún no vence» se distinguen; sin dato dice «no disponible». */
-function celda(nota) {
+export function celda(nota) {
   switch (nota?.estado) {
     case 'CALIFICADO':
       return { texto: formatearNumero(nota.nota), clase: nota.nota < APROBACION ? 'nota--bajo' : 'nota--ok' }
@@ -67,6 +67,10 @@ export default function Libro() {
   const [indicadores, setIndicadores] = useState({ clave: null, datos: null })
   const [abierto, setAbierto] = useState(null)
   const sid = curso?.ultimaSincronizacion?.id ?? null
+  // TA-23.A2 · Una cifra del asistente abre el libro con ?estudiante= y ?actividad=: la fila y la celda quedan señaladas.
+  const [parametros] = useSearchParams()
+  const senalado = Number(parametros.get('estudiante')) || null
+  const actividadSenalada = Number(parametros.get('actividad')) || null
 
   useEffect(() => {
     let vigente = true
@@ -111,6 +115,12 @@ export default function Libro() {
   const cerrar = useCallback(() => setAbierto(null), [])
 
   const { datos, error } = cargado.clave === clave ? cargado : { datos: null, error: null }
+
+  useEffect(() => {
+    if (!senalado || !datos) return
+    const fila = document.getElementById(`libro-fila-${senalado}`)
+    if (fila && typeof fila.scrollIntoView === 'function') fila.scrollIntoView({ block: 'center' })
+  }, [senalado, datos])
 
   if (error?.tipo === 'sin-sincronizar') {
     return (
@@ -222,7 +232,13 @@ export default function Libro() {
                 {datos.estudiantes.map((e) => {
                   const promedio = formatearNumero(e.promedioPonderado)
                   return (
-                    <tr key={e.id} className="libro-fila" onClick={() => abrir(e.id)}>
+                    <tr
+                      key={e.id}
+                      id={`libro-fila-${e.id}`}
+                      className={`libro-fila${e.id === senalado ? ' libro-fila--senalada' : ''}`}
+                      aria-current={e.id === senalado ? 'true' : undefined}
+                      onClick={() => abrir(e.id)}
+                    >
                       <th scope="row" className="libro-fijo">
                         <button
                           type="button"
@@ -241,7 +257,7 @@ export default function Libro() {
                         return (
                           <td key={n.actividadId ?? i}>
                             <span
-                              className={`nota ${clase}${cambio ? ' nota--nueva' : ''}`}
+                              className={`nota ${clase}${cambio ? ' nota--nueva' : ''}${e.id === senalado && n.actividadId === actividadSenalada ? ' nota--senalada' : ''}`}
                               title={cambio ? `Nuevo en la última sincronización: ${TIPO_CAMBIO[cambio.tipo] ?? 'cambió'}` : undefined}
                             >
                               {texto}

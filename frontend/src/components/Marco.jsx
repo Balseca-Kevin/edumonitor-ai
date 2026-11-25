@@ -92,6 +92,9 @@ export default function Marco({ curso, cabecera, barra, alertas = null, busqueda
             <NavLink to="/admin/estado" className={claseEnlace}>
               Estado del sistema
             </NavLink>
+            <NavLink to="/admin/auditoria" className={claseEnlace}>
+              Auditoría
+            </NavLink>
           </nav>
         )}
 

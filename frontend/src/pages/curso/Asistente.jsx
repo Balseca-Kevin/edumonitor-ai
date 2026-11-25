@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useOutletContext, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import FichaLateral from '../../components/FichaLateral'
 import { formatearFecha, formatearNumero } from '../../components/formato'
 import { nombreTramo, useTramo } from '../../components/tramo'
@@ -33,34 +33,88 @@ function usuarioActual() {
   }
 }
 
-function Bloques({ texto }) {
+/**
+ * TA-23.A2 · Cada cifra verificada de la respuesta abre la celda del libro de donde sale (estudiante y actividad); una cifra que el
+ * verificador no encontró en los datos se marca «no verificada». La pantalla no calcula nada: usa las cifras que devolvió el agente.
+ */
+export function ConCifras({ texto, cifras, cursoId }) {
+  const lista = (cifras ?? []).filter((c) => c.valor)
+  if (!texto || lista.length === 0) return texto ?? null
+  const porValor = new Map()
+  for (const c of lista) if (!porValor.has(c.valor.replace('%', ''))) porValor.set(c.valor.replace('%', ''), c)
+  const escapar = (v) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const valores = [...porValor.keys()].sort((a, b) => b.length - a.length).map(escapar)
+  const patron = new RegExp(`(?<![\\w.,-])(${valores.join('|')})(?![\\w]|[.,]\\d)`, 'g')
+  const partes = []
+  let desde = 0
+  for (const m of texto.matchAll(patron)) {
+    const cifra = porValor.get(m[1])
+    partes.push(texto.slice(desde, m.index))
+    if (!cifra.verificada) {
+      partes.push(
+        <span key={m.index} className="cifra-enlace cifra-enlace--no-verificada" title="Cifra no verificada: no está en los datos consultados">
+          {m[1]}
+        </span>,
+      )
+    } else if (cifra.estudianteId) {
+      const destino = new URLSearchParams({ estudiante: cifra.estudianteId })
+      if (cifra.actividadId) destino.set('actividad', cifra.actividadId)
+      partes.push(
+        <Link key={m.index} className="cifra-enlace" to={`/cursos/${cursoId}/libro?${destino}`} title="Ver en el libro de calificaciones">
+          {m[1]}
+        </Link>,
+      )
+    } else {
+      partes.push(
+        <span key={m.index} className="cifra-enlace cifra-enlace--verificada" title="Cifra verificada en los datos consultados">
+          {m[1]}
+        </span>,
+      )
+    }
+    desde = m.index + m[0].length
+  }
+  partes.push(texto.slice(desde))
+  return partes
+}
+
+function Bloques({ texto, cifras, cursoId }) {
   const partes = separarRespuesta(texto)
-  if (!partes) return <p className="msg-texto">{texto}</p>
+  const conCifras = (t) => <ConCifras texto={t} cifras={cifras} cursoId={cursoId} />
+  if (!partes) return <p className="msg-texto">{conCifras(texto)}</p>
   return (
     <>
-      {partes.antes && <p className="msg-texto">{partes.antes}</p>}
+      {partes.antes && <p className="msg-texto">{conCifras(partes.antes)}</p>}
       <div className="respuesta-bloques num">
         {partes.hechos && (
           <div className="respuesta-bloque">
             <span>Hechos</span>
-            <p>{partes.hechos}</p>
+            <p>{conCifras(partes.hechos)}</p>
           </div>
         )}
         {partes.inferencia && (
           <div className="respuesta-bloque">
             <span>Inferencia</span>
-            <p>{partes.inferencia}</p>
+            <p>{conCifras(partes.inferencia)}</p>
           </div>
         )}
         {partes.recomendacion && (
           <div className="respuesta-bloque respuesta-bloque--ia">
             <span>Recomendación</span>
-            <p>{partes.recomendacion}</p>
+            <p>{conCifras(partes.recomendacion)}</p>
           </div>
         )}
       </div>
     </>
   )
+}
+
+/** HU-23 · Quién respondió, en palabras del docente. */
+export function quienRespondio(respuesta) {
+  const modelo = respuesta.modelo
+  const proveedor = respuesta.proveedor ?? (!modelo || modelo === 'ninguno' ? 'NINGUNO' : 'LOCAL')
+  if (proveedor === 'NINGUNO') return 'Respondió: EduMonitor, sin llamar al modelo'
+  if (proveedor === 'EXTERNO') return `Respondió: modelo externo · ${modelo}`
+  return respuesta.respaldo ? `Respondió: modelo local (respaldo) · ${modelo}` : `Respondió: modelo local · ${modelo}`
 }
 
 function Estudiantes({ estudiantes, onAbrir }) {
@@ -89,15 +143,9 @@ function Estudiantes({ estudiantes, onAbrir }) {
 
 /** HU-17 · Desplegable cerrado: quién respondió, qué se consultó con qué parámetros, en cuánto tiempo y de qué sincronización. */
 function ComoLlego({ respuesta, estudiantes, sincronizacion }) {
-  const modelo = respuesta.modelo
-  const quien =
-    !modelo || modelo === 'ninguno'
-      ? 'Respondió: EduMonitor, sin llamar al modelo'
-      : respuesta.respaldo === false
-        ? `Respondió: modelo externo (${modelo})`
-        : respuesta.respaldo === true
-          ? `Respondió: modelo local (respaldo) · ${modelo}`
-          : `Respondió: modelo local · ${modelo}`
+  const quien = quienRespondio(respuesta)
+  const cifras = respuesta.cifras ?? []
+  const sinVerificar = cifras.filter((c) => !c.verificada)
   return (
     <details className="como-llego">
       <summary>Cómo llegó a esta respuesta</summary>
@@ -115,6 +163,12 @@ function ComoLlego({ respuesta, estudiantes, sincronizacion }) {
           )
         })}
         {!respuesta.herramientas?.length && <li>Sin consultar datos del curso.</li>}
+        {cifras.length > 0 && (
+          <li>
+            Cifras verificadas en los datos: {cifras.length - sinVerificar.length} de {cifras.length}
+            {sinVerificar.length > 0 && ` · no verificadas: ${sinVerificar.map((c) => c.valor).join(', ')}`}
+          </li>
+        )}
         {respuesta.duracionMs != null && <li>Tiempo total: {formatearNumero(respuesta.duracionMs / 1000, 1)} s</li>}
         {sincronizacion?.fecha && <li>Datos de la sincronización del {formatearFecha(sincronizacion.fecha)}</li>}
       </ul>
@@ -122,7 +176,7 @@ function ComoLlego({ respuesta, estudiantes, sincronizacion }) {
   )
 }
 
-function Turno({ turno, estudiantes, sincronizacion, onAbrir }) {
+function Turno({ turno, estudiantes, sincronizacion, onAbrir, cursoId }) {
   return (
     <div className="msg">
       <div className="msg-docente">{turno.pregunta}</div>
@@ -146,7 +200,8 @@ function Turno({ turno, estudiantes, sincronizacion, onAbrir }) {
           )}
           {turno.respuesta && (
             <>
-              <Bloques texto={turno.respuesta.respuesta} />
+              <Bloques texto={turno.respuesta.respuesta} cifras={turno.respuesta.cifras} cursoId={cursoId} />
+              <span className="respondio ayuda">{quienRespondio(turno.respuesta)}</span>
               <Estudiantes estudiantes={estudiantesMencionados(turno.respuesta.respuesta, estudiantes)} onAbrir={onAbrir} />
               <ComoLlego respuesta={turno.respuesta} estudiantes={estudiantes} sincronizacion={sincronizacion} />
             </>
@@ -208,7 +263,12 @@ function Historial({ conversaciones, planes, planActivo, abrirPlan, activa, abri
               onClick={() => abrir(c.id)}
             >
               <span>{c.pregunta}</span>
-              {c.fecha && <span className="ayuda">{formatearFecha(c.fecha)}</span>}
+              {c.fecha && (
+                <span className="ayuda">
+                  {formatearFecha(c.fecha)}
+                  {c.turnos > 1 ? ` · ${c.turnos} preguntas` : ''}
+                </span>
+              )}
             </button>
           ))
         )}
@@ -244,6 +304,9 @@ export default function Asistente() {
   const consultando = turnos.some((t) => t.cargando)
   const estudiantes = indicadores?.estudiantes ?? []
   const enfocado = estudiantes.find((e) => e.id === Number(parametros.get('estudiante'))) ?? null
+  // HU-23 · Foco de la actividad abierta (desde el panel de actividad); su nombre sale del período del curso.
+  const actividadFoco = Number(parametros.get('actividad')) || null
+  const actividadEnfocada = (periodo?.actividades ?? []).find((a) => a.id === actividadFoco) ?? null
 
   useEffect(() => {
     let vigente = true
@@ -337,11 +400,19 @@ export default function Asistente() {
     setMensaje('')
     setTurnos((t) => [...t, { pregunta, cargando: true }])
     try {
-      const respuesta = await preguntarAlAsistente(id, pregunta)
+      // HU-23 · Con una conversación abierta, la pregunta sigue su hilo y el asistente recuerda los últimos 4 turnos.
+      const foco = { estudianteId: enfocado?.id, actividadId: actividadFoco }
+      const respuesta = await preguntarAlAsistente(id, pregunta, foco, activa)
       setTurnos((t) => [...t.slice(0, -1), { pregunta, respuesta }])
-      setActiva(respuesta.conversacionId)
-      const guardada = { id: respuesta.conversacionId, fecha: respuesta.fecha, pregunta }
-      setHistorial((h) => [guardada, ...h.filter((c) => c.id !== respuesta.conversacionId)])
+      const hilo = respuesta.hiloId ?? respuesta.conversacionId
+      setActiva(hilo)
+      setHistorial((h) => {
+        const existente = h.find((c) => c.id === hilo)
+        const guardada = existente
+          ? { ...existente, turnos: (existente.turnos ?? 1) + 1 }
+          : { id: hilo, fecha: respuesta.fecha, pregunta, turnos: 1 }
+        return [guardada, ...h.filter((c) => c.id !== hilo)]
+      })
     } catch (error) {
       setTurnos((t) => [...t.slice(0, -1), { pregunta, error: describirError(error) }])
     }
@@ -352,12 +423,23 @@ export default function Asistente() {
     setActiva(conversacionId)
     try {
       const c = await obtenerConversacion(conversacionId)
-      setTurnos([
-        {
-          pregunta: c.pregunta,
-          respuesta: { conversacionId: c.id, respuesta: c.respuesta, herramientas: c.herramientas, modelo: c.modelo, duracionMs: c.duracionMs, respaldo: c.respaldo },
-        },
-      ])
+      const turnosDelHilo = c.turnos?.length ? c.turnos : [c]
+      setActiva(c.hiloId ?? c.id)
+      setTurnos(
+        turnosDelHilo.map((t) => ({
+          pregunta: t.pregunta,
+          respuesta: {
+            conversacionId: t.id,
+            respuesta: t.respuesta,
+            herramientas: t.herramientas,
+            modelo: t.modelo,
+            duracionMs: t.duracionMs,
+            respaldo: t.respaldo,
+            proveedor: t.proveedor,
+            cifras: t.cifras,
+          },
+        })),
+      )
     } catch (error) {
       setTurnos([{ pregunta: 'Conversación guardada', error: describirError(error) }])
     }
@@ -392,6 +474,8 @@ export default function Asistente() {
     semanaPeriodo,
     nombreTramo(tramo, indicadores?.unidades),
     enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null,
+    actividadEnfocada ? actividadEnfocada.nombre : null,
+    activa && turnos.length > 0 ? `${turnos.length} ${turnos.length === 1 ? 'pregunta' : 'preguntas'} de esta conversación` : null,
     planActual ? `plan de refuerzo de ${planActual.actividad.nombre}` : null,
   ]
     .filter(Boolean)
@@ -448,7 +532,14 @@ export default function Asistente() {
               </div>
             )}
             {turnos.map((turno, i) => (
-              <Turno key={i} turno={turno} estudiantes={estudiantes} sincronizacion={curso?.ultimaSincronizacion} onAbrir={abrirFicha} />
+              <Turno
+                key={i}
+                turno={turno}
+                estudiantes={estudiantes}
+                sincronizacion={curso?.ultimaSincronizacion}
+                onAbrir={abrirFicha}
+                cursoId={id}
+              />
             ))}
           </div>
         </div>
