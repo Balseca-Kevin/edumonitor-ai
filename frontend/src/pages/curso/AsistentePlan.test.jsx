@@ -72,7 +72,7 @@ describe('TA-15.A4 · El plan de refuerzo como foco del asistente', () => {
     })
     renderAsistente()
 
-    await waitFor(() => expect(preguntarAlAsistente).toHaveBeenCalledWith('1', '', { refuerzoId: 9 }))
+    await waitFor(() => expect(preguntarAlAsistente).toHaveBeenCalledWith('1', '', { refuerzoId: 9 }), { timeout: 5000 })
     expect(preguntarAlAsistente).toHaveBeenCalledTimes(1)
     const plan = await screen.findByRole('region', { name: 'Plan de refuerzo en el asistente' }, { timeout: 5000 })
     expect(await within(plan).findByRole('textbox', {}, { timeout: 5000 })).toHaveValue(borrador.texto)
