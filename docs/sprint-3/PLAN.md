@@ -61,8 +61,9 @@ Lo que pide el prototipo y no estaba en el plan entra como tareas de HU que ya e
 | TA-15.A4 | HU-15 | El asistente recibe el plan como foco, redacta el borrador por estudiante (tareas por tema, entrega sugerida antes de la próxima evaluación de esos temas, qué está en juego) en una conversación propia; «Aprobar borrador» habilita PDF y DOCX; «Historial de refuerzos» en el plan y en el asistente con su estado y el resultado de TA-15.A1 | Jeremy; Kevin (contrato del chat) | Kevin (foco del plan en el chat, `obtener_plan_refuerzo`, borrador editable, aprobación, PDF y DOCX, historial) |
 | TA-22.A1 | HU-22 | Diagnóstico por criterio: `CalculadoraCriterio` con la separación (Pearson entre el criterio y el resto de la rúbrica) y el aviso `REVISAR_ENSENANZA` o `REVISAR_ENUNCIADO` con los umbrales 0,30 y 0,20, en `GET /api/cursos/{id}/actividades/{aid}` y en `obtener_detalle_actividad`, con pruebas | Kevin | Kevin |
 | TA-22.A2 | HU-22 | Avisos bajo cada criterio en el panel de actividad y «Pedir enunciado corregido», que abre el asistente con la actividad como foco; la respuesta se puede copiar | Kevin | Kevin |
+| TA-15.B1 y TA-15.B2 | HU-15 | Grupos de refuerzo por tema: `GET /api/cursos/{id}/refuerzos/grupos` con quienes tienen nota del tema menor a 6,0 en temas con 2 estudiantes o más, pestaña «Por tema» en «Plan de refuerzo» y «Armar plan grupal», que usa el mismo flujo del plan (borrador del asistente, aprobación con la foto del tema, PDF, DOCX e historial), con pruebas | Kevin | Kevin |
 
-TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kevin lo reincorpora como tarea de HU-21. TA-22.A1 y TA-22.A2 también salían por la línea de corte y Kevin los retomó en el cierre. La línea de corte sigue vigente para TA-15.B1, TA-15.B2 y TA-15.B3.
+TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kevin lo reincorpora como tarea de HU-21. TA-22.A1 y TA-22.A2 también salían por la línea de corte y Kevin los retomó en el cierre. Kevin también reincorporó TA-15.B1 y TA-15.B2 (grupos de refuerzo por tema y plan grupal). La línea de corte sigue vigente para TA-15.B3.
 
 ## Bloques
 

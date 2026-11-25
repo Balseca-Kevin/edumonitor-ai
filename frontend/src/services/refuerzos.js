@@ -53,3 +53,9 @@ export async function descargarDocumento(cursoId, planId, formato) {
 
 /** Texto del estado de un plan en pantalla. */
 export const ESTADO_PLAN = { ENVIADO: 'Enviado al asistente', BORRADOR: 'Borrador por aprobar', APROBADO: 'Aprobado' }
+
+/** TA-15.B1 · Grupos de refuerzo por tema: quienes tienen nota del tema menor a 6,0, en temas con 2 estudiantes o más. */
+export async function obtenerGrupos(cursoId) {
+  const { data } = await api.get(`/api/cursos/${cursoId}/refuerzos/grupos`)
+  return data
+}

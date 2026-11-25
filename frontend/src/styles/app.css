@@ -112,7 +112,7 @@
 .segmento { min-height: 40px; padding: 9px var(--e-14); border: 0; border-left: var(--grosor-linea) solid var(--linea-2); background: var(--hoja); color: var(--tinta-hover); font: 400 var(--fs-13) var(--fuente); cursor: pointer; transition: background-color var(--t-rapido) ease, color var(--t-rapido) ease; }
 .segmento:first-child { border-left: 0; }
 .segmento:hover { background: var(--papel); }
-.segmento[aria-pressed='true'] { background: var(--tinta); color: var(--papel); font-weight: 700; }
+.segmento[aria-pressed='true'], .segmento[aria-selected='true'] { background: var(--tinta); color: var(--papel); font-weight: 700; }
 .boton--ia { background: var(--ia); border-color: var(--ia); color: var(--hoja); }
 .boton--ia:hover:not(:disabled) { background: var(--ia-hover); border-color: var(--ia-hover); }
 .contenido { flex: 1; min-width: 0; padding: var(--e-28) var(--e-32); display: flex; flex-direction: column; gap: var(--e-32); }
@@ -247,6 +247,11 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .plan-tema input, .plan-estudiante input { accent-color: var(--ia); margin-top: 3px; }
 .plan-tema-texto, .plan-estudiante > span { display: flex; flex-direction: column; gap: 2px; }
 .plan-donde ul { margin: var(--e-4) 0 0; padding-left: var(--e-16); font-size: var(--fs-13); }
+.plan-grupos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--e-16); }
+.plan-grupo { padding: var(--e-16) var(--e-20); display: flex; flex-direction: column; gap: var(--e-10); }
+.plan-grupo h3 { margin: 0; font-size: var(--fs-16); }
+.plan-grupo ul { margin: 0; padding-left: var(--e-16); font-size: var(--fs-13); display: flex; flex-direction: column; gap: 2px; }
+.plan-grupo .boton { align-self: flex-start; }
 .plan-historial-seccion h3 { margin: 0 0 var(--e-8); font-size: var(--fs-16); }
 .plan-historial { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-8); }
 .plan-historial-item { padding: var(--e-12) var(--e-16); display: flex; flex-direction: column; gap: var(--e-6); }
