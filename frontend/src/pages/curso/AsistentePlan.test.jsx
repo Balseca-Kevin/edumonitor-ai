@@ -104,6 +104,23 @@ describe('TA-15.A4 · El plan de refuerzo como foco del asistente', () => {
     expect(URL.createObjectURL).toHaveBeenCalled()
   })
 
+  it('TA-15.B3 · un borrador redactado con el estilo del docente lo marca', async () => {
+    obtenerPlan.mockResolvedValue({ ...borrador, conEstilo: true })
+    renderAsistente()
+
+    const plan = await screen.findByRole('region', { name: 'Plan de refuerzo en el asistente' })
+    expect(await within(plan).findByText('Con tu estilo')).toBeInTheDocument()
+  })
+
+  it('sin ejemplos de estilo el borrador no lleva la marca', async () => {
+    obtenerPlan.mockResolvedValue({ ...borrador, conEstilo: false })
+    renderAsistente()
+
+    const plan = await screen.findByRole('region', { name: 'Plan de refuerzo en el asistente' })
+    await within(plan).findByRole('textbox')
+    expect(within(plan).queryByText('Con tu estilo')).not.toBeInTheDocument()
+  })
+
   it('si el asistente no responde lo dice y deja pedir el borrador otra vez', async () => {
     obtenerPlan.mockResolvedValue(enviado)
     preguntarAlAsistente.mockRejectedValue({ response: { status: 503, data: { title: 'Asistente no disponible' } } })
