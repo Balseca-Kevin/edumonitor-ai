@@ -34,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped<EduMonitor.Application.Fichas.FichaEstudianteService>();
         services.AddScoped<EduMonitor.Application.Actividades.ActividadService>();
         services.AddScoped<EduMonitor.Application.Informes.InformeService>();
+        services.AddScoped<EduMonitor.Application.Evaluacion.EvaluacionService>();
+        services.AddSingleton<EduMonitor.Application.Evaluacion.ColaEvaluaciones>();
         services.AddScoped<ModeloAsistenteService>();
         services.AddScoped<EstadoSistemaService>();
         services.AddScoped<ImportadorUnidades>();

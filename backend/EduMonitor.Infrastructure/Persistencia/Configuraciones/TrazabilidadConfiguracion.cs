@@ -60,3 +60,33 @@ internal sealed class AuditoriaConfiguracion : IEntityTypeConfiguration<Auditori
         builder.Property(a => a.Resultado).HasMaxLength(10).IsRequired();
     }
 }
+
+internal sealed class EvaluacionAgenteConfiguracion : IEntityTypeConfiguration<EvaluacionAgente>
+{
+    public void Configure(EntityTypeBuilder<EvaluacionAgente> builder)
+    {
+        builder.ToTable("EvaluacionAgente");
+        builder.HasKey(e => e.Id);
+        builder.HasOne(e => e.Curso).WithMany().HasForeignKey(e => e.CursoId).OnDelete(DeleteBehavior.NoAction);
+        builder.HasOne(e => e.Usuario).WithMany().HasForeignKey(e => e.UsuarioId).OnDelete(DeleteBehavior.NoAction);
+        builder.Property(e => e.Estado).HasMaxLength(20).IsRequired();
+        builder.Property(e => e.Detalle).HasMaxLength(500);
+    }
+}
+
+internal sealed class ResultadoEvaluacionConfiguracion : IEntityTypeConfiguration<ResultadoEvaluacion>
+{
+    public void Configure(EntityTypeBuilder<ResultadoEvaluacion> builder)
+    {
+        builder.ToTable("ResultadoEvaluacion");
+        builder.HasKey(r => r.Id);
+        builder.HasOne(r => r.Evaluacion).WithMany(e => e.Resultados).HasForeignKey(r => r.EvaluacionAgenteId);
+        builder.HasIndex(r => new { r.EvaluacionAgenteId, r.Modo, r.Numero }).IsUnique();
+        builder.Property(r => r.Modo).HasMaxLength(10).IsRequired();
+        builder.Property(r => r.Motivo).HasMaxLength(300).IsRequired();
+        builder.Property(r => r.Respuesta).IsRequired();
+        builder.Property(r => r.Herramientas).HasMaxLength(500).IsRequired();
+        builder.Property(r => r.Modelo).HasMaxLength(100).IsRequired();
+        builder.Property(r => r.Proveedor).HasMaxLength(20).IsRequired();
+    }
+}

@@ -28,6 +28,8 @@ public interface IEduMonitorDbContext
     DbSet<TrazaHerramienta> TrazasHerramienta { get; }
     DbSet<ConfiguracionAsistente> ConfiguracionesAsistente { get; }
     DbSet<Auditoria> Auditorias { get; }
+    DbSet<EvaluacionAgente> EvaluacionesAgente { get; }
+    DbSet<ResultadoEvaluacion> ResultadosEvaluacion { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
