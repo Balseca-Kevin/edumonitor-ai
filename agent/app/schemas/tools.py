@@ -38,6 +38,16 @@ class ParametrosCalificaciones(ParametrosAlertas):
             return None
         return valor
 
+    @field_validator("orden", mode="before")
+    @classmethod
+    def orden_conocido_o_por_defecto(cls, valor):
+        """El modelo local a veces inventa el orden («asc», «promedioPonderado»). Un orden desconocido no anula la consulta: se usa
+        el orden por defecto del backend (de menor a mayor promedio)."""
+        if not isinstance(valor, str):
+            return valor
+        clave = valor.replace("_", "").replace(" ", "").lower()
+        return {"promedio": "promedio", "sinentrega": "sinEntrega"}.get(clave)
+
     @field_validator("nombre", mode="before")
     @classmethod
     def vacio_es_ninguno(cls, valor):

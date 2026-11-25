@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import operator
 import time
 from typing import Annotated, Sequence, TypedDict
@@ -22,6 +23,8 @@ from app.tools.backend_tools import consultar_backend
 from app import modelos
 from app.modelos import LIMITE_EXTERNO_SEGUNDOS, MODELO_LOCAL as MODEL_NAME, OLLAMA_BASE_URL  # noqa: F401
 from app.verificacion import datos_de_herramienta, verificar
+
+logger = logging.getLogger("agent")
 
 MAX_ITERACIONES = 4
 
@@ -125,6 +128,8 @@ HERRAMIENTAS = {
 class AgentState(TypedDict, total=False):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     token: str
+    # Curso de la pregunta: completa el cursoId cuando el modelo llama a una herramienta sin él.
+    cursoId: int | None
     iterations: int
     trazas: list[TrazaHerramienta]
     error: str | None
@@ -215,9 +220,15 @@ async def tool_node(state: AgentState):
         nombre = llamada["name"]
         try:
             ruta, esquema, _ = HERRAMIENTAS[nombre]
-            parametros = esquema.model_validate(llamada["args"]).model_dump(exclude_none=True)
-        except (KeyError, ValidationError):
-            # Los argumentos inválidos pueden contener texto libre o credenciales.
+            argumentos = dict(llamada.get("args") or {})
+            # El token de servicio ya está atado al curso de la pregunta; si el modelo olvida el cursoId, se usa ese.
+            if "cursoId" in esquema.model_fields and argumentos.get("cursoId") in (None, "") and state.get("cursoId"):
+                argumentos["cursoId"] = state["cursoId"]
+            parametros = esquema.model_validate(argumentos).model_dump(exclude_none=True)
+        except (KeyError, ValidationError) as exc:
+            # Los argumentos inválidos pueden contener texto libre o credenciales: se registran los campos, nunca sus valores.
+            campos = sorted({".".join(map(str, e["loc"])) + ":" + e["type"] for e in exc.errors()}) if isinstance(exc, ValidationError) else []
+            logger.warning("Parámetros inválidos para %s: %s", nombre, campos)
             resultado = {"error": "parametros_invalidos"}
             traza = TrazaHerramienta(
                 nombre=nombre if nombre in HERRAMIENTAS else "herramienta_desconocida",
@@ -227,6 +238,8 @@ async def tool_node(state: AgentState):
             )
         else:
             resultado, traza = await consultar_backend(nombre, ruta, parametros, state["token"])
+            if nombre == "calcular_nota_necesaria" and traza.estado == "OK":
+                resultado = con_lectura_nota_necesaria(resultado)
 
         trazas.append(traza)
         if traza.estado == "ERROR":
@@ -239,6 +252,27 @@ async def tool_node(state: AgentState):
         mensajes.append(ToolMessage(content=contenido, tool_call_id=llamada["id"]))
 
     return {"messages": mensajes, "trazas": trazas, "error": error, "resultados": resultados}
+
+
+def con_lectura_nota_necesaria(resultado: dict) -> dict:
+    """Suma «lectura»: el estado del backend en una frase, para que el modelo no lea maximoPosible como la nota que necesita.
+    No calcula nada: solo pone en palabras los campos que ya vienen."""
+    datos = resultado.get("resultado") if isinstance(resultado, dict) else None
+    if not isinstance(datos, dict):
+        return resultado
+    pendientes, maximo, necesaria = datos.get("pendientes"), datos.get("maximoPosible"), datos.get("notaNecesaria")
+    lecturas = {
+        "NECESITA": f"Necesita {necesaria} en cada una de sus {pendientes} actividades pendientes para llegar a 7,0.",
+        "NO_ALCANZA": f"Ya no alcanza 7,0: aun con 10 en sus {pendientes} actividades pendientes llegaría a {maximo}. "
+                      "No digas que necesita una nota: di que ya no alcanza y cuál es el máximo posible.",
+        "YA_ALCANZA": "Ya llega a 7,0 aunque saque 0 en sus actividades pendientes.",
+        "SIN_PENDIENTES": f"No le quedan actividades pendientes; su promedio actual es {datos.get('promedioActual')}.",
+        "SIN_DATOS": "No tiene notas ni actividades pendientes: no hay datos para el cálculo.",
+    }
+    lectura = lecturas.get(datos.get("estado"))
+    if lectura is None:
+        return resultado
+    return {**resultado, "lectura": lectura + " Es un cálculo con las notas actuales, no la nota final."}
 
 
 def error_node(state: AgentState):
