@@ -1,3 +1,4 @@
+using EduMonitor.Api.Autorizacion;
 using EduMonitor.Application.Configuracion;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,7 @@ public sealed class ConfiguracionMoodleController(ConfiguracionMoodleService con
 
     /// <summary>Guarda la URL y el token de Moodle en la base (token protegido); sobrevive al reinicio. 400 si la URL no es http(s) absoluta.</summary>
     [HttpPut]
+    [Auditar("CONFIGURAR_MOODLE")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     public IActionResult Actualizar([FromBody] ActualizarConfiguracionMoodle cuerpo) =>

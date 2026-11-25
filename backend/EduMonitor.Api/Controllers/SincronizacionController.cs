@@ -16,6 +16,7 @@ public sealed class SincronizacionController(SincronizacionService sincronizacio
     /// 502 si Moodle no respondió en ninguna función (el intento queda registrado como FALLIDA).
     /// </summary>
     [HttpPost]
+    [Auditar("SINCRONIZAR")]
     [ProducesResponseType<SincronizacionDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]

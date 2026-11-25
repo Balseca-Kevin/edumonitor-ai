@@ -1,3 +1,4 @@
+using EduMonitor.Api.Autorizacion;
 using EduMonitor.Application.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,7 @@ public sealed class AuthController(AuthService auth) : ControllerBase
 {
     /// <summary>Inicia sesión. 200 con el JWT; 401 genérico si el usuario o la contraseña no coinciden.</summary>
     [HttpPost("login")]
+    [Auditar("INICIAR_SESION")]
     [AllowAnonymous]
     [ProducesResponseType<RespuestaLogin>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]

@@ -16,6 +16,7 @@ namespace EduMonitor.Api.Controllers;
 public sealed class RefuerzosController(PlanRefuerzoService planes, CursoService cursos) : ControllerBase
 {
     [HttpPost]
+    [Auditar("CREAR_REFUERZO")]
     [ProducesResponseType<PlanRefuerzoDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Crear(int id, [FromBody] PedidoPlanRefuerzo pedido, CancellationToken ct)
     {
@@ -44,18 +45,25 @@ public sealed class RefuerzosController(PlanRefuerzoService planes, CursoService
             ? Ok(await planes.ListarAsync(id, ct))
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El curso {id} no existe.");
 
+    /// <summary>TA-15.A2 · Refuerzos aplicados: nota del tema antes y después de cada refuerzo aprobado, con los conteos.</summary>
+    [HttpGet("aplicados")]
+    [ProducesResponseType<RefuerzosAplicadosDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Aplicados(int id, CancellationToken ct) => Ok(await planes.AplicadosAsync(id, ct));
+
     [HttpGet("{rid:int}")]
     [ProducesResponseType<PlanRefuerzoDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Obtener(int id, int rid, CancellationToken ct) => Responder(await planes.ObtenerAsync(id, rid, ct));
 
     /// <summary>TA-15.A4 · Edita el texto del borrador o lo aprueba (estado APROBADO).</summary>
     [HttpPatch("{rid:int}")]
+    [Auditar("EDITAR_REFUERZO")]
     [ProducesResponseType<PlanRefuerzoDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Cambiar(int id, int rid, [FromBody] PedidoCambioPlan cambio, CancellationToken ct) =>
         Responder(await planes.CambiarAsync(id, rid, cambio, ct));
 
     /// <summary>TA-15.A4 · Documento del plan aprobado. 400 formato inválido; 404 plan ajeno; 409 si todavía no está aprobado.</summary>
     [HttpGet("{rid:int}/documento")]
+    [Auditar("DESCARGAR_DOCUMENTO")]
     [Produces("application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
     public async Task<IActionResult> Documento(int id, int rid, [FromQuery] string? formato, CancellationToken ct)
     {
