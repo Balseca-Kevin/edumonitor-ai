@@ -3,7 +3,7 @@ import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 
 import { formatearFecha, formatearNumero, formatearPorcentaje } from '../../components/formato'
 import { textoResultadoRefuerzo } from '../../components/lenguaje'
 import { obtenerMapeo, obtenerTematicas } from '../../services/tematicas'
-import { crearPlan, ESTADO_PLAN, listarPlanes, nombrePlan, obtenerAplicados } from '../../services/refuerzos'
+import { crearPlan, ESTADO_PLAN, listarPlanes, nombrePlan, obtenerAplicados, obtenerGrupos } from '../../services/refuerzos'
 import { obtenerNotaNecesaria } from '../../services/notaNecesaria'
 import { describirError } from '../../services/errores'
 
@@ -90,6 +90,52 @@ function RefuerzosAplicados({ aplicados, cursoId }) {
 }
 
 /**
+ * TA-15.B1 · Grupos por tema: en cada tema, quienes tienen nota del tema menor a 6,0, con esa nota y cuántas notas la componen. Todo sale
+ * de GET /api/cursos/{id}/refuerzos/grupos. «Armar plan grupal» guarda el plan con la última actividad del tema y sigue el flujo de
+ * TA-15.A3 y TA-15.A4 en el asistente.
+ */
+function GruposPorTema({ grupos, cursoId, armar, armando }) {
+  if (grupos === undefined) return <p className="ayuda">Cargando los grupos…</p>
+  if (!grupos) return <p className="ayuda">Grupos por tema: no disponible.</p>
+  if (grupos.grupos.length === 0) return <p className="ayuda">Ningún tema tiene 2 o más estudiantes bajo 6,0.</p>
+  return (
+    <ul className="plan-grupos">
+      {grupos.grupos.map((g) => (
+        <li key={g.temaId} className="hoja plan-grupo">
+          <div>
+            <span className="mono ayuda">
+              U{g.unidad.numero} · {g.unidad.nombre}
+            </span>
+            <h3>{g.tema}</h3>
+            <span className="ayuda num">
+              {g.estudiantes.length} estudiantes bajo 6,0 · se arma sobre {g.actividad.nombre}
+            </span>
+          </div>
+          <ul aria-label={`Estudiantes del grupo ${g.tema}`}>
+            {g.estudiantes.map((e) => (
+              <li key={e.id} className="num">
+                <Link to={`/cursos/${cursoId}/estudiantes/${e.id}`}>
+                  {e.nombre} {e.apellido}
+                </Link>{' '}
+                · {formatearNumero(e.promedio)} en el tema ({e.notas} {e.notas === 1 ? 'nota' : 'notas'})
+              </li>
+            ))}
+          </ul>
+          <span className="ayuda">
+            {g.proximas.length === 0
+              ? 'Ninguna actividad futura evalúa este tema.'
+              : `Se vuelve a evaluar en ${g.proximas.map((p) => `${p.nombre} (vence ${formatearFecha(p.fechaLimite)})`).join(', ')}.`}
+          </span>
+          <button type="button" className="boton boton--ia" onClick={() => armar(g)} disabled={armando !== null}>
+            {armando === g.temaId ? 'Enviando…' : 'Armar plan grupal'}
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/**
  * HU-15 · TA-15.A3 · Plan de refuerzo (docs/sprint-3/diseno.md): la actividad evaluada, las temáticas donde falló el curso con el
  * porcentaje que domina cada tema y quién quedó bajo 6,0, los estudiantes, dónde se vuelven a evaluar esos temas y la nota necesaria
  * de cada uno. «Enviar el plan al asistente» lo guarda (POST /api/cursos/{id}/refuerzos) y abre el asistente con el plan como foco.
@@ -108,6 +154,9 @@ export default function PlanRefuerzo() {
   const [necesarias, setNecesarias] = useState({})
   const [planes, setPlanes] = useState([])
   const [aplicados, setAplicados] = useState(undefined)
+  const [vista, setVista] = useState(parametros.get('vista') === 'tema' ? 'tema' : 'actividad')
+  const [grupos, setGrupos] = useState({ clave: null, datos: undefined })
+  const [armando, setArmando] = useState(null)
   const pedidas = useRef(new Set())
   const [envio, setEnvio] = useState({ enviando: false, error: null })
   const claveMapeo = `${id}|${version}`
@@ -123,6 +172,9 @@ export default function PlanRefuerzo() {
     obtenerAplicados(id)
       .then((datos) => vigente && setAplicados(datos))
       .catch(() => vigente && setAplicados(null))
+    obtenerGrupos(id)
+      .then((datos) => vigente && setGrupos({ clave: claveMapeo, datos }))
+      .catch(() => vigente && setGrupos({ clave: claveMapeo, datos: null }))
     return () => {
       vigente = false
     }
@@ -196,6 +248,19 @@ export default function PlanRefuerzo() {
     }
   }
 
+  // TA-15.B1 · El plan grupal usa el mismo POST del plan por actividad: la última actividad del tema, ese tema y los del grupo.
+  async function armarGrupal(g) {
+    setArmando(g.temaId)
+    setEnvio({ enviando: false, error: null })
+    try {
+      const plan = await crearPlan(id, { actividadId: g.actividad.id, temas: [g.temaId], estudiantes: g.estudiantes.map((e) => e.id) })
+      navigate(`/cursos/${id}/asistente?refuerzo=${plan.id}`)
+    } catch (e) {
+      setArmando(null)
+      setEnvio({ enviando: false, error: describirError(e).detalle ?? 'No se pudo guardar el plan.' })
+    }
+  }
+
   if (mapeo.error) {
     return (
       <div className={`aviso ${mapeo.error.tipo === 'sin-sincronizar' ? 'aviso--atencion' : 'aviso--error'}`} role="alert">
@@ -213,11 +278,32 @@ export default function PlanRefuerzo() {
       <div className="libro-cabecera">
         <div>
           <h2 id="titulo-plan">Plan de refuerzo</h2>
-          <p className="ayuda">Elige la actividad evaluada, marca los temas donde falló el curso y envía el plan al asistente para que redacte el borrador.</p>
+          <p className="ayuda">
+            {vista === 'tema'
+              ? 'Cada tema reúne a quienes quedaron bajo 6,0. Arma el plan del grupo y el asistente redacta el borrador.'
+              : 'Elige la actividad evaluada, marca los temas donde falló el curso y envía el plan al asistente para que redacte el borrador.'}
+          </p>
+        </div>
+        <div className="segmentado" role="tablist" aria-label="Cómo armar el plan">
+          <button type="button" role="tab" className="segmento" aria-selected={vista === 'actividad'} onClick={() => setVista('actividad')}>
+            Por actividad
+          </button>
+          <button type="button" role="tab" className="segmento" aria-selected={vista === 'tema'} onClick={() => setVista('tema')}>
+            Por tema
+          </button>
         </div>
       </div>
 
-      {actividades.length === 0 ? (
+      {vista === 'tema' ? (
+        <>
+          <GruposPorTema grupos={grupos.clave === claveMapeo ? grupos.datos : undefined} cursoId={id} armar={armarGrupal} armando={armando} />
+          {envio.error && (
+            <p className="ayuda mapa-error" role="alert">
+              {envio.error}
+            </p>
+          )}
+        </>
+      ) : actividades.length === 0 ? (
         <div className="aviso aviso--atencion" role="status">
           <strong>Sin temas asociados</strong>
           <span>

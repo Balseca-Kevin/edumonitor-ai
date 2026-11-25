@@ -4,11 +4,11 @@ import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-d
 import PlanRefuerzo from './PlanRefuerzo'
 
 vi.mock('../../services/tematicas', () => ({ obtenerMapeo: vi.fn(), obtenerTematicas: vi.fn() }))
-vi.mock('../../services/refuerzos', async (original) => ({ ...(await original()), crearPlan: vi.fn(), listarPlanes: vi.fn(), obtenerAplicados: vi.fn() }))
+vi.mock('../../services/refuerzos', async (original) => ({ ...(await original()), crearPlan: vi.fn(), listarPlanes: vi.fn(), obtenerAplicados: vi.fn(), obtenerGrupos: vi.fn() }))
 vi.mock('../../services/notaNecesaria', () => ({ obtenerNotaNecesaria: vi.fn() }))
 
 import { obtenerMapeo, obtenerTematicas } from '../../services/tematicas'
-import { crearPlan, listarPlanes, obtenerAplicados } from '../../services/refuerzos'
+import { crearPlan, listarPlanes, obtenerAplicados, obtenerGrupos } from '../../services/refuerzos'
 import { obtenerNotaNecesaria } from '../../services/notaNecesaria'
 
 // Formas de GET /api/cursos/{id}/mapeo, /tematicas, /refuerzos y /nota-necesaria (docs/contratos-api.md).
@@ -44,6 +44,18 @@ const planAprobado = {
   resultados: [ { estudianteId: 8, estudiante: 'Diego Díaz', temaId: 30, tema: 'Historias de usuario', antes: 5.2, ahora: 7.1, estado: 'SUBIO' } ],
 }
 
+// Forma de GET /api/cursos/{id}/refuerzos/grupos (docs/contratos-api.md, TA-15.B1).
+const grupos = {
+  cursoId: 1, umbral: 6, minimoEstudiantes: 2,
+  grupos: [
+    {
+      temaId: 30, tema: 'Historias de usuario', unidad: { numero: 1, nombre: 'Principios fundamentales' }, actividad: { id: 103, nombre: 'Tarea 3' },
+      estudiantes: [ { id: 8, nombre: 'Diego', apellido: 'Díaz', promedio: 4, notas: 3 }, { id: 12, nombre: 'Luis', apellido: 'Mora', promedio: 5.5, notas: 1 } ],
+      proximas: [ { actividadId: 118, nombre: 'Tarea 9', fechaLimite: '2026-11-28T23:59:00-05:00' } ],
+    },
+  ],
+}
+
 function Ubicacion() {
   const { pathname, search } = useLocation()
   return <p data-testid="ruta">{`${pathname}${search}`}</p>
@@ -66,6 +78,7 @@ beforeEach(() => {
   obtenerMapeo.mockResolvedValue(mapeo)
   obtenerTematicas.mockResolvedValue(tematicas)
   listarPlanes.mockResolvedValue([planAprobado])
+  obtenerGrupos.mockResolvedValue(grupos)
   obtenerAplicados.mockResolvedValue({
     cursoId: 1,
     conteos: { subio: 1, igual: 0, bajo: 0, sinNotasNuevas: 0 },
@@ -147,5 +160,41 @@ describe('TA-15.A3 · Plan de refuerzo', () => {
     renderPlan()
 
     expect(await screen.findByText('Retroalimentación de Tarea 3')).toBeInTheDocument()
+  })
+})
+
+describe('TA-15.B1 · Grupos de refuerzo por tema', () => {
+  it('la pestaña «Por tema» muestra cada grupo con la nota del tema y cuántas notas la componen', async () => {
+    renderPlan()
+
+    fireEvent.click(await screen.findByRole('tab', { name: 'Por tema' }))
+    expect(screen.getByRole('tab', { name: 'Por tema' })).toHaveAttribute('aria-selected', 'true')
+    const lista = await screen.findByRole('list', { name: 'Estudiantes del grupo Historias de usuario' })
+    expect(within(lista).getByText(/4,00 en el tema \(3 notas\)/)).toBeInTheDocument()
+    expect(within(lista).getByText(/5,50 en el tema \(1 nota\)/)).toBeInTheDocument()
+    expect(within(lista).getByRole('link', { name: 'Diego Díaz' })).toHaveAttribute('href', '/cursos/1/estudiantes/8')
+    expect(screen.getByText('2 estudiantes bajo 6,0 · se arma sobre Tarea 3')).toBeInTheDocument()
+    expect(screen.getByText(/Se vuelve a evaluar en Tarea 9 \(vence 28\/11\/2026/)).toBeInTheDocument()
+  })
+
+  it('«Armar plan grupal» guarda el plan con la actividad, el tema y el grupo, y abre el asistente', async () => {
+    crearPlan.mockResolvedValue({ ...planAprobado, id: 11, estado: 'ENVIADO' })
+    renderPlan('/cursos/1/refuerzos?vista=tema')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Armar plan grupal' }))
+
+    await waitFor(() => expect(crearPlan).toHaveBeenCalledWith('1', { actividadId: 103, temas: [30], estudiantes: [8, 12] }))
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/asistente?refuerzo=11')
+  })
+
+  it('sin grupos lo dice, y si la consulta falla dice «no disponible», nunca 0', async () => {
+    obtenerGrupos.mockResolvedValue({ ...grupos, grupos: [] })
+    renderPlan('/cursos/1/refuerzos?vista=tema')
+    expect(await screen.findByText('Ningún tema tiene 2 o más estudiantes bajo 6,0.')).toBeInTheDocument()
+    cleanup()
+
+    obtenerGrupos.mockRejectedValue(new Error('caída'))
+    renderPlan('/cursos/1/refuerzos?vista=tema')
+    expect(await screen.findByText('Grupos por tema: no disponible.')).toBeInTheDocument()
   })
 })

@@ -1,6 +1,7 @@
 using EduMonitor.Api.Autorizacion;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Refuerzos;
+using EduMonitor.Application.Tematicas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,6 +50,20 @@ public sealed class RefuerzosController(PlanRefuerzoService planes, CursoService
     [HttpGet("aplicados")]
     [ProducesResponseType<RefuerzosAplicadosDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Aplicados(int id, CancellationToken ct) => Ok(await planes.AplicadosAsync(id, ct));
+
+    /// <summary>TA-15.B1 · Grupos de refuerzo por tema. 409 sin sincronizar.</summary>
+    [HttpGet("grupos")]
+    [ProducesResponseType<GruposRefuerzoDto>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Grupos(int id, CancellationToken ct)
+    {
+        var resultado = await planes.GruposAsync(id, ct);
+        return resultado.Estado switch
+        {
+            EstadoConsultaTematica.Correcta => Ok(resultado.Valor),
+            EstadoConsultaTematica.SinSincronizar => Problem(statusCode: StatusCodes.Status409Conflict, title: "Curso sin sincronizar", detail: resultado.Detalle),
+            _ => Problem(statusCode: StatusCodes.Status404NotFound, detail: resultado.Detalle),
+        };
+    }
 
     [HttpGet("{rid:int}")]
     [ProducesResponseType<PlanRefuerzoDto>(StatusCodes.Status200OK)]

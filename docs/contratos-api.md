@@ -1264,6 +1264,27 @@ Una fila por estudiante y tema de cada plan de refuerzo aprobado, del más recie
 
 Herramienta `consultar_refuerzos_aplicados`: `{ "herramienta", "generado", "conteos", "filas" }`, con la forma de la ruta anterior. Responde 400 sin `cursoId`.
 
+### GET /api/cursos/{id}/refuerzos/grupos · DOCENTE
+
+Grupos de refuerzo por tema (TA-15.B1, la reincorpora Kevin en el cierre): los estudiantes con nota del tema menor a 6,0, agrupados por tema, para armar un plan grupal con el flujo de «Plan de refuerzo». Se calcula con «Desempeño por tema»; no llama a Moodle.
+
+```json
+{
+  "cursoId": 1, "umbral": 6.0, "minimoEstudiantes": 2,
+  "grupos": [
+    { "temaId": 30, "tema": "Historias de usuario", "unidad": { "numero": 1, "nombre": "Principios fundamentales de las metodologías ágiles" },
+      "actividad": { "id": 103, "nombre": "Tarea 3" },
+      "estudiantes": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "promedio": 4.0, "notas": 3 } ],
+      "proximas": [ { "actividadId": 118, "nombre": "Tarea 9", "fechaLimite": "2026-11-28T23:59:00-05:00" } ] }
+  ]
+}
+```
+
+- **Estudiantes:** los que tienen al menos una nota en el tema y su nota del tema queda bajo 6,0 (6,0 exacto no entra). Un estudiante sin notas del tema no entra: no es 0. Van de menor a mayor nota.
+- **Grupos:** solo los temas con 2 estudiantes o más, de más a menos estudiantes, luego por unidad y nombre.
+- **`actividad`:** la última evaluación del tema, en el orden del curso, donde el grupo ya tiene nota. Es la `actividadId` del `POST /api/cursos/{id}/refuerzos` del plan grupal.
+- Códigos: 401, 403, 404 y 409, como en el resto del bloque.
+
 ## Informe del curso (HU-16)
 
 Por la línea de corte, el informe exporta el resumen del asistente. Flujo:
@@ -1361,6 +1382,7 @@ Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nu
 | GET/PATCH | `/api/cursos/{id}/refuerzos` | DOCENTE | HU-15 | Planificación |
 | GET | `/api/cursos/{id}/refuerzos/{rid}/documento?formato=pdf\|docx` | DOCENTE | HU-15 | nueva |
 | GET | `/api/cursos/{id}/refuerzos/aplicados` | DOCENTE | HU-15 (TA-15.A2) | nueva |
+| GET | `/api/cursos/{id}/refuerzos/grupos` | DOCENTE | HU-15 (TA-15.B1) | nueva |
 | GET | `/api/cursos/{id}/informe?formato=pdf` | DOCENTE | HU-16 | Planificación |
 | GET | `/api/auditoria` | ADMIN | HU-17 | Planificación |
 | GET/PUT | `/api/admin/modelo` | ADMIN | HU-23 | nueva |
