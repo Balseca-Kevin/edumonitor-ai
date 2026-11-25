@@ -771,3 +771,7 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .mapa-calor-celda--medio { background: var(--pista); color: var(--tinta-4); }
 .mapa-calor-celda--ok { background: var(--ok-fondo); color: var(--ok); }
 .mapa-calor-celda--vacio { color: var(--tinta-3); font-size: var(--fs-11); }
+
+/* HU-16 · Informe del curso. */
+.panel-acciones { display: flex; justify-content: flex-end; margin: 0 0 var(--e-12); }
+.msg-informe { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-8); margin: var(--e-8) 0 0; }

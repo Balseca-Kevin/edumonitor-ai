@@ -3,17 +3,7 @@ import { formatearFecha } from './formato'
 import { textoResultadoRefuerzo } from './lenguaje'
 import { cambiarPlan, descargarDocumento, ESTADO_PLAN } from '../services/refuerzos'
 import { describirError } from '../services/errores'
-
-function guardarArchivo({ blob, nombre }) {
-  const url = URL.createObjectURL(blob)
-  const enlace = document.createElement('a')
-  enlace.href = url
-  enlace.download = nombre
-  document.body.appendChild(enlace)
-  enlace.click()
-  enlace.remove()
-  URL.revokeObjectURL(url)
-}
+import { guardarArchivo } from './archivo'
 
 /**
  * HU-15 · TA-15.A4 · El plan de refuerzo como foco del asistente: el borrador que redactó el asistente, editable por el docente;

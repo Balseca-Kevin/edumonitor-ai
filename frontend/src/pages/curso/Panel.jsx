@@ -11,6 +11,7 @@ import { obtenerIndicadores } from '../../services/indicadores'
 import { obtenerAlertas } from '../../services/alertas'
 import { actividadesDelLibro, obtenerLibro } from '../../services/libro'
 import { describirError } from '../../services/errores'
+import { PREGUNTA_INFORME } from '../../services/informe'
 
 const NO_DISPONIBLE = 'no disponible'
 const APROBACION = 7
@@ -234,6 +235,15 @@ export default function Panel() {
 
   return (
     <>
+      <div className="panel-acciones">
+        <button
+          type="button"
+          className="boton boton--secundario"
+          onClick={() => navigate(`/cursos/${id}/asistente?${new URLSearchParams({ pregunta: PREGUNTA_INFORME })}`)}
+        >
+          Informe del curso
+        </button>
+      </div>
       <section className="panel-cifras-s3" aria-label="Cifras del curso">
         <div className="panel-cifra entra">
           <span className="cifra-titulo">Promedio del curso</span>

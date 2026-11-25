@@ -44,6 +44,8 @@ builder.Services.AddScoped<IAuthorizationHandler, CursoAutorizadoHandler>();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, RespuestaAutorizacionProblemDetails>();
 
 builder.Services.AddControllers(opciones => opciones.Filters.Add<EduMonitor.Api.Autorizacion.AuditoriaFilter>());
+// HU-18 · Evaluación del asistente en segundo plano.
+builder.Services.AddHostedService<EduMonitor.Api.Servicios.EvaluacionWorker>();
 builder.Services.AddProblemDetails(opciones => opciones.CustomizeProblemDetails = TitulosProblemDetails.Aplicar);
 builder.Services.AddExceptionHandler<ManejadorExcepciones>();
 

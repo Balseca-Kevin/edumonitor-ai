@@ -11,6 +11,8 @@ import { obtenerIndicadores } from '../../services/indicadores'
 import { obtenerAlertas } from '../../services/alertas'
 import { actividadesDelLibro, obtenerLibro } from '../../services/libro'
 import { describirError } from '../../services/errores'
+import { descargarInforme } from '../../services/informe'
+import { guardarArchivo } from '../../components/archivo'
 
 const LARGO_MAXIMO = 500
 const APROBACION = 7
@@ -176,6 +178,32 @@ function ComoLlego({ respuesta, estudiantes, sincronizacion }) {
   )
 }
 
+/** HU-16 · Descarga la respuesta como informe del curso en PDF, con los indicadores del panel. */
+function DescargarInforme({ cursoId, conversacionId }) {
+  const [estado, setEstado] = useState({ ocupado: false, error: null })
+  async function descargar() {
+    setEstado({ ocupado: true, error: null })
+    try {
+      guardarArchivo(await descargarInforme(cursoId, conversacionId))
+      setEstado({ ocupado: false, error: null })
+    } catch (e) {
+      setEstado({ ocupado: false, error: describirError(e).detalle ?? 'No se pudo descargar el informe.' })
+    }
+  }
+  return (
+    <div className="msg-informe">
+      <button type="button" className="boton boton--secundario boton--chico" onClick={descargar} disabled={estado.ocupado}>
+        {estado.ocupado ? 'Preparando…' : 'Descargar como informe del curso (PDF)'}
+      </button>
+      {estado.error && (
+        <span className="ayuda mapa-error" role="alert">
+          {estado.error}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function Turno({ turno, estudiantes, sincronizacion, onAbrir, cursoId }) {
   return (
     <div className="msg">
@@ -204,6 +232,7 @@ function Turno({ turno, estudiantes, sincronizacion, onAbrir, cursoId }) {
               <span className="respondio ayuda">{quienRespondio(turno.respuesta)}</span>
               <Estudiantes estudiantes={estudiantesMencionados(turno.respuesta.respuesta, estudiantes)} onAbrir={onAbrir} />
               <ComoLlego respuesta={turno.respuesta} estudiantes={estudiantes} sincronizacion={sincronizacion} />
+              {turno.respuesta.conversacionId && <DescargarInforme cursoId={cursoId} conversacionId={turno.respuesta.conversacionId} />}
             </>
           )}
           {turno.error && (
@@ -320,6 +349,8 @@ export default function Asistente() {
         if (!vigente) return
         setIndicadores(datos)
         // Desde la ficha: la pregunta sobre ese estudiante queda escrita para que el docente la revise y la envíe.
+        const escrita = parametros.get('pregunta')
+        if (escrita) setMensaje((actual) => actual || escrita.slice(0, LARGO_MAXIMO))
         const elegido = datos?.estudiantes?.find((e) => e.id === pedido)
         if (elegido) setMensaje((actual) => actual || `¿Cómo va ${elegido.nombre} ${elegido.apellido}? ¿En qué actividades le fue mal?`)
       })

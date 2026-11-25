@@ -559,6 +559,44 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("Estudiante", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.EvaluacionAgente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Detalle")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTimeOffset?>("Fin")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("Inicio")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CursoId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("EvaluacionAgente", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Matricula", b =>
                 {
                     b.Property<int>("Id")
@@ -701,6 +739,75 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .IsUnique();
 
                     b.ToTable("ReglaAlerta", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ResultadoEvaluacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Aprobada")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("CifrasTotal")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CifrasVerificadas")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ConversacionId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DuracionMs")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EvaluacionAgenteId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Herramientas")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Modo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("Numero")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Proveedor")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("Respondio")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Respuesta")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EvaluacionAgenteId", "Modo", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("ResultadoEvaluacion", (string)null);
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Sincronizacion", b =>
@@ -1131,6 +1238,25 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Usuario");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.EvaluacionAgente", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
+                        .WithMany()
+                        .HasForeignKey("CursoId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Curso");
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Matricula", b =>
                 {
                     b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
@@ -1229,6 +1355,17 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Curso");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ResultadoEvaluacion", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.EvaluacionAgente", "Evaluacion")
+                        .WithMany("Resultados")
+                        .HasForeignKey("EvaluacionAgenteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Evaluacion");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.Sincronizacion", b =>
                 {
                     b.HasOne("EduMonitor.Domain.Entities.Curso", "Curso")
@@ -1310,6 +1447,11 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
             modelBuilder.Entity("EduMonitor.Domain.Entities.Estudiante", b =>
                 {
                     b.Navigation("Matriculas");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.EvaluacionAgente", b =>
+                {
+                    b.Navigation("Resultados");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.PlanRefuerzo", b =>
