@@ -117,6 +117,10 @@ public class ActividadRetroalimentacionApiTests
         Assert.Equal(2, criterios.Count);
         Assert.Equal(0m, criterios[0].GetProperty("domina").GetDecimal()); // Ana: 1 de 2,5
         Assert.Equal(1m, criterios[1].GetProperty("domina").GetDecimal()); // Ana: 2,5 de 2,5
+        // TA-22.A1: con menos de 8 calificados no hay separación; el dominio 0 basta para el aviso de enseñanza.
+        Assert.Equal(JsonValueKind.Null, criterios[0].GetProperty("separacion").ValueKind);
+        Assert.Equal("REVISAR_ENSENANZA", criterios[0].GetProperty("aviso").GetString());
+        Assert.Equal(JsonValueKind.Null, criterios[1].GetProperty("aviso").ValueKind);
         var fila = panel.GetProperty("estudiantes").EnumerateArray().Single(e => e.GetProperty("id").GetInt32() == ana);
         Assert.Contains("falta el beneficio", fila.GetProperty("comentario").GetString());
         Assert.Equal(10, panel.GetProperty("distribucion").GetArrayLength());
@@ -140,6 +144,7 @@ public class ActividadRetroalimentacionApiTests
 
         var herramienta = await api.ClienteAgente(curso).GetStringAsync($"/api/tools/actividad?cursoId={curso}&actividadId={tarea}");
         Assert.Contains("obtener_detalle_actividad", herramienta);
+        Assert.Contains("\"aviso\"", herramienta); // TA-22.A2: el asistente ve el aviso de cada criterio
         Assert.DoesNotContain("Pérez", herramienta);
         Assert.DoesNotContain("Mora", herramienta);
         Assert.Equal(HttpStatusCode.BadRequest, (await api.ClienteAgente(curso).GetAsync($"/api/tools/actividad?cursoId={curso}")).StatusCode);
