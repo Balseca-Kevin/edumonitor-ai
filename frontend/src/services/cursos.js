@@ -101,3 +101,12 @@ export async function obtenerHistorialSincronizaciones(id) {
   const response = await api.get(`/api/cursos/${id}/sync`)
   return response.data
 }
+
+/**
+ * TA-21.A1 · Celdas que cambiaron en la sincronización `sid` frente a la anterior, con sus conteos (docs/contratos-api.md,
+ * «Cambios entre sincronizaciones»). 404 si la sincronización no es del curso.
+ */
+export async function obtenerCambiosSincronizacion(cursoId, sid) {
+  const response = await api.get(`/api/cursos/${cursoId}/sync/${sid}/cambios`)
+  return response.data
+}

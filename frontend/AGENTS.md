@@ -47,7 +47,7 @@ Reglas nuevas del Sprint 3:
 - Cada respuesta del asistente tiene «Respondió: modelo externo» o «Respondió: modelo local (respaldo)» dentro de «Cómo llegó a esta respuesta», y sus cifras verificadas son enlaces.
 - La nota necesaria lleva la leyenda «cálculo con las notas actuales». El diagnóstico por criterio dice «revisar», sin la palabra correlación.
 
-El router (`src/App.jsx`) tiene `/login`, `/cursos`, `/cursos/:id/panel`, `/cursos/:id/alertas`, `/cursos/:id/asistente`, `/admin/moodle` y `/admin/estado`. «Acceso no permitido» y «Tu sesión venció» se muestran en la misma ruta con `components/PaginaError.jsx`, sin rutas propias.
+El router (`src/App.jsx`) tiene `/login`, `/cursos`, `/cursos/:id/libro` (primera pantalla del curso), `/cursos/:id/panel`, `/cursos/:id/alertas`, `/cursos/:id/asistente`, `/admin/moodle` y `/admin/estado`. «Acceso no permitido» y «Tu sesión venció» se muestran en la misma ruta con `components/PaginaError.jsx`, sin rutas propias.
 
 Un servicio por recurso en `src/services/` (`indicadores.js`, `alertas.js`, `agente.js`, `estado.js`), con las rutas y JSON de `docs/contratos-api.md`.
 

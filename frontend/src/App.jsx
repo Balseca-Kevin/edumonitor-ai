@@ -7,6 +7,7 @@ import Layout from './components/Layout'
 import CursoMarco from './pages/curso/CursoMarco'
 import Asistente from './pages/curso/Asistente'
 import Alertas from './pages/curso/Alertas'
+import Libro from './pages/curso/Libro'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
 
@@ -21,7 +22,8 @@ export default function App() {
           <Route path="/admin/moodle" element={<ConfiguracionMoodle />} />
           <Route path="/admin/estado" element={<EstadoSistema />} />
           <Route path="/cursos/:id" element={<CursoMarco />}>
-            <Route index element={<Navigate to="panel" replace />} />
+            <Route index element={<Navigate to="libro" replace />} />
+            <Route path="libro" element={<Libro />} />
             <Route path="panel" element={<Panel />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="asistente" element={<Asistente />} />

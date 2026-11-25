@@ -48,7 +48,13 @@ const periodo = {
 }
 
 function Ubicacion() {
-  return <p data-testid="ruta">{useLocation().pathname}</p>
+  const { pathname, state } = useLocation()
+  return (
+    <>
+      <p data-testid="ruta">{pathname}</p>
+      <p data-testid="estado">{JSON.stringify(state)}</p>
+    </>
+  )
 }
 
 function renderCursos() {
@@ -137,12 +143,12 @@ describe('R.3 · Mis cursos en tarjetas', () => {
     expect(within(tarjeta).queryByText(/requieren atención/)).toBeNull()
   })
 
-  it('«Abrir curso» lleva al panel del curso', async () => {
+  it('«Abrir curso» lleva al libro, primera pantalla del curso', async () => {
     obtenerCursos.mockResolvedValue([agil])
     renderCursos()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Abrir curso' }))
-    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/panel')
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/libro')
   })
 
   it('«Sincronizar y abrir» sincroniza y abre el curso', async () => {
@@ -153,7 +159,42 @@ describe('R.3 · Mis cursos en tarjetas', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Sincronizar y abrir' }))
 
     expect(sincronizarCurso).toHaveBeenCalledWith(1)
-    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/panel')
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/libro')
+    // TA-21.A2 · El resultado viaja al curso para el aviso con las cifras de la sincronización.
+    expect(JSON.parse(screen.getByTestId('estado').textContent).sincronizacion.id).toBe(6)
+  })
+
+  it('TA-21.A2 · «Sincronizar y abrir» muestra «Sincronizando curso…» con los 5 pasos, que giran hasta que responde el aula virtual', async () => {
+    obtenerCursos.mockResolvedValue([agil])
+    let responder
+    sincronizarCurso.mockReturnValue(new Promise((listo) => (responder = listo)))
+    renderCursos()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Sincronizar y abrir' }))
+
+    const carga = await screen.findByRole('dialog', { name: 'Sincronizando curso…' })
+    expect(within(carga).getByText('AGIL-4B · AULA VIRTUAL')).toBeInTheDocument()
+    expect(within(carga).getAllByRole('listitem').map((li) => li.firstChild.nextSibling.firstChild.textContent)).toEqual([
+      'Cursos y unidades',
+      'Matriculados',
+      'Ítems y notas por categoría',
+      'Entregas y fechas límite',
+      'Finalización de actividades',
+    ])
+    expect(within(carga).getByRole('progressbar', { name: 'Avance' })).toHaveAttribute('aria-valuenow', '0')
+
+    responder({
+      id: 6,
+      estado: 'PARCIAL',
+      fin: '2026-11-22T10:00:00-05:00',
+      errores: [{ funcion: 'core_completion_get_activities_completion_status', mensaje: 'Acceso denegado' }],
+    })
+
+    await waitFor(() => expect(within(carga).getByRole('progressbar', { name: 'Avance' })).toHaveAttribute('aria-valuenow', '5'))
+    expect(within(carga).getByText('Acceso denegado')).toBeInTheDocument()
+    expect(within(carga).getByText('Finalización de actividades').closest('li')).toHaveClass('carga-paso--error')
+    expect(within(carga).getByText('Matriculados').closest('li')).toHaveClass('carga-paso--listo')
+    expect(await screen.findByTestId('ruta')).toHaveTextContent('/cursos/1/libro')
   })
 
   it('una sincronización FALLIDA no abre el curso y muestra el historial con sus errores', async () => {

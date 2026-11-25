@@ -1,11 +1,15 @@
-import { useEffect, useState } from 'react'
-import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Marco from '../../components/Marco'
 import PaginaError from '../../components/PaginaError'
 import CabeceraCurso from '../../components/CabeceraCurso'
+import PantallaCarga from '../../components/PantallaCarga'
+import AvisoSincronizacion from '../../components/AvisoSincronizacion'
+import { PASOS_APERTURA, PAUSA_FINAL_MS, pasosDeSincronizacion } from '../../components/sincronizacion'
 import { formatearFecha } from '../../components/formato'
 import { TODO, busquedaTramo, segmentosDe, useTramo } from '../../components/tramo'
-import { obtenerCurso, sincronizarCurso } from '../../services/cursos'
+import { obtenerCambiosSincronizacion, obtenerCurso, sincronizarCurso } from '../../services/cursos'
+import { obtenerLibro } from '../../services/libro'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../../services/indicadores'
 import { obtenerPeriodo } from '../../services/periodo'
 import { describirError } from '../../services/errores'
@@ -72,6 +76,20 @@ export function BarraCurso({ curso, unidades, sincronizando, resultado, onSincro
 export default function CursoMarco() {
   const { id } = useParams()
   const tramo = useTramo()
+  const location = useLocation()
+  const navigate = useNavigate()
+  // TA-21.A2 · «Abrir curso» llega con state.abrir y «Sincronizar y abrir» con state.sincronizacion (el resultado del POST).
+  const [apertura, setApertura] = useState(() => (location.state?.abrir ? { id, pasos: PASOS_APERTURA.map(() => 'girando') } : null))
+  const [cargaSync, setCargaSync] = useState(null)
+  const [aviso, setAviso] = useState(() =>
+    location.state?.sincronizacion ? { id, sincronizacion: location.state.sincronizacion, cambios: null, atencion: null } : null,
+  )
+
+  const marcarPaso = useCallback((cursoId, indice) => {
+    setApertura((anterior) =>
+      anterior && anterior.id === cursoId ? { ...anterior, pasos: anterior.pasos.map((p, i) => (i === indice ? 'listo' : p)) } : anterior,
+    )
+  }, [])
   const [cargado, setCargado] = useState({ id: null, curso: null, error: null })
   const [contexto, setContexto] = useState({ id: null, unidades: [], alertas: null, periodo: null, estudiantes: null })
   const [version, setVersion] = useState(0)
@@ -92,21 +110,83 @@ export default function CursoMarco() {
   // unidades y queda solo «Todo el ciclo»; el contador sin dato no se muestra, nunca como 0.
   useEffect(() => {
     let vigente = true
-    Promise.all([obtenerIndicadores(id).catch(() => null), contarEstudiantesConAlertas(id), obtenerPeriodo(id).catch(() => null)]).then(
-      ([indicadores, alertas, periodo]) =>
-        vigente &&
-        setContexto({ id, unidades: indicadores?.unidades ?? [], alertas, periodo, estudiantes: indicadores?.curso?.estudiantes ?? null }),
+    Promise.all([obtenerIndicadores(id).catch(() => null), contarEstudiantesConAlertas(id)]).then(([indicadores, alertas]) => {
+      if (!vigente) return
+      setContexto((anterior) => ({
+        ...(anterior.id === id ? anterior : { periodo: null }),
+        id,
+        unidades: indicadores?.unidades ?? [],
+        alertas,
+        estudiantes: indicadores?.curso?.estudiantes ?? null,
+      }))
+      marcarPaso(id, 1)
+    })
+    obtenerPeriodo(id)
+      .catch(() => null)
+      .then((periodo) => {
+        if (!vigente) return
+        setContexto((anterior) => ({ ...(anterior.id === id ? anterior : { unidades: [], alertas: null, estudiantes: null }), id, periodo }))
+        marcarPaso(id, 2)
+      })
+    return () => {
+      vigente = false
+    }
+  }, [id, version, marcarPaso])
+
+  // «Abriendo curso…»: el libro de calificaciones es el primer paso; sus datos los vuelve a pedir la pantalla del libro.
+  const abriendo = apertura?.id === id
+  useEffect(() => {
+    if (!abriendo) return
+    let vigente = true
+    obtenerLibro(id)
+      .catch(() => null)
+      .then(() => vigente && marcarPaso(id, 0))
+    return () => {
+      vigente = false
+    }
+  }, [abriendo, id, marcarPaso])
+
+  const aperturaTerminada = Boolean(apertura?.pasos.every((p) => p !== 'girando'))
+  useEffect(() => {
+    if (!aperturaTerminada) return
+    const t = setTimeout(() => setApertura(null), PAUSA_FINAL_MS)
+    return () => clearTimeout(t)
+  }, [aperturaTerminada])
+
+  // Aviso con las cifras reales de la sincronización: cambios frente a la anterior (TA-21.A1) y estudiantes que requieren atención.
+  const syncDelAviso = aviso?.sincronizacion
+  useEffect(() => {
+    if (!syncDelAviso?.id || syncDelAviso.estado === 'FALLIDA') return
+    let vigente = true
+    Promise.all([obtenerCambiosSincronizacion(id, syncDelAviso.id).catch(() => null), contarEstudiantesConAlertas(id)]).then(
+      ([cambios, atencion]) =>
+        vigente && setAviso((anterior) => (anterior?.sincronizacion === syncDelAviso ? { ...anterior, cambios, atencion } : anterior)),
     )
     return () => {
       vigente = false
     }
-  }, [id, version])
+  }, [id, syncDelAviso])
+  const cerrarAviso = useCallback(() => setAviso(null), [])
+
+  // Lo que llegó desde Mis cursos (abrir o el resultado de la sincronización) se usa una vez: se limpia para no repetirlo al recargar.
+  const llegada = location.state
+  useEffect(() => {
+    if (!llegada?.abrir && !llegada?.sincronizacion) return
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null })
+  }, [llegada, navigate, location.pathname, location.search])
 
   async function sincronizar() {
     setSincronizando(true)
     setResultado(null)
+    setAviso(null)
+    setCargaSync({ id, resultado: null })
     try {
       const sync = await sincronizarCurso(id)
+      setCargaSync({ id, resultado: sync })
+      setTimeout(() => {
+        setCargaSync(null)
+        setAviso({ id, sincronizacion: sync, cambios: null, atencion: null })
+      }, PAUSA_FINAL_MS)
       setResultado(
         sync?.estado === 'COMPLETADA'
           ? 'Sincronización completada'
@@ -117,6 +197,7 @@ export default function CursoMarco() {
       setVersion((v) => v + 1)
     } catch (error) {
       const descrito = describirError(error)
+      setCargaSync(null)
       setResultado(`${descrito.titulo}. ${descrito.detalle ?? ''}`.trim())
     } finally {
       setSincronizando(false)
@@ -151,6 +232,35 @@ export default function CursoMarco() {
       )}
       {!curso && !error && <p className="ayuda">Cargando el curso…</p>}
       {curso && <Outlet context={{ curso, version, periodo }} />}
+      {abriendo && (
+        <PantallaCarga
+          titulo="Abriendo curso…"
+          codigo={curso?.nombreCorto}
+          subtitulo="Con los datos de la última sincronización."
+          pasos={PASOS_APERTURA.map((texto, i) => ({ texto, estado: apertura.pasos[i] }))}
+        />
+      )}
+      {cargaSync?.id === id && (
+        <PantallaCarga
+          titulo="Sincronizando curso…"
+          codigo={curso?.nombreCorto ? `${curso.nombreCorto} · AULA VIRTUAL` : null}
+          subtitulo="Leyendo matriculados, notas y entregas del aula virtual. Se guarda sin duplicar registros."
+          pasos={pasosDeSincronizacion(cargaSync.resultado)}
+        />
+      )}
+      {aviso?.id === id && (
+        <AvisoSincronizacion
+          codigo={curso?.nombreCorto ?? ''}
+          sincronizacion={aviso.sincronizacion}
+          cambios={aviso.cambios}
+          atencion={aviso.atencion}
+          onCerrar={cerrarAviso}
+          onVerCambios={() => {
+            cerrarAviso()
+            navigate(`/cursos/${id}/libro${busquedaTramo(tramo)}`)
+          }}
+        />
+      )}
     </Marco>
   )
 }
