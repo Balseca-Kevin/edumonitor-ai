@@ -760,6 +760,7 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .actividad-entregas div { display: flex; flex-direction: column; gap: var(--e-4); }
 .actividad-entregas dt { font-size: var(--fs-12); color: var(--tinta-2); }
 .actividad-entregas dd { margin: 0; font-size: var(--fs-20); font-weight: 800; }
+.criterio-aviso { display: flex; flex-wrap: wrap; align-items: center; gap: var(--e-8); margin-top: var(--e-4); padding: var(--e-8) var(--e-12); border-left: 3px solid var(--arena); background: var(--papel); font-size: var(--fs-14); }
 .actividad-criterios { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-12); font-size: var(--fs-14); }
 .mapa-calor-seccion { padding: var(--e-16); display: flex; flex-direction: column; gap: var(--e-8); }
 .mapa-calor-seccion h3 { margin: 0; font-size: var(--fs-16); font-weight: 800; }

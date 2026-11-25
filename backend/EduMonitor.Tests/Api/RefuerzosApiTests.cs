@@ -4,6 +4,10 @@ using System.Text.Json;
 using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Abstractions.Moodle;
 using EduMonitor.Application.Agente;
+using EduMonitor.Application.Documentos;
+using EduMonitor.Application.Informes;
+using EduMonitor.Application.Refuerzos;
+using EduMonitor.Infrastructure.Documentos;
 using EduMonitor.Infrastructure.Persistencia;
 using EduMonitor.Tests.Infraestructura;
 using Microsoft.EntityFrameworkCore;
@@ -22,13 +26,34 @@ public class RefuerzosApiTests
     {
         public MoodleClientFalso Moodle { get; } = ConRubrica();
         public AgenteClientFalso Agente { get; } = new();
+        public GeneradorQueGuarda Documentos { get; } = new();
 
         protected override void ConfigurarServicios(IServiceCollection services)
         {
+            services.RemoveAll<IGeneradorDocumentos>();
+            services.AddSingleton<IGeneradorDocumentos>(Documentos);
             services.RemoveAll<IMoodleClient>();
             services.AddSingleton<IMoodleClient>(Moodle);
             services.RemoveAll<IAgenteClient>();
             services.AddSingleton<IAgenteClient>(Agente);
+        }
+    }
+
+    /// <summary>TA-16.A1 · El generador real, que además guarda el contenido de cada informe para revisarlo en la prueba.</summary>
+    internal sealed class GeneradorQueGuarda : IGeneradorDocumentos
+    {
+        private readonly GeneradorDocumentos real = new();
+
+        public List<DocumentoInforme> Informes { get; } = new();
+
+        public byte[] Pdf(DocumentoRefuerzo documento) => real.Pdf(documento);
+
+        public byte[] Docx(DocumentoRefuerzo documento) => real.Docx(documento);
+
+        public byte[] Informe(DocumentoInforme documento)
+        {
+            Informes.Add(documento);
+            return real.Informe(documento);
         }
     }
 
@@ -180,5 +205,78 @@ public class RefuerzosApiTests
         Assert.Equal(HttpStatusCode.BadRequest, (await e.Doc01.GetAsync($"{documento}?formato=odt")).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await e.Doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = e.Curso, mensaje = "", foco = new { refuerzoId = rid } })).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await e.Doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = e.Curso, mensaje = "", foco = new { refuerzoId = 9999 } })).StatusCode);
+    }
+
+    // --- TA-16.A1 · Refuerzos aplicados en el informe del curso ---
+
+    private static async Task<DocumentoInforme> DescargarInformeAsync(Escenario e)
+    {
+        var chat = await (await e.Doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = e.Curso, mensaje = "Resume el estado del curso" }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+        var pdf = await e.Doc01.GetAsync($"/api/cursos/{e.Curso}/informe?formato=pdf&conversacionId={chat.GetProperty("conversacionId").GetInt32()}");
+        Assert.Equal(HttpStatusCode.OK, pdf.StatusCode);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString((await pdf.Content.ReadAsByteArrayAsync())[..4]));
+        return e.Factory.Documentos.Informes[^1];
+    }
+
+    [Fact]
+    public async Task El_informe_sin_refuerzos_aplicados_lleva_la_seccion_vacia()
+    {
+        var e = await PrepararAsync();
+        await using var _f = e.Factory;
+
+        var informe = await DescargarInformeAsync(e);
+
+        Assert.Empty(informe.Refuerzos);
+        Assert.Equal("Aún no hay refuerzos aplicados.", GeneradorDocumentos.SinRefuerzos);
+    }
+
+    [Fact]
+    public async Task El_informe_lleva_los_refuerzos_aplicados_con_el_cambio_del_tema()
+    {
+        var e = await PrepararAsync();
+        await using var _f = e.Factory;
+        var rid = (await (await e.Doc01.PostAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos", new { actividadId = e.Tarea, temas = new[] { e.Tema }, estudiantes = new[] { e.Ana } }))
+            .Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+        (await e.Doc01.PatchAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos/{rid}", new { texto = "Ana Pérez: repasa historias de usuario.", estado = "APROBADO" })).EnsureSuccessStatusCode();
+
+        var recien = Assert.Single((await DescargarInformeAsync(e)).Refuerzos);
+        Assert.Equal(new FilaRefuerzoInforme("Historias de usuario", "Ana Pérez", "4,00", "4,00", "Sin notas nuevas", "sin notas nuevas en el tema desde que se aprobó"), recien);
+
+        // Una nota nueva en el tema después de aprobar: el examen se asocia al tema y Ana tiene 0 en él.
+        (await e.Doc01.PutAsJsonAsync($"/api/cursos/{e.Curso}/actividades/{e.Examen}/temas", new { temas = new[] { e.Tema } })).EnsureSuccessStatusCode();
+        var despues = Assert.Single((await DescargarInformeAsync(e)).Refuerzos);
+        Assert.Equal(("Bajó", "bajó de 4,00 a 2,00 en el tema después del refuerzo"), (despues.Estado, despues.Cambio));
+    }
+
+    [Theory]
+    [InlineData(PlanRefuerzoService.Subio, 5.2, 7.1, "Subió", "subió de 5,20 a 7,10 en el tema después del refuerzo")]
+    [InlineData(PlanRefuerzoService.Igual, 6.0, 6.0, "Igual", "sigue en 6,00 en el tema después del refuerzo")]
+    [InlineData(PlanRefuerzoService.SinNotasNuevas, null, null, "Sin notas nuevas", "sin notas nuevas en el tema desde que se aprobó")]
+    public void Cada_estado_dice_el_cambio_sin_decir_que_el_refuerzo_lo_causo(string estado, double? antes, double? ahora, string etiqueta, string cambio)
+    {
+        var fila = InformeService.FilaRefuerzo(new RefuerzoAplicadoDto(
+            7, DateTimeOffset.UnixEpoch, "Tarea 3", 8, "Diego Díaz", 30, "Historias de usuario", (decimal?)antes, (decimal?)ahora, estado));
+
+        Assert.Equal((etiqueta, cambio), (fila.Estado, fila.Cambio));
+        Assert.DoesNotContain("caus", fila.Cambio);
+        Assert.Equal(antes is null ? "sin nota" : ((decimal)antes.Value).ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("es-EC")), fila.Antes);
+    }
+
+    [Fact]
+    public void El_pdf_del_informe_se_genera_con_y_sin_refuerzos()
+    {
+        var generador = new GeneradorDocumentos();
+        var baseInforme = new DocumentoInforme("AGIL-4B", "Semana 12 de 15", DateTimeOffset.UnixEpoch, "COMPLETADA", [("Estudiantes", "32")],
+            "Resume el curso", "Resumen", "Respondió: modelo local", DateTimeOffset.UnixEpoch);
+
+        var vacio = generador.Informe(baseInforme);
+        var conFilas = generador.Informe(baseInforme with
+        {
+            Refuerzos = [new FilaRefuerzoInforme("Historias de usuario", "Diego Díaz", "5,20", "7,10", "Subió", "subió de 5,20 a 7,10 en el tema después del refuerzo")],
+        });
+
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(vacio[..4]));
+        Assert.True(conFilas.Length > vacio.Length);
     }
 }

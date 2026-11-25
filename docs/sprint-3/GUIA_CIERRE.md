@@ -26,7 +26,7 @@ El código base del Sprint 3 ya está en `develop` (PR #53 a #70). Esta guía cu
 
 ## Orden de los bloques
 
-A, B, C1, C2, C3, C4, C5, C6, C7, D, E, F, G, H. Los bloques B y C van antes de D, E y F porque las capturas se toman con la interfaz final. C6 y C7 son los más visibles para Kevin: hazlos con cuidado y antes de la evaluación del bloque D, porque cambian el prompt y la interfaz.
+A, B, C1, C2, C3, C4, C5, C6, C7, C8, D, E, F, G, H. Los bloques B y C van antes de D, E y F porque las capturas se toman con la interfaz final. C6 y C7 son los más visibles para Kevin: hazlos con cuidado y antes de la evaluación del bloque D, porque cambian el prompt y la interfaz.
 
 ## Bloque A · Estado inicial
 
@@ -162,6 +162,55 @@ Cambio pedido:
 8. Recorrido manual con el modelo local: las dos preguntas de Kevin, las de la lista anterior y tres más que se te ocurran, y anota en el resumen cómo respondió el modelo de 7B. Si las respuestas generales son flojas, dilo con ejemplos; no las presentes como buenas. Agrega esas preguntas a `docs/PRUEBAS.md#sprint-3`.
 9. Captura nueva en `docs/evidencias/sprint-3/HU-23/`: una conversación con una pregunta de datos, una de aplicación y una general en el mismo hilo.
 
+### C8 · Velocidad y lógica del asistente (HU-23)
+
+Kevin pide una mejora grande del asistente en velocidad de respuesta y en lógica, sin salirse de los lineamientos del proyecto. Se hace después de C7, porque usa su enrutador.
+
+Contexto medido, no supuesto:
+- La última evaluación con el modelo local dio 11,7 s por pregunta en promedio.
+- El equipo de Kevin tiene una RTX 4050 de 6 GB y 16 GB de RAM. `qwen2.5:7b` ocupa cerca de 4,7 GB cuantizado, así que el margen de VRAM es corto. Si Ollama reparte capas entre GPU y CPU, las respuestas se vuelven mucho más lentas.
+- `OLLAMA_KEEP_ALIVE=24h` ya está puesto. `num_ctx` y `num_predict` no están fijados. El contexto efectivo es el de Ollama por defecto.
+- No hay streaming: el docente ve la pantalla quieta hasta que termina toda la respuesta.
+- Todo turno enlaza las 10 herramientas y deja que el modelo elija parámetros. Eso produjo llamadas sin curso, órdenes inventados y respuestas que no respondían lo preguntado.
+
+Dentro de los lineamientos:
+- Los promedios, alertas, notas necesarias y órdenes los calcula el código. El modelo solo explica y recomienda.
+- Una sola aplicación con un servicio de agente. Sin servicios nuevos.
+- Solo lectura de Moodle. Nada se envía a estudiantes.
+
+No se hace, por quedar fuera del alcance o por romper reglas del proyecto: entrenar o ajustar modelos, varios agentes que se hablan, Redis, colas, bases vectoriales o cualquier servicio nuevo, búsqueda por embeddings sobre las notas, escribir en Moodle, mensajes automáticos, predicción de aprobación, juicios clínicos o psicológicos, y enviar nombres, correos o ids de Moodle a un modelo externo.
+
+Método: mide, cambia una cosa, mide otra vez. Una mejora que no baja el tiempo o no mejora el acierto se revierte y se anota.
+
+**C8.0 · Línea base**
+1. Cada respuesta guarda el tiempo de cada etapa: enrutador, armado del contexto, cada llamada al modelo (tokens de entrada, tokens de salida, segundos), cada herramienta, verificación de cifras. «Cómo llegó a esta respuesta» muestra el total por etapa.
+2. Con la GPU encendida, corre `ollama ps` dentro del contenedor y comprueba que el modelo está al 100 % en GPU. Si reparte capas con la CPU, ese es el primer arreglo: baja `num_ctx`, prueba `OLLAMA_FLASH_ATTENTION=1` y `OLLAMA_KV_CACHE_TYPE=q8_0` en el servicio `ollama` del compose, y usa la cuantización más pequeña que no pierda aciertos en las 18 preguntas.
+3. Corre las 18 preguntas y las preguntas generales de C7. Guarda mediana, promedio y percentil 90 por ruta (determinista, aplicación, general, datos, mixto) en `docs/evidencias/sprint-3/HU-18/`.
+4. Metas propuestas por mí, a confirmar con la línea base: respuesta determinista en menos de 1 s, pregunta general en menos de 5 s y consulta de datos en menos de 6 s en el equipo de Kevin con GPU. Si la línea base muestra que no son realistas, dilo y propón la meta que sí lo sea.
+
+**Velocidad**
+- V1 · Ruta determinista sin modelo. Además de la fecha de C7: «¿qué puedes hacer?», «¿qué significa Requiere atención?» y la lista de pantallas. Y un conjunto cerrado de consultas de datos frecuentes que el código resuelve completo: alertas activas, quién tiene promedio bajo un valor, qué vence esta semana y la siguiente evaluación, nota necesaria de un estudiante, refuerzos aplicados, estado del período. El código llama la herramienta, y la respuesta sale de plantillas escritas en español natural, con coma decimal. Cada respuesta lleva el botón «Explicar» que pide al modelo una lectura de esos mismos datos. Las cifras salen verificadas por construcción.
+- V2 · Solo las herramientas de la ruta. El enrutador enlaza al modelo únicamente las 1 a 3 herramientas que la pregunta necesita. Menos esquemas en el prompt reducen los tokens de entrada.
+- V3 · Los parámetros los pone el código. Curso y tramo de la pantalla, estudiante por nombre (el filtro `nombre` ya existe), actividad por nombre, «esta semana», «la unidad 2», «el parcial 1». El modelo no elige `cursoId`, `orden` ni filtros. Si un nombre coincide con varios, la respuesta ofrece los candidatos como botones y no adivina.
+- V4 · Datos compactos hacia el modelo. JSON sin campos nulos, con las cifras ya redondeadas como se muestran, y solo los campos que la pregunta necesita. Resúmenes precalculados en el backend para las listas largas.
+- V5 · Historial compacto. De los turnos anteriores solo viajan la pregunta y el texto final de la respuesta, nunca los resultados de herramientas. Máximo 4 turnos, con tope de largo.
+- V6 · Ajuste de Ollama. `num_ctx` fijo, el menor que quepa con el prompt más grande ya compacto; `num_predict` con tope por ruta; llamada de calentamiento al arrancar el agente para que la primera pregunta no cargue el modelo. Conserva solo lo que la medición justifique.
+- V7 · Herramientas en paralelo. En un mensaje mixto o con varias consultas independientes, se llaman a la vez (`asyncio.gather` dentro del mismo grafo).
+- V8 · Caché dentro de la API. En memoria del proceso, sin servicio nuevo, para las herramientas de lectura. Clave: curso, herramienta, parámetros, tramo, id de la última sincronización y versión de las reglas de alerta. Se invalida al sincronizar y al cambiar una regla.
+- V9 · Streaming, solo después de V1 a V8 y con las pruebas en verde. El agente expone `POST /chat/stream` (eventos del servidor), la API lo reenvía en `POST /api/agente/chat/stream` con las mismas validaciones de curso y de token, nginx lo pasa sin búfer, y la pantalla muestra los pasos («Consultando alertas…», «Verificando cifras…», «Redactando…») y el texto a medida que llega. El navegador sigue sin hablar con el agente. La conversación se guarda al terminar. El resultado de la verificación de cifras llega como último evento; si obliga a redactar otra vez, la pantalla reemplaza el texto con una transición visible. `POST /api/agente/chat` se conserva para la evaluación y las pruebas. Detalla el contrato en `docs/contratos-api.md` antes de programarlo.
+
+**Lógica**
+- L1 · Entidades resueltas por código antes del modelo (parte de V3): estudiantes, actividades, temas y tramos por nombre. Si falta uno, la respuesta lo dice.
+- L2 · Mismo tramo en el texto y en las tarjetas, y la respuesta dice de cuál habla (corrige la diferencia que se vio con `?tramo=u2`).
+- L3 · «¿A quién atiendo primero?» devuelve un orden calculado en el backend con criterios visibles: temas bajo 6,0, actividades vencidas sin entrega, nota necesaria que ya no alcanza 7,0. Sin puntaje opaco, sin las palabras riesgo o predicción. Cada criterio enlaza a sus datos y el asistente solo lo explica. Es un orden de atención, no un pronóstico.
+- L4 · Acciones sugeridas como botones. Tras una respuesta, de 1 a 3 botones que genera el código según el tipo de respuesta: «Armar plan de refuerzo para …», «Abrir ficha», «Ver la actividad», «Preguntar por el tema». Cada botón abre una pantalla o envía una pregunta predefinida. No envían nada a estudiantes ni escriben en Moodle.
+- L5 · Más filtros en el backend, con el patrón de HU-23 (el modelo nunca filtra ni ordena listas): sin entrega por actividad, con ceros, por tema, por unidad, los N primeros, quiénes subieron o bajaron más. Cada filtro nuevo se detalla en `docs/contratos-api.md`.
+- L6 · Comparaciones deterministas en el backend: estudiante frente al curso, y una actividad frente a otra. El asistente redacta con ese resultado.
+- L7 · Verificación ampliada. Además de las cifras, se verifica que los nombres de estudiantes y de actividades de la respuesta existan en lo que devolvieron las herramientas. Si no, se redacta otra vez y, si persiste, se marca no verificada.
+- L8 · Regresión. Un archivo pytest con 30 mensajes (enrutador, V1, V3, L1, L7) que corre en la integración continua. Las 18 preguntas de «Calidad del asistente» no cambian.
+
+Orden: C8.0, V1, V3, V2, V4, V5, V6, L1, L2, L5, L4, L3, V7, V8, L6, L7, V9. Una rama y un PR por grupo de 2 a 4 ítems, de 30 archivos como máximo. Al terminar, repite la línea base y escribe en el resumen final la tabla de antes y después por ruta, con los números reales, y qué ítems revertiste y por qué.
+
 ## Bloque D · Calidad del asistente con el modelo local
 
 Solo modelo local, por la decisión 6a. La última corrida dio 14 de 18 aciertos y 11,7 s por pregunta; el objetivo es subir esos aciertos corrigiendo causas reales.
@@ -227,6 +276,6 @@ Al terminar, entrega este resumen, en prosa y con datos exactos:
 2. Resultado de las tres suites, con las cifras.
 3. Resultado de «Calidad del asistente» con el modelo local: aciertos de 18, datos inventados y tiempo medio, y qué preguntas siguen sin pasar.
 4. Qué se pudo capturar y qué no, con el motivo.
-5. Qué añadidos quedaron completos y cuáles no, y por qué. Incluye C6 (cabecera: librerías añadidas y cuánto subió el paquete) y C7 (causa de las cifras distintas entre el texto y las tarjetas, y cómo respondió el modelo local a las preguntas generales).
+5. Qué añadidos quedaron completos y cuáles no, y por qué. Incluye C6 (cabecera: librerías añadidas y cuánto subió el paquete), C7 (causa de las cifras distintas entre el texto y las tarjetas, y cómo respondió el modelo local a las preguntas generales) y C8 (tabla de tiempos antes y después por ruta, con los números medidos, y qué mejoras se revirtieron).
 6. Lo que le toca a Kevin: el informe, el video, el ensayo y el paquete de OneDrive.
 7. Cualquier dato de Moodle que habría que corregir y que no corregiste.

@@ -17,6 +17,9 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
 {
     private static readonly CultureInfo Ecuador = CultureInfo.GetCultureInfo("es-EC");
 
+    /// <summary>TA-16.A1 · Lo que dice el informe cuando el curso no tiene refuerzos aplicados, en lugar de un 0.</summary>
+    public const string SinRefuerzos = "Aún no hay refuerzos aplicados.";
+
     static GeneradorDocumentos()
     {
         QuestPDF.Settings.License = LicenseType.Community;
@@ -119,6 +122,43 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
                         tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).AlignRight().Text(valor).Bold();
                     }
                 });
+                c.Item().PaddingTop(8).Text("Refuerzos aplicados").FontSize(14).Bold();
+                if (d.Refuerzos.Count == 0)
+                {
+                    c.Item().Text(SinRefuerzos);
+                }
+                else
+                {
+                    c.Item().Table(tabla =>
+                    {
+                        tabla.ColumnsDefinition(columnas =>
+                        {
+                            columnas.RelativeColumn(3);
+                            columnas.RelativeColumn(3);
+                            columnas.RelativeColumn(1.2f);
+                            columnas.RelativeColumn(1.2f);
+                            columnas.RelativeColumn(2);
+                        });
+                        foreach (var titulo in new[] { "Tema", "Estudiante", "Antes", "Ahora", "Estado" })
+                        {
+                            tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Darken1).PaddingVertical(4).Text(titulo).Bold();
+                        }
+
+                        foreach (var r in d.Refuerzos)
+                        {
+                            tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).Text(r.Tema);
+                            tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).Text(t =>
+                            {
+                                t.Line(r.Estudiante);
+                                t.Span(r.Cambio).FontSize(9).FontColor(Colors.Grey.Darken1);
+                            });
+                            tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).AlignRight().Text(r.Antes);
+                            tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).AlignRight().Text(r.Ahora);
+                            tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).PaddingLeft(6).Text(r.Estado);
+                        }
+                    });
+                }
+
                 c.Item().PaddingTop(8).Text("Resumen del asistente").FontSize(14).Bold();
                 c.Item().Text(t =>
                 {

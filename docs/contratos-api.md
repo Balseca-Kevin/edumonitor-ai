@@ -1208,6 +1208,11 @@ Los valores del ejemplo son ilustrativos.
 - **`resumen`:** solo las notas calificadas entran a `promedio`; sin entrega no es 0. `aprobados` cuenta las notas de 7,0 o más y `bajo6`, las menores a 6,0.
 - **`distribucion`:** 10 tramos de 1 punto con las notas calificadas.
 - **`criterios`:** un criterio se domina con el 70 % de su puntaje máximo o más. `domina` es la parte de los estudiantes con nivel que lo logra, de 0 a 1. Sin niveles, `domina` y `puntajePromedio` van en `null`.
+- **Diagnóstico por criterio (TA-22.A1):** cada criterio suma `separacion` y `aviso`.
+  - `separacion`: coeficiente de Pearson entre el puntaje del criterio y la suma de los demás criterios de la rúbrica, con los estudiantes `CALIFICADO` que tienen nivel en todos. Va en `null` con un solo criterio, con menos de 8 estudiantes o si un lado no varía.
+  - `aviso`: `REVISAR_ENSENANZA` si `domina` es 0,30 o menos; si no, `REVISAR_ENUNCIADO` si `separacion` es 0,20 o menos; si no, `null`.
+  - En pantalla: «Casi todo el curso falló este criterio: revisar cómo se enseñó» y «Este criterio no separa a quienes van bien del resto: revisar el enunciado». Con 32 estudiantes es orientativo; la palabra correlación no aparece.
+  - `GET /api/tools/actividad` lleva los mismos dos campos en cada criterio.
 - **`temas`:** el «Desempeño por tema» de esa actividad.
 - **`requierenAtencion`:** quienes quedaron bajo 6,0 y quienes no entregaron una actividad vencida. `alertaActiva` dice si tienen una alerta activa en el curso.
 - **`sigla`, `estadoPeriodo` y `semana`:** salen de «Estado del período».
@@ -1274,6 +1279,14 @@ El PDF se genera con QuestPDF y se llama `informe-<curso>-<conversacionId>.pdf`.
 - la pregunta y la respuesta guardadas de esa conversación, con «Respondió: …».
 
 Una cifra que no se pudo obtener dice «no disponible», nunca 0.
+
+Refuerzos aplicados (TA-16.A1): antes del resumen del asistente, el PDF lleva la sección «Refuerzos aplicados». Tiene una fila por estudiante y tema de cada plan de refuerzo aprobado, con los mismos datos de `GET /api/cursos/{id}/refuerzos/aplicados`:
+- el tema y el estudiante;
+- la nota del tema antes y ahora («sin nota» si no tiene);
+- el estado: «Subió», «Igual», «Bajó» o «Sin notas nuevas»;
+- el cambio en palabras («subió de 5,20 a 7,10 en el tema después del refuerzo»), sin decir que el refuerzo lo causó.
+
+Sin planes aprobados, la sección dice «Aún no hay refuerzos aplicados.».
 
 Códigos:
 - 400 si `formato` no es `pdf` o falta `conversacionId`.

@@ -227,6 +227,26 @@ async def test_obtener_desempeno_tematico_con_y_sin_actividad_hu08(monkeypatch):
     assert "Historias de usuario" in resultado["messages"][0].content
 
 
+@pytest.mark.asyncio
+@respx.mock
+async def test_obtener_detalle_actividad_devuelve_el_aviso_de_cada_criterio_ta22a2(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/actividad", params={"cursoId": "1", "actividadId": "103"}).respond(
+        json={
+            "herramienta": "obtener_detalle_actividad",
+            "criterios": [{"descripcion": "Redacción", "domina": 0.8, "separacion": 0.05, "aviso": "REVISAR_ENUNCIADO"}],
+        }
+    )
+
+    resultado = await graph.tool_node(estado(llamada("obtener_detalle_actividad", {"cursoId": 1, "actividadId": 103})))
+
+    assert ruta.called
+    assert "REVISAR_ENUNCIADO" in resultado["messages"][0].content
+    descripcion = graph.HERRAMIENTAS["obtener_detalle_actividad"][2]
+    assert "REVISAR_ENSENANZA" in descripcion and "enunciado corregido" in descripcion
+    assert "correlaci" not in descripcion
+
+
 def test_el_prompt_nombra_las_herramientas_nuevas_y_pide_decir_que_es_con_las_notas_actuales():
     assert "calcular_nota_necesaria" in graph.PROMPT_SISTEMA
     assert "obtener_desempeno_tematico" in graph.PROMPT_SISTEMA

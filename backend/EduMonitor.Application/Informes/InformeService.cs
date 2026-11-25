@@ -4,6 +4,7 @@ using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Documentos;
 using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Periodo;
+using EduMonitor.Application.Refuerzos;
 using Microsoft.EntityFrameworkCore;
 
 namespace EduMonitor.Application.Informes;
@@ -13,7 +14,7 @@ namespace EduMonitor.Application.Informes;
 /// conversación del docente (por la línea de corte, el informe exporta el resumen del asistente). No llama a Moodle ni al agente.
 /// </summary>
 public sealed class InformeService(
-    IEduMonitorDbContext db, IndicadorService indicadores, PeriodoService periodo, IGeneradorDocumentos documentos, TimeProvider reloj)
+    IEduMonitorDbContext db, IndicadorService indicadores, PeriodoService periodo, IGeneradorDocumentos documentos, PlanRefuerzoService refuerzos, TimeProvider reloj)
 {
     private static readonly CultureInfo Ecuador = CultureInfo.GetCultureInfo("es-EC");
     private const string NoDisponible = "no disponible";
@@ -82,8 +83,29 @@ public sealed class InformeService(
             conversacion.Pregunta,
             conversacion.Respuesta,
             $"{respondio} · {CalculadoraPeriodo.EnEcuador(conversacion.Fecha).ToString("dd/MM/yyyy HH:mm", Ecuador)}",
-            CalculadoraPeriodo.EnEcuador(reloj.GetUtcNow()));
+            CalculadoraPeriodo.EnEcuador(reloj.GetUtcNow()))
+        {
+            Refuerzos = (await refuerzos.AplicadosAsync(cursoId, ct)).Filas.Select(FilaRefuerzo).ToList(),
+        };
         return new(EstadoInforme.Generado, documentos.Informe(documento), $"informe-{curso.NombreCorto}-{cid}.pdf");
+    }
+
+    /// <summary>
+    /// TA-16.A1 · Fila de «Refuerzos aplicados» con el cambio del tema dicho sin causalidad: el refuerzo pasó antes, no se afirma que
+    /// lo causó. Una nota que no existe dice «sin nota», nunca 0.
+    /// </summary>
+    public static FilaRefuerzoInforme FilaRefuerzo(RefuerzoAplicadoDto r)
+    {
+        var antes = r.Antes is decimal a ? a.ToString("0.00", Ecuador) : "sin nota";
+        var ahora = r.Ahora is decimal h ? h.ToString("0.00", Ecuador) : "sin nota";
+        var (estado, cambio) = r.Estado switch
+        {
+            PlanRefuerzoService.Subio => ("Subió", $"subió de {antes} a {ahora} en el tema después del refuerzo"),
+            PlanRefuerzoService.Bajo => ("Bajó", $"bajó de {antes} a {ahora} en el tema después del refuerzo"),
+            PlanRefuerzoService.Igual => ("Igual", $"sigue en {ahora} en el tema después del refuerzo"),
+            _ => ("Sin notas nuevas", "sin notas nuevas en el tema desde que se aprobó"),
+        };
+        return new FilaRefuerzoInforme(r.Tema, r.Estudiante, antes, ahora, estado, cambio);
     }
 
     private static string Numero(decimal? valor) => valor is decimal v ? v.ToString("0.00", Ecuador) : NoDisponible;

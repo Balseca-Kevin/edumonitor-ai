@@ -53,11 +53,24 @@ public sealed class ActividadService(IEduMonitorDbContext db, IndicadorService i
         var ids = criterios.Select(c => c.Id).ToList();
         var puntajes = await db.CalificacionesCriterio.AsNoTracking()
             .Where(c => ids.Contains(c.CriterioRubricaId))
-            .Select(c => new { c.CriterioRubricaId, c.Puntaje })
+            .Select(c => new { c.CriterioRubricaId, c.EstudianteId, c.Puntaje })
             .ToListAsync(ct);
+
+        // TA-22.A1: la separación usa a los estudiantes calificados que tienen nivel en todos los criterios de la rúbrica.
+        var calificados = filas.Where(f => f.Estado == "CALIFICADO").Select(f => f.Id).ToHashSet();
+        var porEstudiante = puntajes
+            .Where(p => calificados.Contains(p.EstudianteId))
+            .GroupBy(p => p.EstudianteId)
+            .Where(g => g.Select(p => p.CriterioRubricaId).Distinct().Count() == criterios.Count)
+            .ToDictionary(g => g.Key, g => g.GroupBy(p => p.CriterioRubricaId).ToDictionary(x => x.Key, x => x.First().Puntaje));
         var dominioCriterios = criterios
-            .Select(c => CalculadoraActividad.Criterio(c.Id, c.Orden, c.Descripcion, c.PuntajeMaximo, c.Tema,
-                puntajes.Where(p => p.CriterioRubricaId == c.Id).Select(p => p.Puntaje).ToList()))
+            .Select(c =>
+            {
+                var pares = porEstudiante.Values.Select(v => (v[c.Id], v.Where(x => x.Key != c.Id).Sum(x => x.Value))).ToList();
+                return CalculadoraActividad.Criterio(c.Id, c.Orden, c.Descripcion, c.PuntajeMaximo, c.Tema,
+                    puntajes.Where(p => p.CriterioRubricaId == c.Id).Select(p => p.Puntaje).ToList(),
+                    CalculadoraCriterio.Separacion(pares, criterios.Count));
+            })
             .ToList();
 
         var temas = (await tematicas.DesempenoAsync(cursoId, actividadId, ct)).Valor?.Temas
@@ -160,18 +173,20 @@ public static class CalculadoraActividad
 
     /// <summary>
     /// Dominio de un criterio: la parte de los estudiantes con nivel que sacó el 70 % del puntaje máximo o más, de 0 a 1, y el
-    /// puntaje promedio. Sin niveles, los dos van en null.
+    /// puntaje promedio. Sin niveles, los dos van en null. Suma la separación (TA-22.A1) y el aviso que sale del dominio y de ella.
     /// </summary>
-    public static CriterioActividadDto Criterio(int id, int orden, string descripcion, decimal puntajeMaximo, string? tema, IReadOnlyList<decimal> puntajes)
+    public static CriterioActividadDto Criterio(
+        int id, int orden, string descripcion, decimal puntajeMaximo, string? tema, IReadOnlyList<decimal> puntajes, decimal? separacion = null)
     {
         if (puntajes.Count == 0)
         {
-            return new CriterioActividadDto(id, orden, descripcion, puntajeMaximo, tema, 0, null, null);
+            return new CriterioActividadDto(id, orden, descripcion, puntajeMaximo, tema, 0, null, null, null, null);
         }
 
         var umbral = puntajeMaximo * ParteDominio;
         var domina = Math.Round((decimal)puntajes.Count(p => p >= umbral) / puntajes.Count, 4);
-        return new CriterioActividadDto(id, orden, descripcion, puntajeMaximo, tema, puntajes.Count, domina, CalculadoraIndicadores.Redondear(puntajes.Average()));
+        return new CriterioActividadDto(id, orden, descripcion, puntajeMaximo, tema, puntajes.Count, domina,
+            CalculadoraIndicadores.Redondear(puntajes.Average()), separacion, CalculadoraCriterio.Aviso(domina, separacion));
     }
 }
 
@@ -209,7 +224,8 @@ public sealed record ResumenActividadDto(
     decimal? Promedio, int Aprobados, int Bajo6);
 
 public sealed record CriterioActividadDto(
-    int Id, int Orden, string Descripcion, decimal PuntajeMaximo, string? Tema, int ConNivel, decimal? Domina, decimal? PuntajePromedio);
+    int Id, int Orden, string Descripcion, decimal PuntajeMaximo, string? Tema, int ConNivel, decimal? Domina, decimal? PuntajePromedio,
+    decimal? Separacion = null, string? Aviso = null);
 
 public sealed record TemaActividadDto(int Id, string Nombre, decimal? Domina, decimal? Promedio, int EstudiantesConNota);
 

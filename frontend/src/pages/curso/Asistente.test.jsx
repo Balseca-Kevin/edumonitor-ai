@@ -401,3 +401,21 @@ describe('HU-16 · Informe del curso desde el asistente', () => {
     await waitFor(() => expect(descargarInforme).toHaveBeenCalledWith('1', 44))
   })
 })
+
+describe('TA-22.A2 · Enunciado corregido desde el panel de actividad', () => {
+  it('llega con la actividad como foco y la respuesta se copia', async () => {
+    const escribir = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(globalThis.navigator, 'clipboard', { value: { writeText: escribir }, configurable: true })
+    preguntarAlAsistente.mockResolvedValue({ ...respuestaChat, respuesta: 'Enunciado corregido del criterio.' })
+    const pregunta = 'Propón una versión corregida del enunciado de Tarea 3 para el criterio «Redacción».'
+    renderAsistente(`/cursos/1/asistente?${new URLSearchParams({ actividad: '103', pregunta })}`)
+
+    expect(await screen.findByDisplayValue(pregunta)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
+    await waitFor(() => expect(preguntarAlAsistente).toHaveBeenCalledWith('1', pregunta, expect.objectContaining({ actividadId: 103 }), null))
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copiar respuesta' }))
+    await waitFor(() => expect(escribir).toHaveBeenCalledWith('Enunciado corregido del criterio.'))
+    expect(await screen.findByText('Copiado')).toBeInTheDocument()
+  })
+})
