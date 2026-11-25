@@ -17,6 +17,7 @@ internal sealed class PlanRefuerzoConfiguracion : IEntityTypeConfiguration<PlanR
         builder.HasOne(p => p.Actividad).WithMany().HasForeignKey(p => p.ActividadId).OnDelete(DeleteBehavior.NoAction);
         builder.HasOne<Conversacion>().WithMany().HasForeignKey(p => p.ConversacionId).OnDelete(DeleteBehavior.NoAction);
         builder.Property(p => p.Estado).HasMaxLength(20).IsRequired();
+        builder.Property(p => p.Tipo).HasMaxLength(20).IsRequired().HasDefaultValue(PlanRefuerzo.TipoRefuerzo);
         builder.Property(p => p.Texto).HasMaxLength(20000);
     }
 }

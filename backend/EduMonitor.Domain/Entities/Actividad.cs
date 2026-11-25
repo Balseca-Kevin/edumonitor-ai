@@ -34,4 +34,10 @@ public class Actividad
 
     /// <summary>Fecha límite de la tarea. La llena TA-05.4 desde mod_assign_get_assignments.</summary>
     public DateTimeOffset? FechaLimite { get; set; }
+
+    /// <summary>HU-22 · Enunciado de la tarea en texto, importado de Moodle (<c>intro</c>). Null si Moodle no lo da.</summary>
+    public string? Enunciado { get; set; }
+
+    /// <summary>HU-22 · Archivos adjuntos del enunciado en JSON (nombre, tamaño y tipo), sin URL ni token.</summary>
+    public string? Archivos { get; set; }
 }

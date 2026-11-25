@@ -29,6 +29,7 @@ public class EduMonitorDbContext(DbContextOptions<EduMonitorDbContext> options) 
     public DbSet<TareaRefuerzo> TareasRefuerzo => Set<TareaRefuerzo>();
     public DbSet<Conversacion> Conversaciones => Set<Conversacion>();
     public DbSet<TrazaHerramienta> TrazasHerramienta => Set<TrazaHerramienta>();
+    public DbSet<ConfiguracionAsistente> ConfiguracionesAsistente => Set<ConfiguracionAsistente>();
     public DbSet<Auditoria> Auditorias => Set<Auditoria>();
 
     // HU-20 · Conexión con Moodle guardada por el ADMIN, con el token protegido.

@@ -36,7 +36,14 @@ public sealed class AgenteClient(HttpClient http, ILogger<AgenteClient> logger) 
         HttpResponseMessage respuesta;
         try
         {
-            respuesta = await http.PostAsJsonAsync("chat", new { mensaje = peticion.Mensaje, cursoId = peticion.CursoId, token = peticion.Token }, Json, ct);
+            respuesta = await http.PostAsJsonAsync("chat", new
+            {
+                mensaje = peticion.Mensaje,
+                cursoId = peticion.CursoId,
+                token = peticion.Token,
+                historial = peticion.Historial ?? Array.Empty<TurnoAgente>(),
+                modo = peticion.Modo,
+            }, Json, ct);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)
         {
@@ -62,7 +69,12 @@ public sealed class AgenteClient(HttpClient http, ILogger<AgenteClient> logger) 
                 var cuerpo = await respuesta.Content.ReadFromJsonAsync<RespuestaAgente>(Json, ct);
                 return cuerpo is null || cuerpo.Respuesta is null
                     ? throw new AgenteNoDisponibleException("El asistente devolvió una respuesta vacía.")
-                    : cuerpo with { Herramientas = cuerpo.Herramientas ?? Array.Empty<TrazaAgente>(), Modelo = cuerpo.Modelo ?? string.Empty };
+                    : cuerpo with
+                    {
+                        Herramientas = cuerpo.Herramientas ?? Array.Empty<TrazaAgente>(),
+                        Modelo = cuerpo.Modelo ?? string.Empty,
+                        Cifras = cuerpo.Cifras ?? Array.Empty<CifraDto>(),
+                    };
             }
             catch (JsonException e)
             {

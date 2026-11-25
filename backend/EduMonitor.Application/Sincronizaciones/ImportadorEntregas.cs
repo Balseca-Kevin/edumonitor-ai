@@ -35,6 +35,11 @@ public sealed class ImportadorEntregas(IMoodleClient moodle, IEduMonitorDbContex
             if (actividad.Instancia is int instancia && tareasPorInstancia.TryGetValue(instancia, out var tarea))
             {
                 actividad.FechaLimite = tarea.FechaLimite;
+                // HU-22 · Enunciado en texto y adjuntos del panel de actividad.
+                actividad.Enunciado = string.IsNullOrWhiteSpace(tarea.Enunciado) ? null : tarea.Enunciado.Trim();
+                actividad.Archivos = tarea.Archivos.Count == 0
+                    ? null
+                    : System.Text.Json.JsonSerializer.Serialize(tarea.Archivos, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
             }
         }
 

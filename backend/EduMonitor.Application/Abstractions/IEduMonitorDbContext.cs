@@ -26,6 +26,8 @@ public interface IEduMonitorDbContext
     DbSet<Alerta> Alertas { get; }
     DbSet<Conversacion> Conversaciones { get; }
     DbSet<TrazaHerramienta> TrazasHerramienta { get; }
+    DbSet<ConfiguracionAsistente> ConfiguracionesAsistente { get; }
+    DbSet<Auditoria> Auditorias { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

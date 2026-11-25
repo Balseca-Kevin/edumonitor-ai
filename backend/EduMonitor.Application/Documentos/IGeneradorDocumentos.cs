@@ -7,7 +7,11 @@ public sealed record DocumentoRefuerzo(
     IReadOnlyList<string> Temas,
     IReadOnlyList<string> Estudiantes,
     string Texto,
-    DateTimeOffset Aprobado);
+    DateTimeOffset Aprobado)
+{
+    /// <summary>HU-15 · «Plan de refuerzo» o «Retroalimentación».</summary>
+    public string Titulo { get; init; } = "Plan de refuerzo";
+}
 
 /// <summary>
 /// HU-15 · Generador de documentos (bloque 4, Kevin): PDF con QuestPDF y DOCX con DocumentFormat.OpenXml. La implementación vive en

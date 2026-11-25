@@ -45,7 +45,17 @@ public sealed record ItemCalificacionMoodle(
     decimal? NotaMaxima);
 
 /// <summary>Tarea de <c>mod_assign_get_assignments</c>. <see cref="ModuloCursoId"/> enlaza con <see cref="ModuloMoodle.Id"/>.</summary>
-public sealed record TareaMoodle(int Id, int ModuloCursoId, string Nombre, DateTimeOffset? FechaLimite);
+public sealed record TareaMoodle(int Id, int ModuloCursoId, string Nombre, DateTimeOffset? FechaLimite)
+{
+    /// <summary>HU-22 · Enunciado de la tarea (<c>intro</c>) en texto plano, tal como lo escribió el docente en Moodle.</summary>
+    public string? Enunciado { get; init; }
+
+    /// <summary>HU-22 · Archivos adjuntos del enunciado (<c>introattachments</c>): nombre, tamaño y tipo. La URL no se guarda.</summary>
+    public IReadOnlyList<ArchivoMoodle> Archivos { get; init; } = Array.Empty<ArchivoMoodle>();
+}
+
+/// <summary>HU-22 · Archivo adjunto al enunciado de una tarea.</summary>
+public sealed record ArchivoMoodle(string Nombre, long Tamano, string? Tipo);
 
 /// <summary>Entrega de <c>mod_assign_get_submissions</c>. <see cref="Estado"/>: <c>new</c>, <c>draft</c>, <c>submitted</c>...; <see cref="EstadoCalificacion"/>: <c>graded</c> o <c>notgraded</c>.</summary>
 public sealed record EntregaMoodle(int TareaId, int UsuarioId, string Estado, string? EstadoCalificacion);

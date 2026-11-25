@@ -10,6 +10,15 @@ public class PlanRefuerzo
     public const string Borrador = "BORRADOR";
     public const string Aprobado = "APROBADO";
 
+    /// <summary>HU-15 · Plan de refuerzo por temas (TA-15.A3).</summary>
+    public const string TipoRefuerzo = "REFUERZO";
+
+    /// <summary>HU-15 · Retroalimentación por estudiante de una actividad, con su rúbrica y el comentario del docente.</summary>
+    public const string TipoRetroalimentacion = "RETROALIMENTACION";
+
+    /// <summary>HU-15 · <c>REFUERZO</c> o <c>RETROALIMENTACION</c>. Solo el refuerzo guarda la foto del tema y su resultado.</summary>
+    public string Tipo { get; set; } = TipoRefuerzo;
+
     public int Id { get; set; }
 
     public int CursoId { get; set; }

@@ -127,7 +127,19 @@ internal sealed partial class MoodleClient(HttpClient http, IConfiguracionMoodle
 
         return cursos
             .SelectMany(c => c.GetProperty("assignments").EnumerateArray())
-            .Select(a => new TareaMoodle(Entero(a, "id"), Entero(a, "cmid"), Texto(a, "name"), Fecha(a, "duedate")))
+            .Select(a => new TareaMoodle(Entero(a, "id"), Entero(a, "cmid"), Texto(a, "name"), Fecha(a, "duedate"))
+            {
+                // HU-22 · El enunciado y sus adjuntos vienen en la misma respuesta; no es otra función de Moodle.
+                Enunciado = TextoOpcional(a, "intro") is { } intro && TextoPlano(intro) is { Length: > 0 } texto ? texto : null,
+                Archivos = a.TryGetProperty("introattachments", out var adjuntos) && adjuntos.ValueKind == JsonValueKind.Array
+                    ? adjuntos.EnumerateArray()
+                        .Select(f => new ArchivoMoodle(
+                            Texto(f, "filename"),
+                            f.TryGetProperty("filesize", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt64() : 0,
+                            TextoOpcional(f, "mimetype")))
+                        .ToList()
+                    : Array.Empty<ArchivoMoodle>(),
+            })
             .ToList();
     }
 

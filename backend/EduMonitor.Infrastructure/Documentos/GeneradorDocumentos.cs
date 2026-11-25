@@ -30,7 +30,7 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
             pagina.DefaultTextStyle(t => t.FontSize(11));
             pagina.Header().Column(c =>
             {
-                c.Item().Text("Plan de refuerzo").FontSize(20).Bold();
+                c.Item().Text(d.Titulo).FontSize(20).Bold();
                 c.Item().Text($"{d.Curso} · {d.Actividad}").FontSize(12).FontColor(Colors.Grey.Darken2);
             });
             pagina.Content().PaddingVertical(12).Column(c =>
@@ -39,7 +39,7 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
                 c.Item().Text(t =>
                 {
                     t.Span("Temas: ").Bold();
-                    t.Span(string.Join(", ", d.Temas));
+                    t.Span(d.Temas.Count == 0 ? "todos los de la actividad" : string.Join(", ", d.Temas));
                 });
                 c.Item().Text(t =>
                 {
@@ -73,9 +73,9 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
         {
             var principal = documento.AddMainDocumentPart();
             var cuerpo = new Body();
-            cuerpo.Append(Parrafo("Plan de refuerzo", negrita: true, tamano: 40));
+            cuerpo.Append(Parrafo(d.Titulo, negrita: true, tamano: 40));
             cuerpo.Append(Parrafo($"{d.Curso} · {d.Actividad}", tamano: 24));
-            cuerpo.Append(Parrafo($"Temas: {string.Join(", ", d.Temas)}"));
+            cuerpo.Append(Parrafo($"Temas: {(d.Temas.Count == 0 ? "todos los de la actividad" : string.Join(", ", d.Temas))}"));
             cuerpo.Append(Parrafo($"Estudiantes: {string.Join(", ", d.Estudiantes)}"));
             cuerpo.Append(Parrafo($"Aprobado por el docente: {d.Aprobado.ToString("dd/MM/yyyy HH:mm", Ecuador)}"));
             foreach (var linea in Lineas(d.Texto))

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EduMonitor.Application.Refuerzos;
 
-public sealed record PedidoPlanRefuerzo(int? ActividadId, IReadOnlyList<int>? Temas, IReadOnlyList<int>? Estudiantes);
+public sealed record PedidoPlanRefuerzo(int? ActividadId, IReadOnlyList<int>? Temas, IReadOnlyList<int>? Estudiantes, string? Tipo = null);
 
 public sealed record PedidoCambioPlan(string? Texto, string? Estado);
 
@@ -31,7 +31,25 @@ public sealed record PlanRefuerzoDto(
     int? ConversacionId,
     string? Texto,
     DateTimeOffset? AprobadoEn,
-    IReadOnlyList<ResultadoRefuerzoDto> Resultados);
+    IReadOnlyList<ResultadoRefuerzoDto> Resultados)
+{
+    /// <summary>HU-15 · <c>REFUERZO</c> o <c>RETROALIMENTACION</c>.</summary>
+    public string Tipo { get; init; } = PlanRefuerzo.TipoRefuerzo;
+}
+
+/// <summary>TA-15.A2 · Respuesta de <c>GET /api/cursos/{id}/refuerzos/aplicados</c>: cuántos subieron, quedaron igual, bajaron o no tienen notas nuevas.</summary>
+public sealed record RefuerzosAplicadosDto(int CursoId, ConteoAplicadosDto Conteos, IReadOnlyList<RefuerzoAplicadoDto> Filas);
+
+public sealed record ConteoAplicadosDto(int Subio, int Igual, int Bajo, int SinNotasNuevas);
+
+public sealed record RefuerzoAplicadoDto(
+    int PlanId, DateTimeOffset AprobadoEn, string Actividad, int EstudianteId, string Estudiante, int TemaId, string Tema, decimal? Antes, decimal? Ahora, string Estado);
+
+/// <summary>TA-15.A2 · Herramienta consultar_refuerzos_aplicados.</summary>
+public sealed record RespuestaRefuerzosAplicadosHerramienta(string Herramienta, DateTimeOffset Generado, ConteoAplicadosDto Conteos, IReadOnlyList<RefuerzoAplicadoDto> Filas)
+{
+    public const string Nombre = "consultar_refuerzos_aplicados";
+}
 
 public enum EstadoOperacionPlan
 {
@@ -71,6 +89,9 @@ public sealed record RespuestaPlanHerramienta(
     IReadOnlyList<EstudianteHerramientaPlanDto> Estudiantes)
 {
     public const string Nombre = "obtener_plan_refuerzo";
+
+    /// <summary>HU-15 · <c>REFUERZO</c> o <c>RETROALIMENTACION</c>.</summary>
+    public string Tipo { get; init; } = PlanRefuerzo.TipoRefuerzo;
 }
 
 /// <summary>
@@ -105,11 +126,20 @@ public sealed class PlanRefuerzoService(
             return new(EstadoOperacionPlan.NoEncontrado, Detalle: $"La actividad {actividadId} no es del curso {cursoId}.");
         }
 
+        var tipo = string.IsNullOrWhiteSpace(pedido.Tipo) ? PlanRefuerzo.TipoRefuerzo : pedido.Tipo.Trim().ToUpperInvariant();
+        if (tipo is not (PlanRefuerzo.TipoRefuerzo or PlanRefuerzo.TipoRetroalimentacion))
+        {
+            return new(EstadoOperacionPlan.Invalida, Detalle: "El tipo es REFUERZO o RETROALIMENTACION.");
+        }
+
         var temas = (pedido.Temas ?? Array.Empty<int>()).Distinct().ToList();
         var estudiantes = (pedido.Estudiantes ?? Array.Empty<int>()).Distinct().ToList();
-        if (temas.Count == 0 || estudiantes.Count == 0)
+        // HU-15 · La retroalimentación es de la actividad completa: los temas son opcionales.
+        if ((temas.Count == 0 && tipo == PlanRefuerzo.TipoRefuerzo) || estudiantes.Count == 0)
         {
-            return new(EstadoOperacionPlan.Invalida, Detalle: "Marca al menos un tema y un estudiante.");
+            return new(EstadoOperacionPlan.Invalida, Detalle: tipo == PlanRefuerzo.TipoRefuerzo
+                ? "Marca al menos un tema y un estudiante."
+                : "Marca al menos un estudiante.");
         }
 
         if (estudiantes.Count > MaximoEstudiantes)
@@ -136,6 +166,7 @@ public sealed class PlanRefuerzoService(
             ActividadId = actividadId,
             Creado = reloj.GetLocalNow(),
             Estado = PlanRefuerzo.Enviado,
+            Tipo = tipo,
             Temas = temas.Select(t => new PlanRefuerzoTema { TemaId = t }).ToList(),
             Estudiantes = estudiantes.Select(e => new PlanRefuerzoEstudiante { EstudianteId = e }).ToList(),
         };
@@ -260,15 +291,19 @@ public sealed class PlanRefuerzoService(
         }
 
         var curso = await db.Cursos.AsNoTracking().SingleAsync(c => c.Id == cursoId, ct);
+        var retro = plan.Tipo == PlanRefuerzo.TipoRetroalimentacion;
         var documento = new EduMonitor.Application.Documentos.DocumentoRefuerzo(
             $"{curso.NombreCorto} · {curso.Nombre}",
             plan.Actividad.Nombre,
             plan.Temas.Select(t => t.Tema.Nombre).OrderBy(t => t).ToList(),
             plan.Estudiantes.Select(e => $"{e.Estudiante.Nombre} {e.Estudiante.Apellido}").OrderBy(e => e).ToList(),
             plan.Texto ?? string.Empty,
-            Periodo.CalculadoraPeriodo.EnEcuador(plan.AprobadoEn.Value));
+            Periodo.CalculadoraPeriodo.EnEcuador(plan.AprobadoEn.Value))
+        {
+            Titulo = retro ? "Retroalimentación" : "Plan de refuerzo",
+        };
         var contenido = formato!.Equals("pdf", StringComparison.OrdinalIgnoreCase) ? documentos.Pdf(documento) : documentos.Docx(documento);
-        return new(EstadoOperacionPlan.Correcta, (contenido, tipo, $"plan-refuerzo-{curso.NombreCorto}-{plan.Id}.{formato.ToLowerInvariant()}"));
+        return new(EstadoOperacionPlan.Correcta, (contenido, tipo, $"{(retro ? "retroalimentacion" : "plan-refuerzo")}-{curso.NombreCorto}-{plan.Id}.{formato.ToLowerInvariant()}"));
     }
 
     /// <summary>TA-15.A4 · Datos del plan para que el asistente redacte el borrador por estudiante, con notas reales.</summary>
@@ -283,7 +318,11 @@ public sealed class PlanRefuerzoService(
         var temasIds = plan.Temas.Select(t => t.TemaId).ToHashSet();
         var desempeno = (await tematicas.DesempenoAsync(cursoId, plan.ActividadId, ct)).Valor;
         var curso = (await tematicas.DesempenoAsync(cursoId, null, ct)).Valor;
-        var criterios = await db.CriteriosRubrica.AsNoTracking().Where(c => c.ActividadId == plan.ActividadId && c.TemaId != null && temasIds.Contains(c.TemaId.Value)).ToListAsync(ct);
+        // HU-15 · La retroalimentación mira todos los criterios de la actividad; el refuerzo, solo los de sus temas.
+        var retro = plan.Tipo == PlanRefuerzo.TipoRetroalimentacion;
+        var criterios = await db.CriteriosRubrica.AsNoTracking()
+            .Where(c => c.ActividadId == plan.ActividadId && (retro || (c.TemaId != null && temasIds.Contains(c.TemaId.Value))))
+            .ToListAsync(ct);
         var ids = criterios.Select(c => c.Id).ToList();
         var niveles = await db.CalificacionesCriterio.AsNoTracking().Where(n => ids.Contains(n.CriterioRubricaId)).ToListAsync(ct);
         var comentarios = await db.Calificaciones.AsNoTracking().Where(c => c.ActividadId == plan.ActividadId).ToDictionaryAsync(c => c.EstudianteId, c => c.Comentario, ct);
@@ -319,11 +358,22 @@ public sealed class PlanRefuerzoService(
             plan.Actividad.Nombre,
             plan.Temas.Select(t => t.Tema.Nombre).ToList(),
             proximas,
-            estudiantes);
+            estudiantes)
+        {
+            Tipo = plan.Tipo,
+        };
     }
 
     private async Task AprobarAsync(PlanRefuerzo plan, CancellationToken ct)
     {
+        if (plan.Tipo == PlanRefuerzo.TipoRetroalimentacion)
+        {
+            // La retroalimentación no es un refuerzo por tema: no guarda foto del tema ni tareas de refuerzo.
+            plan.Estado = PlanRefuerzo.Aprobado;
+            plan.AprobadoEn = reloj.GetLocalNow();
+            return;
+        }
+
         var curso = (await tematicas.DesempenoAsync(plan.CursoId, null, ct)).Valor;
         foreach (var estudiante in plan.Estudiantes)
         {
@@ -385,7 +435,38 @@ public sealed class PlanRefuerzoService(
         p.ConversacionId,
         p.Texto,
         p.AprobadoEn,
-        resultados);
+        resultados)
+    {
+        Tipo = p.Tipo,
+    };
+
+    /// <summary>
+    /// TA-15.A2 · Refuerzos aplicados del curso: una fila por estudiante y tema de cada plan de refuerzo aprobado, con la nota del tema
+    /// al aprobar y la de hoy, del más reciente al más antiguo, y los conteos por resultado.
+    /// </summary>
+    public async Task<RefuerzosAplicadosDto> AplicadosAsync(int cursoId, CancellationToken ct = default)
+    {
+        var ids = await db.PlanesRefuerzo.AsNoTracking()
+            .Where(p => p.CursoId == cursoId && p.Estado == PlanRefuerzo.Aprobado && p.Tipo == PlanRefuerzo.TipoRefuerzo)
+            .OrderByDescending(p => p.Id)
+            .Select(p => p.Id)
+            .ToListAsync(ct);
+        var filas = new List<RefuerzoAplicadoDto>();
+        foreach (var id in ids)
+        {
+            var plan = (await ObtenerAsync(cursoId, id, ct)).Valor!;
+            filas.AddRange(plan.Resultados.Select(r => new RefuerzoAplicadoDto(
+                plan.Id, plan.AprobadoEn!.Value, plan.Actividad.Nombre, r.EstudianteId, r.Estudiante, r.TemaId, r.Tema, r.Antes, r.Ahora, r.Estado)));
+        }
+
+        return new RefuerzosAplicadosDto(cursoId, ContarAplicados(filas), filas);
+    }
+
+    public static ConteoAplicadosDto ContarAplicados(IReadOnlyList<RefuerzoAplicadoDto> filas) => new(
+        filas.Count(f => f.Estado == Subio),
+        filas.Count(f => f.Estado == Igual),
+        filas.Count(f => f.Estado == Bajo),
+        filas.Count(f => f.Estado == SinNotasNuevas));
 
     private sealed record FotoTema(int TemaId, decimal? Nota, int Notas);
 }
