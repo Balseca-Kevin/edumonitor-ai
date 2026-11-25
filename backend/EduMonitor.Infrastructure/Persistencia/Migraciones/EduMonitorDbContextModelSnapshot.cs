@@ -30,12 +30,18 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Archivos")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Categoria")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("CursoId")
                         .HasColumnType("int");
+
+                    b.Property<string>("Enunciado")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset?>("FechaLimite")
                         .HasColumnType("datetimeoffset");
@@ -148,6 +154,14 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("CursoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Detalle")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("Entidad")
                         .IsRequired()
                         .HasMaxLength(250)
@@ -156,10 +170,17 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Property<DateTimeOffset>("Fecha")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<int>("UsuarioId")
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<int?>("UsuarioId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Accion");
 
                     b.HasIndex("Fecha");
 
@@ -289,6 +310,25 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.ToTable("CambioSincronizacion", (string)null);
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.ConfiguracionAsistente", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("Actualizado")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("SoloModeloLocal")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ConfiguracionAsistente", (string)null);
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.ConfiguracionMoodle", b =>
                 {
                     b.Property<int>("Id")
@@ -345,6 +385,9 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Cifras")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("CursoId")
                         .HasColumnType("int");
 
@@ -353,6 +396,9 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     b.Property<DateTimeOffset>("Fecha")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<int?>("HiloId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Modelo")
                         .IsRequired()
@@ -364,6 +410,14 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("Proveedor")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("Respaldo")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Respuesta")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -374,6 +428,8 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.HasKey("Id");
 
                     b.HasIndex("CursoId");
+
+                    b.HasIndex("HiloId");
 
                     b.HasIndex("UsuarioId");
 
@@ -558,6 +614,13 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Property<string>("Texto")
                         .HasMaxLength(20000)
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("REFUERZO");
 
                     b.Property<int>("UsuarioId")
                         .HasColumnType("int");
@@ -931,8 +994,7 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.HasOne("EduMonitor.Domain.Entities.Usuario", "Usuario")
                         .WithMany()
                         .HasForeignKey("UsuarioId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Usuario");
                 });

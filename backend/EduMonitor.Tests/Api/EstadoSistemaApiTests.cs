@@ -38,17 +38,20 @@ public class EstadoSistemaApiTests
     public async Task Admin_ve_los_cinco_servicios_en_verde()
     {
         await using var api = new ApiConServiciosFalsos();
+        api.Agente.Externo = new EduMonitor.Application.Agente.SaludModeloExterno("anthropic", "modelo-externo", "OK", 0);
         var admin = await api.ClienteConSesionAsync("admin");
 
         var cuerpo = await admin.GetFromJsonAsync<JsonElement>("/api/admin/estado");
 
         Assert.True(cuerpo.TryGetProperty("generado", out _));
-        Assert.Equal(new[] { "api", "sqlserver", "moodle", "agente", "modelo" },
+        // HU-23: «modelo» es el local (Ollama) y «modelo externo» el principal.
+        Assert.Equal(new[] { "api", "sqlserver", "moodle", "agente", "modelo", "modelo externo" },
             cuerpo.GetProperty("servicios").EnumerateArray().Select(s => s.GetProperty("nombre").GetString()));
         var servicios = Servicios(cuerpo);
         Assert.All(servicios.Values, s => Assert.Equal("OK", s.Estado));
         Assert.Equal("Moodle-Lab-UTA 4.5", servicios["moodle"].Detalle);
         Assert.Equal("qwen2.5:7b", servicios["modelo"].Detalle);
+        Assert.Equal("anthropic modelo-externo", servicios["modelo externo"].Detalle);
         Assert.Equal("EduMonitorDB", servicios["sqlserver"].Detalle);
     }
 

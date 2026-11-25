@@ -23,7 +23,7 @@ public sealed class EstadoSistemaService(IEduMonitorDbContext db, IMoodleClient 
         var saludAgente = SaludAgenteAsync(ct);
         await Task.WhenAll(baseDatos, aulaVirtual, saludAgente);
 
-        var (servicioAgente, servicioModelo) = saludAgente.Result;
+        var (servicioAgente, servicioModelo, servicioExterno) = saludAgente.Result;
         return new EstadoSistemaDto(reloj.GetLocalNow(), new[]
         {
             new ServicioEstadoDto("api", Ok, $"versión {Version()}"),
@@ -31,6 +31,7 @@ public sealed class EstadoSistemaService(IEduMonitorDbContext db, IMoodleClient 
             aulaVirtual.Result,
             servicioAgente,
             servicioModelo,
+            servicioExterno,
         });
     }
 
@@ -53,7 +54,7 @@ public sealed class EstadoSistemaService(IEduMonitorDbContext db, IMoodleClient 
         }
     }
 
-    private async Task<(ServicioEstadoDto Agente, ServicioEstadoDto Modelo)> SaludAgenteAsync(CancellationToken ct)
+    private async Task<(ServicioEstadoDto Agente, ServicioEstadoDto Modelo, ServicioEstadoDto Externo)> SaludAgenteAsync(CancellationToken ct)
     {
         using var limite = CancellationTokenSource.CreateLinkedTokenSource(ct);
         limite.CancelAfter(TiempoMaximo);
@@ -63,13 +64,21 @@ public sealed class EstadoSistemaService(IEduMonitorDbContext db, IMoodleClient 
             var modelo = salud.Ollama == Ok
                 ? new ServicioEstadoDto("modelo", Ok, salud.Modelo)
                 : new ServicioEstadoDto("modelo", NoDisponible, $"Ollama no responde ({salud.Modelo})");
-            return (new ServicioEstadoDto("agente", Ok, "Responde en la red interna"), modelo);
+            // HU-23 · El modelo externo no se llama desde aquí: el agente informa si está configurado o en pausa.
+            var externo = salud.Externo switch
+            {
+                { Estado: Ok } e => new ServicioEstadoDto("modelo externo", Ok, $"{e.Proveedor} {e.Modelo}".Trim()),
+                { Estado: "EN_PAUSA" } e => new ServicioEstadoDto("modelo externo", NoDisponible, $"En pausa por 3 fallos en 5 minutos ({e.Modelo})"),
+                _ => new ServicioEstadoDto("modelo externo", NoDisponible, "Sin configurar: responde el modelo local"),
+            };
+            return (new ServicioEstadoDto("agente", Ok, "Responde en la red interna"), modelo, externo);
         }
         catch (Exception e) when (e is AgenteNoDisponibleException or OperationCanceledException && !ct.IsCancellationRequested)
         {
             var detalle = e is OperationCanceledException ? $"No respondió en {TiempoMaximo.TotalSeconds:0} s" : e.Message;
             return (new ServicioEstadoDto("agente", NoDisponible, detalle),
-                new ServicioEstadoDto("modelo", NoDisponible, "Sin dato: el agente no respondió"));
+                new ServicioEstadoDto("modelo", NoDisponible, "Sin dato: el agente no respondió"),
+                new ServicioEstadoDto("modelo externo", NoDisponible, "Sin dato: el agente no respondió"));
         }
     }
 

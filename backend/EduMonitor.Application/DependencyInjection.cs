@@ -29,6 +29,11 @@ public static class DependencyInjection
         services.AddScoped<AlertasService>();
         services.AddScoped<HerramientasService>();
         services.AddScoped<AgenteService>();
+        services.AddScoped<Seudonimizador>();
+        services.AddScoped<EduMonitor.Application.Auditorias.AuditoriaService>();
+        services.AddScoped<EduMonitor.Application.Fichas.FichaEstudianteService>();
+        services.AddScoped<EduMonitor.Application.Actividades.ActividadService>();
+        services.AddScoped<ModeloAsistenteService>();
         services.AddScoped<EstadoSistemaService>();
         services.AddScoped<ImportadorUnidades>();
         services.AddScoped<ImportadorMatriculados>();

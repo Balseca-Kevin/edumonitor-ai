@@ -17,6 +17,17 @@ internal sealed class ConversacionConfiguracion : IEntityTypeConfiguration<Conve
         builder.Property(c => c.Pregunta).HasMaxLength(500).IsRequired();
         builder.Property(c => c.Respuesta).IsRequired();
         builder.Property(c => c.Modelo).HasMaxLength(100).IsRequired();
+        builder.Property(c => c.Proveedor).HasMaxLength(20).IsRequired();
+        builder.HasIndex(c => c.HiloId);
+    }
+}
+
+internal sealed class ConfiguracionAsistenteConfiguracion : IEntityTypeConfiguration<ConfiguracionAsistente>
+{
+    public void Configure(EntityTypeBuilder<ConfiguracionAsistente> builder)
+    {
+        builder.ToTable("ConfiguracionAsistente");
+        builder.HasKey(c => c.Id);
     }
 }
 
@@ -41,8 +52,11 @@ internal sealed class AuditoriaConfiguracion : IEntityTypeConfiguration<Auditori
         builder.ToTable("Auditoria");
         builder.HasKey(a => a.Id);
         builder.HasIndex(a => a.Fecha);
-        builder.HasOne(a => a.Usuario).WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.NoAction);
+        builder.HasIndex(a => a.Accion);
+        builder.HasOne(a => a.Usuario).WithMany().HasForeignKey(a => a.UsuarioId).IsRequired(false).OnDelete(DeleteBehavior.NoAction);
         builder.Property(a => a.Accion).HasMaxLength(50).IsRequired();
         builder.Property(a => a.Entidad).HasMaxLength(250).IsRequired();
+        builder.Property(a => a.Detalle).HasMaxLength(500).IsRequired();
+        builder.Property(a => a.Resultado).HasMaxLength(10).IsRequired();
     }
 }

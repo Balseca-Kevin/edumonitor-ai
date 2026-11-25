@@ -13,6 +13,18 @@ public sealed class AgenteClientFalso : IAgenteClient
 
     public bool Caido { get; set; }
 
+    /// <summary>HU-23 · Texto que responde el agente (puede traer códigos E-001…).</summary>
+    public string Texto { get; set; } = "Hechos: 1 estudiante tiene una nota cero en Examen P1.";
+
+    public string Proveedor { get; set; } = "LOCAL";
+
+    public bool Respaldo { get; set; }
+
+    public List<CifraDto> Cifras { get; } = new();
+
+    /// <summary>HU-23 · Estado del modelo externo que informa /salud; null como un agente del Sprint 2.</summary>
+    public SaludModeloExterno? Externo { get; set; }
+
     /// <summary>Estado de Ollama que informa <c>GET /salud</c>.</summary>
     public string Ollama { get; set; } = "OK";
 
@@ -31,7 +43,7 @@ public sealed class AgenteClientFalso : IAgenteClient
             await Task.Delay(TimeSpan.FromSeconds(30), ct);
         }
 
-        return new SaludAgente("OK", "qwen2.5:7b", Ollama);
+        return new SaludAgente("OK", "qwen2.5:7b", Ollama, Externo, Externo?.Estado == "OK" ? "EXTERNO" : "LOCAL");
     }
 
     public Task<RespuestaAgente> ConsultarAsync(PeticionAgente peticion, CancellationToken ct = default)
@@ -44,9 +56,14 @@ public sealed class AgenteClientFalso : IAgenteClient
 
         var parametros = JsonSerializer.SerializeToElement(new { cursoId = peticion.CursoId });
         return Task.FromResult(new RespuestaAgente(
-            "Hechos: 1 estudiante tiene una nota cero en Examen P1.",
+            Texto,
             new[] { new TrazaAgente("obtener_calificaciones", parametros, "OK", 84) },
             "qwen2.5:7b",
-            5400));
+            5400)
+        {
+            Proveedor = Proveedor,
+            Respaldo = Respaldo,
+            Cifras = Cifras.ToList(),
+        });
     }
 }

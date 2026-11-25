@@ -146,7 +146,8 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
                         x.Actividad.Categoria,
                         x.Actividad.UnidadId is int id && unidades.TryGetValue(id, out var numero) ? numero : null,
                         CalculadoraIndicadores.Redondear(CalculadoraIndicadores.NotaEnEscala(x.Calificacion!.Nota, x.Actividad.NotaMaxima)),
-                        Libro.LibroService.EstadoNota(x.Calificacion, x.Actividad, datos.Ahora)))
+                        Libro.LibroService.EstadoNota(x.Calificacion, x.Actividad, datos.Ahora),
+                        x.Actividad.Id))
                     .ToList()))
             .ToList();
 
@@ -216,4 +217,5 @@ public sealed record EstudianteCalificacionesDto(
     IReadOnlyList<CalificacionHerramientaDto> Calificaciones);
 
 /// <summary>Nota en escala 0 a 10 (null si no hay nota) y estado: CALIFICADO, SIN_ENTREGA, PENDIENTE o null si no está disponible.</summary>
-public sealed record CalificacionHerramientaDto(string Actividad, string? Categoria, int? Unidad, decimal? Nota, string? Estado);
+/// <summary>Nota de un estudiante en una actividad. <c>ActividadId</c> (HU-23) deja enlazar cada cifra de la respuesta con su celda del libro.</summary>
+public sealed record CalificacionHerramientaDto(string Actividad, string? Categoria, int? Unidad, decimal? Nota, string? Estado, int? ActividadId = null);
