@@ -6,6 +6,13 @@ import Libro from './Libro'
 vi.mock('../../services/libro', async (original) => ({ ...(await original()), obtenerLibro: vi.fn() }))
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn() }))
 vi.mock('../../services/cursos', () => ({ obtenerCambiosSincronizacion: vi.fn() }))
+vi.mock('../../services/notaNecesaria', () => ({
+  // Forma de GET /api/cursos/{id}/estudiantes/{eid}/nota-necesaria (docs/contratos-api.md, «Nota necesaria»).
+  obtenerNotaNecesaria: vi.fn().mockResolvedValue({
+    estado: 'NECESITA', notaNecesaria: 7.67, maximoPosible: 7.7, pendientes: 2, promedioActual: 6.6,
+    categorias: [ { categoria: 'Exámenes', peso: 0.4, calificadas: 1, promedio: 6, pendientes: [ { actividadId: 117, nombre: 'Examen Parcial 2', fechaLimite: '2026-11-25T18:59:00-05:00', estado: 'AUN_NO_VENCE' } ] } ],
+  }),
+}))
 
 import { obtenerLibro } from '../../services/libro'
 import { obtenerIndicadores } from '../../services/indicadores'

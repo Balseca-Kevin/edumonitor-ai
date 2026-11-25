@@ -87,6 +87,15 @@ public class TematicasApiTests
 
         var soloTarea = await doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{curso}/tematicas?actividadId={tarea.GetProperty("id").GetInt32()}");
         Assert.Equal(4m, soloTarea.GetProperty("temas")[0].GetProperty("promedio").GetDecimal());
+
+        // La herramienta del asistente da lo mismo en forma corta, sin la lista completa de estudiantes.
+        var herramienta = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/desempeno-tematico?cursoId={curso}");
+        Assert.Equal("obtener_desempeno_tematico", herramienta.GetProperty("herramienta").GetString());
+        var corto = herramienta.GetProperty("temas")[0];
+        Assert.Equal("Historias de usuario", corto.GetProperty("nombre").GetString());
+        Assert.Equal("Tarea 1 (criterio: Redacción de historias de usuario)", corto.GetProperty("evaluaciones")[0].GetString());
+        Assert.False(corto.TryGetProperty("estudiantes", out _));
+        Assert.Equal(HttpStatusCode.BadRequest, (await doc01.GetAsync("/api/tools/desempeno-tematico")).StatusCode);
     }
 
     [Fact]

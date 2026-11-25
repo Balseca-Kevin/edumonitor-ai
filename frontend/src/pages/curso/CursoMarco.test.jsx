@@ -82,7 +82,7 @@ describe('R.2 · Barra lateral oscura y barra del curso', () => {
     renderCurso()
 
     const nav = await screen.findByRole('navigation', { name: 'Curso AGIL-4B' })
-    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Libro de calificaciones', 'Panel del curso', 'Alertas3', 'Asistente'])
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Libro de calificaciones', 'Panel del curso', 'Mapa del curso', 'Alertas3', 'Asistente'])
     expect(within(nav).getByLabelText('3 estudiantes requieren atención')).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Panel del curso' })).toHaveClass('activo')
     const lateral = screen.getByRole('complementary', { name: 'Navegación' })

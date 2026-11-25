@@ -28,6 +28,7 @@ export function Marca() {
 const PANTALLAS_CURSO = [
   { ruta: 'libro', texto: 'Libro de calificaciones' },
   { ruta: 'panel', texto: 'Panel del curso' },
+  { ruta: 'mapa', texto: 'Mapa del curso' },
   { ruta: 'alertas', texto: 'Alertas', contador: true },
   { ruta: 'asistente', texto: 'Asistente' },
 ]

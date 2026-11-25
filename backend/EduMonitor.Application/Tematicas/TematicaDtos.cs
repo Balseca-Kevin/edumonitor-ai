@@ -66,3 +66,38 @@ public enum EstadoConsultaTematica
 
 /// <summary>Resultado de una operación del mapeo o del desempeño por tema, con el detalle del error para el ProblemDetails.</summary>
 public sealed record ResultadoTematica<T>(EstadoConsultaTematica Estado, T? Valor = default, string? Detalle = null);
+
+// ---------- Herramienta obtener_desempeno_tematico (forma corta para el asistente) ----------
+
+public sealed record TemaHerramientaDto(
+    int Id,
+    string Nombre,
+    string Unidad,
+    decimal? Domina,
+    decimal? Promedio,
+    int EstudiantesConNota,
+    IReadOnlyList<string> Evaluaciones,
+    IReadOnlyList<EstudianteBajoDto> Bajo6,
+    IReadOnlyList<string> Proximas);
+
+public sealed record RespuestaDesempenoHerramienta(string Herramienta, DateTimeOffset Generado, int CursoId, int? ActividadId, IReadOnlyList<TemaHerramientaDto> Temas, IReadOnlyList<string> SinTemas)
+{
+    public const string Nombre = "obtener_desempeno_tematico";
+
+    public static RespuestaDesempenoHerramienta Desde(TematicasDto t, DateTimeOffset generado) => new(
+        Nombre,
+        generado,
+        t.CursoId,
+        t.ActividadId,
+        t.Temas.Select(x => new TemaHerramientaDto(
+            x.Id,
+            x.Nombre,
+            $"U{x.Unidad.Numero} · {x.Unidad.Nombre}",
+            x.Domina,
+            x.Promedio,
+            x.EstudiantesConNota,
+            x.Evaluaciones.Select(e => e.Criterios.Count > 0 ? $"{e.Actividad} (criterio: {string.Join(", ", e.Criterios)})" : e.Actividad).ToList(),
+            x.Bajo6,
+            x.Proximas.Select(p => $"{p.Nombre} ({p.FechaLimite:yyyy-MM-dd})").ToList())).ToList(),
+        t.SinTemas.Select(s => s.Nombre).ToList());
+}

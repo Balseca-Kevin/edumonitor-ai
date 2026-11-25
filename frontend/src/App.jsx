@@ -8,6 +8,7 @@ import CursoMarco from './pages/curso/CursoMarco'
 import Asistente from './pages/curso/Asistente'
 import Alertas from './pages/curso/Alertas'
 import Libro from './pages/curso/Libro'
+import Mapa from './pages/curso/Mapa'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
 
@@ -25,6 +26,7 @@ export default function App() {
             <Route index element={<Navigate to="libro" replace />} />
             <Route path="libro" element={<Libro />} />
             <Route path="panel" element={<Panel />} />
+            <Route path="mapa" element={<Mapa />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="asistente" element={<Asistente />} />
           </Route>

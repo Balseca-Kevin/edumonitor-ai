@@ -24,7 +24,7 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 |---|---|---|---|---|---|
 | HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint y pantalla hechos (pantalla adelantada por Kevin) |
 | HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Por hacer |
-| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Rúbricas y funciones de Moodle en PR #49; falta backend y pantalla |
+| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Hecha: rúbricas en la sincronización, mapeo, desempeño por tema y «Mapa del curso» (adelantada por Kevin) |
 | HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Por hacer |
 | HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Por hacer |
 | HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Filtros en PR #51; falta el resto |
@@ -89,7 +89,7 @@ Guía: `docs/sprint-3/diseno.md` y el prototipo `docs/sprint-3/prototipo/EduMoni
 - R.1 Tokens del Sprint 3 en `tokens.css`: paleta oscura del diseño D para inicio, barra lateral, cabecera, carga y aviso; papel `#F4F2ED` para el contenido; verde petróleo `#0E6E60` para las acciones del asistente y del plan de refuerzo. Hizo: Kevin.
 - R.2 Barra lateral oscura con la navegación del curso y el contador de alertas; barra blanca con el control segmentado que filtra de verdad, «Sincronizar» y «Preguntar al asistente». Hizo: Kevin. El filtro llega al backend con el parámetro `tramo` (contrato «Tramo del período»); Libro, Mapa y Plan de refuerzo se suman a la barra cuando exista su pantalla.
 - R.3 Mis cursos en tarjetas con «Abrir curso» y «Sincronizar y abrir» (la pantalla de carga es TA-21.A2). Hizo: Kevin. La semana, la unidad actual y lo que vence esta semana se sumaron a la tarjeta con TA-22.A5.
-- R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante». Hizo: Kevin. La ficha suma el desglose 40/30/30 y «aún no vence» calculados en el backend; «Para llegar a 7,0» llega con TA-10.A1.
+- R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante». Hizo: Kevin. La ficha suma el desglose 40/30/30 y «aún no vence» calculados en el backend, y «Para llegar a 7,0» (TA-10.A1).
 - R.5 Alertas en tarjetas con chips por regla, «Debe: …», «Armar plan de refuerzo», «Marcar revisada» y el modal «Umbrales de alerta». Hizo: Kevin.
 - R.6 Asistente: historial con los grupos «Planes de refuerzo» y «Conversaciones», contexto visible y el desplegable cerrado «Cómo llegó a esta respuesta». Hizo: Kevin. El grupo «Planes de refuerzo» aparece con TA-15.A4; la semana del período ya está en «Sabe: …» (TA-22.A5).
 - R.7 Inicio de sesión del diseño D con lo que suma el prototipo. Hizo: Kevin.
@@ -107,14 +107,14 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 - TA-21.2 Pantalla `Libro.jsx`, primera del curso, con cero, sin entrega y pendiente diferenciados y «no disponible» cuando falta el dato. Hizo: Kevin, con «aún no vence», el tramo, la búsqueda, el orden, la ficha al hacer clic y las celdas nuevas de TA-21.A2.
 - TA-21.3 Prueba de interfaz del libro. Hizo: Kevin (`Libro.test.jsx`).
 - HU-10 Ficha del estudiante (`GET /api/cursos/{id}/estudiantes/{eid}`; se detalla el contrato antes).
-- TA-10.A1 Cálculo de la nota necesaria para llegar a 7,0, con pruebas y herramienta del asistente (Kevin).
-- TA-10.A2 Bloque «Para llegar a 7,0» en la ficha (Santiago).
+- TA-10.A1 Cálculo de la nota necesaria para llegar a 7,0, con pruebas y herramienta del asistente (Kevin). Hizo: Kevin.
+- TA-10.A2 Bloque «Para llegar a 7,0» en la ficha (Santiago). Hizo: Kevin, en la ficha lateral del panel, las alertas y el libro.
 - TA-21.A1 Diferencias entre sincronizaciones (Kevin) y TA-21.A2 pantalla de carga, aviso y celdas nuevas en el libro (Santiago).
 
 ### Bloque 2 · Rúbricas y temas (Kevin, Sebastián)
 
 - Kevin: tres métodos nuevos en `IMoodleClient` (rúbricas, calificación por criterio, estado de cada entrega con el comentario del docente), entidad y migración de los criterios de rúbrica, importación en la sincronización. Hizo: Kevin.
-- Sebastián, HU-08: temas y contenidos mínimos por unidad, mapeo actividad → tema y criterio → tema, desempeño por tema con pruebas, pantalla de mapeo.
+- Sebastián, HU-08: temas y contenidos mínimos por unidad, mapeo actividad → tema y criterio → tema, desempeño por tema con pruebas, pantalla de mapeo. Hizo: Kevin, por pedido de Kevin (temas, mapeo, desempeño por tema y la pantalla «Mapa del curso»; los contenidos mínimos no entran).
 
 ### Bloque 3 · Asistente con contexto y respaldo (Kevin, Jeremy)
 

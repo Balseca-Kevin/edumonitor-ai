@@ -46,6 +46,16 @@ class ParametrosCalificaciones(ParametrosAlertas):
             return None
         return valor.strip() if isinstance(valor, str) else valor
 
+class ParametrosNotaNecesaria(ParametrosAlertas):
+    """TA-10.A1 · El backend calcula la nota necesaria; el modelo solo pasa el curso y el estudiante."""
+    estudianteId: int = Field(gt=0, strict=True)
+
+
+class ParametrosDesempenoTematico(ParametrosAlertas):
+    """HU-08 · Desempeño por tema del curso o, con actividadId, de una actividad."""
+    actividadId: Optional[int] = Field(default=None, gt=0, strict=True)
+
+
 class ChatPeticion(BaseModel):
     mensaje: str = Field(min_length=1)
     token: str = Field(min_length=1, repr=False)

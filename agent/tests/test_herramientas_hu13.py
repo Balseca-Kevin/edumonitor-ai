@@ -188,3 +188,46 @@ async def test_consultar_estado_periodo_llama_al_backend_con_el_curso_ta22a4(mon
 def test_el_prompt_pide_no_calcular_fechas_ta22a4():
     assert "consultar_estado_periodo" in graph.PROMPT_SISTEMA
     assert "no calcules fechas" in graph.PROMPT_SISTEMA
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_calcular_nota_necesaria_pasa_el_estudiante_al_backend_ta10a1(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/nota-necesaria", params={"cursoId": "1", "estudianteId": "8"}).respond(
+        json={"herramienta": "calcular_nota_necesaria", "resultado": {"estado": "NECESITA", "notaNecesaria": 7.67}}
+    )
+
+    resultado = await graph.tool_node(estado(llamada("calcular_nota_necesaria", {"cursoId": 1, "estudianteId": 8})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].estado == "OK"
+    assert "7.67" in resultado["messages"][0].content
+
+
+@pytest.mark.asyncio
+async def test_calcular_nota_necesaria_sin_estudiante_no_llama_al_backend_ta10a1():
+    resultado = await graph.tool_node(estado(llamada("calcular_nota_necesaria", {"cursoId": 1})))
+
+    assert resultado["trazas"][0].estado == "ERROR"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_obtener_desempeno_tematico_con_y_sin_actividad_hu08(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/desempeno-tematico", params={"cursoId": "1", "actividadId": "103"}).respond(
+        json={"herramienta": "obtener_desempeno_tematico", "temas": [{"nombre": "Historias de usuario", "domina": 0.55}]}
+    )
+
+    resultado = await graph.tool_node(estado(llamada("obtener_desempeno_tematico", {"cursoId": 1, "actividadId": 103})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].parametros == {"cursoId": 1, "actividadId": 103}
+    assert "Historias de usuario" in resultado["messages"][0].content
+
+
+def test_el_prompt_nombra_las_herramientas_nuevas_y_pide_decir_que_es_con_las_notas_actuales():
+    assert "calcular_nota_necesaria" in graph.PROMPT_SISTEMA
+    assert "obtener_desempeno_tematico" in graph.PROMPT_SISTEMA
+    assert "notas actuales" in graph.HERRAMIENTAS["calcular_nota_necesaria"][2]

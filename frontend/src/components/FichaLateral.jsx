@@ -1,10 +1,78 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatearFecha, formatearNumero } from './formato'
 import { busquedaTramo } from './tramo'
+import { obtenerNotaNecesaria } from '../services/notaNecesaria'
 
 const NO_DISPONIBLE = 'no disponible'
 const APROBACION = 7
+
+function textoNotaNecesaria(r) {
+  const pendientes = `${r.pendientes} ${r.pendientes === 1 ? 'actividad pendiente' : 'actividades pendientes'}`
+  switch (r.estado) {
+    case 'NECESITA':
+      return `Necesita ${formatearNumero(r.notaNecesaria)} en cada una de sus ${pendientes}. Con 10 en todas llegaría a ${formatearNumero(r.maximoPosible)}.`
+    case 'YA_ALCANZA':
+      return `Ya llega a 7,0 aunque saque 0 en sus ${pendientes}.`
+    case 'NO_ALCANZA':
+      return `Ya no alcanza 7,0: con 10 en sus ${pendientes} llegaría a ${formatearNumero(r.maximoPosible)}.`
+    case 'SIN_PENDIENTES':
+      return 'No le quedan actividades pendientes en las categorías ponderadas.'
+    default:
+      return 'Todavía no hay notas para calcularlo.'
+  }
+}
+
+/**
+ * TA-10.A1 · «Para llegar a 7,0»: la nota mínima en las actividades pendientes, calculada por el backend con las notas actuales. Se
+ * abre para ver qué actividades cuentan como pendientes. Nunca se dice «nota final».
+ */
+function ParaLlegar({ cursoId, estudianteId }) {
+  const clave = `${cursoId}|${estudianteId}`
+  const [cargado, setCargado] = useState({ clave: null, datos: null, error: false })
+
+  useEffect(() => {
+    let vigente = true
+    obtenerNotaNecesaria(cursoId, estudianteId)
+      .then((datos) => vigente && setCargado({ clave, datos, error: false }))
+      .catch(() => vigente && setCargado({ clave, datos: null, error: true }))
+    return () => {
+      vigente = false
+    }
+  }, [cursoId, estudianteId, clave])
+
+  const { datos, error } = cargado.clave === clave ? cargado : { datos: null, error: false }
+  const pendientes = (datos?.categorias ?? []).flatMap((c) => c.pendientes.map((p) => ({ ...p, categoria: c.categoria })))
+  return (
+    <section className="ficha-bloque ficha-para-llegar" aria-label="Para llegar a 7,0">
+      <h3>Para llegar a 7,0</h3>
+      {error ? (
+        <p className="ayuda">{NO_DISPONIBLE}</p>
+      ) : !datos ? (
+        <p className="ayuda">Calculando…</p>
+      ) : (
+        <>
+          <p className={`ficha-necesita ficha-necesita--${datos.estado.toLowerCase()}`}>{textoNotaNecesaria(datos)}</p>
+          {pendientes.length > 0 && (
+            <details>
+              <summary>Ver las actividades pendientes</summary>
+              <ul className="ficha-pendientes">
+                {pendientes.map((p) => (
+                  <li key={p.actividadId}>
+                    {p.nombre} · {p.categoria}
+                    {p.fechaLimite ? ` · vence ${formatearFecha(p.fechaLimite)}` : ''}
+                    {p.estado === 'PENDIENTE' ? ' · por calificar' : ''}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          <span className="ayuda">cálculo con las notas actuales</span>
+        </>
+      )}
+    </section>
+  )
+}
 
 function Desglose({ categorias }) {
   if (!categorias?.length) return null
@@ -122,6 +190,7 @@ export default function FichaLateral({ cursoId, estudiante, requiereAtencion, ce
             <span className="ayuda">promedio ponderado en {nombreTramo}</span>
           </div>
           <Desglose categorias={estudiante.categorias} />
+          <ParaLlegar cursoId={cursoId} estudianteId={estudiante.id} />
           <Evolucion celdas={celdas} />
           {sinEntregar.length > 0 && (
             <section className="ficha-bloque" aria-label="Sin entregar">
