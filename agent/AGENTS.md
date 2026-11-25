@@ -44,6 +44,7 @@ Rutas y JSON en el bloque «Sprint 3» de `docs/contratos-api.md`. Ninguna se pr
 | `guardar_tarea_refuerzo` | HU-15 | Borrador de refuerzo en estado BORRADOR (lo aprueba el docente) |
 | `consultar_refuerzos_aplicados` | HU-15 (TA-15.A2) | Refuerzos aprobados con el promedio del tema antes y después |
 | `calcular_nota_necesaria` | HU-10 (TA-10.A1) | Nota mínima para llegar a 7,0 con las notas actuales |
+| `consultar_estado_periodo` | HU-22 (TA-22.A4) | Semana del período, unidad actual, vencidas con entregas que faltan, lo que vence esta semana y la siguiente evaluación (`GET /api/tools/estado-periodo`) |
 
 ### Grafo
 

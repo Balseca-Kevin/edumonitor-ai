@@ -166,3 +166,25 @@ async def test_filtro_vacio_se_ignora_hu23(monkeypatch):
 
     assert ruta.called
     assert resultado["trazas"][0].parametros == {"cursoId": 1}
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_consultar_estado_periodo_llama_al_backend_con_el_curso_ta22a4(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/estado-periodo", params={"cursoId": "1"}).respond(
+        json={"herramienta": "consultar_estado_periodo", "semana": 12, "totalSemanas": 15, "siguiente": {"nombre": "Examen Parcial 2"}}
+    )
+
+    resultado = await graph.tool_node(estado(llamada("consultar_estado_periodo", {"cursoId": 1})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].nombre == "consultar_estado_periodo"
+    assert resultado["trazas"][0].parametros == {"cursoId": 1}
+    assert resultado["trazas"][0].estado == "OK"
+    assert "Examen Parcial 2" in resultado["messages"][0].content
+
+
+def test_el_prompt_pide_no_calcular_fechas_ta22a4():
+    assert "consultar_estado_periodo" in graph.PROMPT_SISTEMA
+    assert "no calcules fechas" in graph.PROMPT_SISTEMA

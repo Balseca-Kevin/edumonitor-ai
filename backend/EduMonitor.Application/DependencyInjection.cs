@@ -7,6 +7,7 @@ using EduMonitor.Application.Estado;
 using EduMonitor.Application.Herramientas;
 using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Libro;
+using EduMonitor.Application.Periodo;
 using EduMonitor.Application.Sincronizaciones;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<CursoService>();
         services.AddScoped<IndicadorService>();
         services.AddScoped<LibroService>();
+        services.AddScoped<PeriodoService>();
         services.AddScoped<AlertasService>();
         services.AddScoped<HerramientasService>();
         services.AddScoped<AgenteService>();

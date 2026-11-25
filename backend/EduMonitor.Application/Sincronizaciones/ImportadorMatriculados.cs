@@ -13,6 +13,32 @@ public sealed class ImportadorMatriculados(IMoodleClient moodle, IEduMonitorDbCo
     /// <summary>Rol de Moodle de los estudiantes. Docentes y demás roles no se importan como estudiantes.</summary>
     public const string RolEstudiante = "student";
 
+    /// <summary>
+    /// TA-22.A4 · Inicio y fin del curso (<c>core_enrol_get_users_courses</c>, la única función permitida que los da). Se pide con un
+    /// estudiante matriculado, porque el usuario técnico ve el curso por su rol de sistema y no está matriculado. Sin estudiantes no
+    /// cambia nada. Lanza <see cref="MoodleNoDisponibleException"/> si Moodle falla; en ese caso las fechas guardadas no cambian.
+    /// True si leyó las fechas de Moodle.
+    /// </summary>
+    public async Task<bool> ImportarFechasCursoAsync(Curso curso, CancellationToken ct = default)
+    {
+        var estudiante = await db.Matriculas.Where(m => m.CursoId == curso.Id).Select(m => (int?)m.Estudiante.MoodleUsuarioId).FirstOrDefaultAsync(ct);
+        if (estudiante is null)
+        {
+            return false;
+        }
+
+        var cursos = await moodle.ObtenerCursosDeUsuarioAsync(estudiante.Value, ct);
+        if (cursos.FirstOrDefault(c => c.Id == curso.MoodleCursoId) is { } delCurso)
+        {
+            curso.Inicio = delCurso.Inicio;
+            curso.Fin = delCurso.Fin;
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+
+        return false;
+    }
+
     /// <summary>Devuelve cuántos estudiantes hay matriculados en el curso según Moodle. Lanza <see cref="MoodleNoDisponibleException"/> si Moodle falla.</summary>
     public async Task<int> ImportarAsync(Curso curso, CancellationToken ct = default)
     {

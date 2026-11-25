@@ -575,6 +575,77 @@ Cambios en dos rutas:
 
 `GET /api/tools/calificaciones` con `estudianteId` también usa `AUN_NO_VENCE`, para que el asistente no diga que falta una entrega que todavía no vence.
 
+## Estado del período (TA-22.A4)
+
+### GET /api/cursos/{id}/periodo · DOCENTE
+
+Semana del período, unidades, actividades con su fecha límite y su estado, y los tres bloques de la cabecera del curso (vencidas, vence esta semana y siguiente). Se calcula en el backend con la fecha del servidor en `America/Guayaquil` y lo que guardó la última sincronización; no llama a Moodle.
+
+```json
+{
+  "cursoId": 1,
+  "hoy": "2026-11-22T10:00:00-05:00",
+  "inicio": "2026-09-01T02:00:00-05:00",
+  "fin": "2026-12-11T23:59:00-05:00",
+  "finOrigen": "ULTIMA_FECHA_LIMITE",
+  "estado": "EN_CURSO",
+  "semana": { "actual": 12, "total": 15 },
+  "unidadActual": { "numero": 4, "nombre": "Herramientas ágiles del mercado", "parcial": 2 },
+  "unidades": [
+    { "numero": 1, "nombre": "Principios fundamentales de las metodologías ágiles", "parcial": 1, "semanaDesde": 1, "semanaHasta": 4 }
+  ],
+  "actividades": [
+    {
+      "id": 101, "nombre": "Tarea 1", "sigla": "T1", "categoria": "Tareas", "unidad": 1,
+      "fechaLimite": "2026-09-08T17:59:00-05:00", "semana": 2, "estado": "VENCIDA",
+      "matriculados": 32, "entregaron": 31, "faltan": 1
+    }
+  ],
+  "vencidas": { "actividades": 12, "entregasQueFaltan": 18, "conFaltas": [ { "id": 113, "nombre": "Tarea 5", "faltan": 4 } ] },
+  "venceEstaSemana": [ { "id": 117, "nombre": "Examen Parcial 2", "fechaLimite": "2026-11-25T18:59:00-05:00", "entregaron": 0, "matriculados": 32 } ],
+  "siguiente": { "id": 118, "nombre": "Tarea 9", "categoria": "Tareas", "semana": 13, "fechaLimite": "2026-11-28T23:59:00-05:00", "temas": [] },
+  "noDisponibles": []
+}
+```
+
+Reglas del cálculo:
+- **Inicio y fin:** `inicio` es el `startdate` del curso en Moodle (`core_enrol_get_users_courses`), que la sincronización guarda. `fin` es el `enddate`; si Moodle lo tiene en 0, es la fecha límite más tardía del curso y `finOrigen` dice `ULTIMA_FECHA_LIMITE` (si no, `MOODLE`).
+- **Semana:** la semana n va del día `inicio + 7·(n−1)` al día anterior a `inicio + 7·n`, en fechas de Ecuador. `semana.total` es la semana de `fin`. `semana.actual` es la semana de `hoy`, acotada entre 1 y `total`. `estado` es `ANTES` (antes de `inicio`), `EN_CURSO` o `TERMINADO` (después de `fin`).
+- **Unidad actual:** la unidad de la siguiente actividad que no ha vencido; si todas vencieron, la última unidad con actividades.
+- **Unidades:** `semanaHasta` es la semana de la última fecha límite de la unidad, y `semanaDesde` es la semana siguiente a la de la unidad anterior (1 en la primera). Una unidad sin actividades va con las dos en `null`.
+- **Estado de cada actividad:**
+  - `VENCIDA`: la fecha límite ya pasó.
+  - `VENCE_ESTA_SEMANA`: no ha pasado y cae en la semana actual.
+  - `PROXIMA`: vence en una semana posterior.
+  - `SIN_FECHA`: no tiene fecha límite.
+- **Entregas:** `entregaron` cuenta las notas calificadas y las entregas por calificar; `faltan` cuenta las que no se entregaron, solo en las vencidas (0 en las demás).
+- **Siguiente:** la primera actividad `PROXIMA`. `temas` son los temas que el mapeo de HU-08 asocia a esa actividad (vacío si todavía no se asociaron).
+- **Sigla:** `Tarea n` → `Tn`, `Taller n` → `TLn`, `APE n` → `APEn`, `Examen Parcial n` → `EX Pn`. Las demás llevan las iniciales en mayúsculas («Proyecto integrador» → `PI`).
+
+`noDisponibles` lleva `"inicio"` si la sincronización no pudo leer la fecha de inicio. En ese caso `semana`, `estado`, `unidades[].semanaDesde/semanaHasta` y `actividades[].semana` van en `null`; los estados de las actividades y los bloques siguen, porque dependen solo de las fechas límite. Sin semanas, «vence esta semana» son las que vencen entre hoy y los 6 días siguientes.
+
+Códigos: 401, 403, 404 y 409 como en el resto del bloque.
+
+### GET /api/tools/estado-periodo?cursoId=1 · DOCENTE, AGENTE
+
+Herramienta `consultar_estado_periodo` del asistente: lo mismo de la ruta anterior en forma corta, para que el modelo sepa en qué punto del período está el curso.
+
+```json
+{
+  "herramienta": "consultar_estado_periodo",
+  "generado": "2026-11-22T10:00:00-05:00",
+  "curso": { "id": 1, "nombreCorto": "AGIL-4B" },
+  "hoy": "2026-11-22",
+  "semana": 12, "totalSemanas": 15,
+  "unidadActual": "U4 · Herramientas ágiles del mercado",
+  "vencidas": [ { "nombre": "Tarea 5", "faltan": 4 } ],
+  "venceEstaSemana": [ { "nombre": "Examen Parcial 2", "fechaLimite": "2026-11-25", "entregaron": 0, "matriculados": 32 } ],
+  "siguiente": { "nombre": "Tarea 9", "semana": 13, "fechaLimite": "2026-11-28", "temas": [] }
+}
+```
+
+`vencidas` lleva solo las que tienen entregas que faltan. Un curso sin sincronizar responde 200 con `semana` en `null` y las listas vacías. Responde 400 sin `cursoId`, 403 en un curso ajeno y 404 si el curso no existe.
+
 ## Tramo del período (R.2)
 
 El control segmentado de la barra del curso (Todo el ciclo, Parcial 1, Parcial 2, U1 … Un) filtra el libro, el panel y las alertas. El backend calcula con las actividades del tramo, con el mismo código del curso completo; el frontend solo elige el tramo.

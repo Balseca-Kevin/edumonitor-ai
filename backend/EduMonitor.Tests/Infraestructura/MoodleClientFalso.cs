@@ -10,6 +10,8 @@ namespace EduMonitor.Tests.Infraestructura;
 public sealed class MoodleClientFalso : IMoodleClient
 {
     public List<MatriculadoMoodle> Matriculados { get; } = new();
+    /// <summary>Cursos que devuelve core_enrol_get_users_courses (con su inicio y fin, TA-22.A4).</summary>
+    public List<CursoMoodle> Cursos { get; } = new();
     public List<CalificacionesUsuarioMoodle> Calificaciones { get; } = new();
     public List<SeccionMoodle> Secciones { get; } = new();
     public List<TareaMoodle> Tareas { get; } = new();
@@ -72,7 +74,7 @@ public sealed class MoodleClientFalso : IMoodleClient
         Responder("core_webservice_get_site_info", new InfoSitioMoodle("Moodle-Lab-UTA", "4.5", "edumonitor_ws_user", FuncionesSitio.ToList()));
 
     public Task<IReadOnlyList<CursoMoodle>> ObtenerCursosDeUsuarioAsync(int moodleUsuarioId, CancellationToken ct = default) =>
-        Responder<IReadOnlyList<CursoMoodle>>("core_enrol_get_users_courses", Array.Empty<CursoMoodle>());
+        Responder<IReadOnlyList<CursoMoodle>>("core_enrol_get_users_courses", Cursos.ToList());
 
     public Task<IReadOnlyList<SeccionMoodle>> ObtenerContenidoCursoAsync(int moodleCursoId, CancellationToken ct = default) =>
         Responder<IReadOnlyList<SeccionMoodle>>("core_course_get_contents", Secciones.ToList());

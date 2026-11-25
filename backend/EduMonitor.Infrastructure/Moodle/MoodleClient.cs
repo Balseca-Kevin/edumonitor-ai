@@ -39,7 +39,7 @@ internal sealed partial class MoodleClient(HttpClient http, IConfiguracionMoodle
     {
         using var json = await LlamarAsync("core_enrol_get_users_courses", new() { ["userid"] = Num(moodleUsuarioId) }, ct);
         return json.RootElement.EnumerateArray()
-            .Select(c => new CursoMoodle(Entero(c, "id"), Texto(c, "shortname"), Texto(c, "fullname")))
+            .Select(c => new CursoMoodle(Entero(c, "id"), Texto(c, "shortname"), Texto(c, "fullname"), Fecha(c, "startdate"), Fecha(c, "enddate")))
             .ToList();
     }
 
