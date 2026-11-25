@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Marco from '../../components/Marco'
 import PaginaError from '../../components/PaginaError'
 import TiraPeriodo from '../../components/TiraPeriodo'
@@ -80,12 +80,11 @@ export function BarraCurso({ curso, unidades, sincronizando, resultado, onSincro
 
 /**
  * HU-19 y R.2 · Estructura de las pantallas de un curso: barra lateral oscura con la navegación del curso y el contador de alertas,
- * cabecera oscura con el código, el nombre y la tira del período, y la barra con el control segmentado. El Asistente es un chat de
- * página completa con su propia barra (mockup MK-14). 401, 403 y 404 se ven en pantalla completa, sin barra lateral.
+ * cabecera oscura con el código, el nombre y la tira del período, y la barra con el control segmentado; el Asistente va dentro de la
+ * misma estructura (R.6). 401, 403 y 404 se ven en pantalla completa, sin barra lateral.
  */
 export default function CursoMarco() {
   const { id } = useParams()
-  const { pathname } = useLocation()
   const tramo = useTramo()
   const [cargado, setCargado] = useState({ id: null, curso: null, error: null })
   const [contexto, setContexto] = useState({ id: null, unidades: [], alertas: null })
@@ -142,10 +141,6 @@ export default function CursoMarco() {
 
   if (error && ['sesion', 'acceso', 'no-existe'].includes(error.tipo)) {
     return <PaginaError error={error} />
-  }
-
-  if (curso && pathname.endsWith('/asistente')) {
-    return <Outlet context={{ curso, version }} />
   }
 
   return (

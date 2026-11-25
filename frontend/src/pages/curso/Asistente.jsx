@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink, useOutletContext, useParams } from 'react-router-dom'
-import { Marca } from '../../components/Marco'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useOutletContext, useParams, useSearchParams } from 'react-router-dom'
+import FichaLateral from '../../components/FichaLateral'
 import { formatearFecha, formatearNumero } from '../../components/formato'
+import { nombreTramo, useTramo } from '../../components/tramo'
+import { datoUsado, estudiantesMencionados, motivo, separarRespuesta } from '../../components/lenguaje'
 import { listarConversaciones, obtenerConversacion, preguntarAlAsistente } from '../../services/agente'
 import { obtenerIndicadores } from '../../services/indicadores'
+import { obtenerAlertas } from '../../services/alertas'
+import { actividadesDelLibro, obtenerLibro } from '../../services/libro'
 import { describirError } from '../../services/errores'
-import { datoUsado, estudiantesMencionados, grupoDeFecha, motivo } from '../../components/lenguaje'
 
 const LARGO_MAXIMO = 500
-const BAJO = 6
+const APROBACION = 7
 
 const SUGERENCIAS = [
   { texto: '¿Qué estudiantes requieren atención?', ayuda: 'Alertas activas con su motivo' },
@@ -16,6 +19,9 @@ const SUGERENCIAS = [
   { texto: '¿Quién tiene más actividades sin entregar?', ayuda: 'Entregas pendientes por estudiante' },
   { texto: '¿Qué cursos tengo asignados?', ayuda: 'Tus cursos en EduMonitor' },
 ]
+
+/** Nombres de los parámetros de las consultas en palabras del docente (dentro de «Cómo llegó a esta respuesta»). */
+const PARAMETRO = { cursoId: 'curso', estudianteId: 'estudiante', nombre: 'nombre', promedioMenorA: 'promedio menor a', orden: 'orden' }
 
 function usuarioActual() {
   try {
@@ -25,27 +31,53 @@ function usuarioActual() {
   }
 }
 
-function TarjetasEstudiantes({ estudiantes }) {
+function Bloques({ texto }) {
+  const partes = separarRespuesta(texto)
+  if (!partes) return <p className="msg-texto">{texto}</p>
+  return (
+    <>
+      {partes.antes && <p className="msg-texto">{partes.antes}</p>}
+      <div className="respuesta-bloques num">
+        {partes.hechos && (
+          <div className="respuesta-bloque">
+            <span>Hechos</span>
+            <p>{partes.hechos}</p>
+          </div>
+        )}
+        {partes.inferencia && (
+          <div className="respuesta-bloque">
+            <span>Inferencia</span>
+            <p>{partes.inferencia}</p>
+          </div>
+        )}
+        {partes.recomendacion && (
+          <div className="respuesta-bloque respuesta-bloque--ia">
+            <span>Recomendación</span>
+            <p>{partes.recomendacion}</p>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+function Estudiantes({ estudiantes, onAbrir }) {
   if (!estudiantes.length) return null
   return (
-    <div className="tarjetas-estudiantes" aria-label="Estudiantes mencionados">
+    <div className="respuesta-estudiantes hoja" aria-label="Estudiantes mencionados">
+      <div className="respuesta-estudiantes-titulo">Estudiantes mencionados</div>
       {estudiantes.map((e) => {
-        const promedio = e.promedioPonderado
+        const bajo = e.promedioPonderado !== null && e.promedioPonderado < APROBACION
         return (
-          <div className="tarjeta-estudiante" key={e.id}>
+          <div className="respuesta-estudiante num" key={e.id}>
             <b>
-              {e.nombre} {e.apellido}
+              {e.apellido}, {e.nombre}
             </b>
-            <div className="barra-nota">
-              <div className="barra-nota-pista">
-                <div
-                  className={`barra-nota-valor${promedio !== null && promedio < BAJO ? ' barra-nota-valor--arena' : ''}`}
-                  style={{ width: `${Math.max(0, Math.min(100, (promedio ?? 0) * 10))}%` }}
-                />
-              </div>
-              <span>{motivo(e)}</span>
-            </div>
-            <span className="nota">{formatearNumero(promedio) ?? 'no disponible'}</span>
+            <span className={`fuerte${bajo ? ' arena-texto' : ''}`}>{formatearNumero(e.promedioPonderado) ?? 'no disponible'}</span>
+            <span className="ayuda">{motivo(e)}</span>
+            <button type="button" className="boton boton--secundario boton--chico" onClick={() => onAbrir(e.id)}>
+              Abrir ficha
+            </button>
           </div>
         )
       })}
@@ -53,57 +85,42 @@ function TarjetasEstudiantes({ estudiantes }) {
   )
 }
 
-function RespuestaAsistente({ turno, cursoId, estudiantes, sincronizacion }) {
-  const [verDatos, setVerDatos] = useState(false)
-  const [copiado, setCopiado] = useState(false)
-  const r = turno.respuesta
-  const mencionados = estudiantesMencionados(r.respuesta, estudiantes)
-
-  async function copiar() {
-    try {
-      await navigator.clipboard?.writeText(r.respuesta)
-      setCopiado(true)
-      setTimeout(() => setCopiado(false), 2000)
-    } catch {
-      setCopiado(false)
-    }
-  }
-
+/** HU-17 · Desplegable cerrado: quién respondió, qué se consultó con qué parámetros, en cuánto tiempo y de qué sincronización. */
+function ComoLlego({ respuesta, estudiantes, sincronizacion }) {
+  const modelo = respuesta.modelo
+  const quien =
+    !modelo || modelo === 'ninguno'
+      ? 'Respondió: EduMonitor, sin llamar al modelo'
+      : respuesta.respaldo === false
+        ? `Respondió: modelo externo (${modelo})`
+        : respuesta.respaldo === true
+          ? `Respondió: modelo local (respaldo) · ${modelo}`
+          : `Respondió: modelo local · ${modelo}`
   return (
-    <>
-      <p className="msg-texto">{r.respuesta}</p>
-      <TarjetasEstudiantes estudiantes={mencionados} />
-      <div className="chat-acciones">
-        <Link to={`/cursos/${cursoId}/panel`} className="chip">
-          Abrir en el panel
-        </Link>
-        <button type="button" className="chip" onClick={copiar}>
-          {copiado ? 'Copiado' : 'Copiar'}
-        </button>
-        <button type="button" className="chip chip--suave" aria-expanded={verDatos} onClick={() => setVerDatos((v) => !v)}>
-          {verDatos ? 'Ocultar datos usados' : 'Datos usados'}
-        </button>
-      </div>
-      {verDatos && (
-        <ul className="chat-datos" aria-label="Datos usados">
-          {r.herramientas?.length ? (
-            r.herramientas.map((h, i) => <li key={`${h.nombre}-${i}`}>{datoUsado(h, estudiantes)}</li>)
-          ) : (
-            <li>Respuesta de EduMonitor sin consultar datos del curso.</li>
-          )}
-          {sincronizacion?.fecha && <li>Sincronización del {formatearFecha(sincronizacion.fecha)}</li>}
-          <li>
-            {r.modelo && r.modelo !== 'ninguno'
-              ? `Respondió el modelo local ${r.modelo} en ${formatearNumero(r.duracionMs / 1000, 1)} s.`
-              : 'EduMonitor respondió sin llamar al modelo.'}
-          </li>
-        </ul>
-      )}
-    </>
+    <details className="como-llego">
+      <summary>Cómo llegó a esta respuesta</summary>
+      <ul>
+        <li>{quien}</li>
+        {(respuesta.herramientas ?? []).map((h, i) => {
+          const parametros = Object.entries(h.parametros ?? {})
+            .map(([clave, valor]) => `${PARAMETRO[clave] ?? clave} ${valor}`)
+            .join(' · ')
+          return (
+            <li key={`${h.nombre}-${i}`}>
+              {datoUsado(h, estudiantes)}
+              {parametros && ` · ${parametros}`}
+            </li>
+          )
+        })}
+        {!respuesta.herramientas?.length && <li>Sin consultar datos del curso.</li>}
+        {respuesta.duracionMs != null && <li>Tiempo total: {formatearNumero(respuesta.duracionMs / 1000, 1)} s</li>}
+        {sincronizacion?.fecha && <li>Datos de la sincronización del {formatearFecha(sincronizacion.fecha)}</li>}
+      </ul>
+    </details>
   )
 }
 
-function Turno({ turno, cursoId, estudiantes, sincronizacion }) {
+function Turno({ turno, estudiantes, sincronizacion, onAbrir }) {
   return (
     <div className="msg">
       <div className="msg-docente">{turno.pregunta}</div>
@@ -126,7 +143,11 @@ function Turno({ turno, cursoId, estudiantes, sincronizacion }) {
             </div>
           )}
           {turno.respuesta && (
-            <RespuestaAsistente turno={turno} cursoId={cursoId} estudiantes={estudiantes} sincronizacion={sincronizacion} />
+            <>
+              <Bloques texto={turno.respuesta.respuesta} />
+              <Estudiantes estudiantes={estudiantesMencionados(turno.respuesta.respuesta, estudiantes)} onAbrir={onAbrir} />
+              <ComoLlego respuesta={turno.respuesta} estudiantes={estudiantes} sincronizacion={sincronizacion} />
+            </>
           )}
           {turno.error && (
             <div className={`aviso aviso--${turno.error.tipo === 'no-disponible' ? 'neutro' : 'error'}`} role="alert">
@@ -140,63 +161,86 @@ function Turno({ turno, cursoId, estudiantes, sincronizacion }) {
   )
 }
 
-function Historial({ conversaciones, activa, abrir }) {
-  const grupos = ['Hoy', 'Esta semana', 'Antes']
-    .map((nombre) => ({ nombre, items: conversaciones.filter((c) => grupoDeFecha(c.fecha) === nombre) }))
-    .filter((g) => g.items.length)
-  if (!grupos.length) return <p className="chat-grupo chat-historial">Todavía no hay preguntas en este curso.</p>
+/**
+ * Historial del asistente: «Planes de refuerzo» (TA-15.A4, cuando existan) y «Conversaciones» guardadas en la base
+ * (GET /api/agente/conversaciones), de la más reciente a la más antigua, con su fecha.
+ */
+function Historial({ conversaciones, activa, abrir, nueva, consultando }) {
   return (
-    <nav className="chat-historial" aria-label="Historial de preguntas">
-      {grupos.map((g) => (
-        <div key={g.nombre}>
-          <span className="chat-grupo">{g.nombre}</span>
-          {g.items.map((c) => (
+    <aside className="asistente-historial" aria-label="Historial del asistente">
+      <button type="button" className="boton boton--ia" onClick={nueva} disabled={consultando}>
+        Nueva conversación
+      </button>
+      <nav aria-label="Conversaciones">
+        <span className="asistente-grupo mono">Conversaciones</span>
+        {conversaciones.length === 0 ? (
+          <p className="ayuda">Todavía no hay preguntas en este curso.</p>
+        ) : (
+          conversaciones.map((c) => (
             <button
               key={c.id}
               type="button"
-              className={`chat-hist${activa === c.id ? ' chat-hist--activo' : ''}`}
+              className="asistente-item"
+              aria-current={activa === c.id ? 'true' : undefined}
               title={c.pregunta}
               onClick={() => abrir(c.id)}
             >
-              {c.pregunta}
+              <span>{c.pregunta}</span>
+              {c.fecha && <span className="ayuda">{formatearFecha(c.fecha)}</span>}
             </button>
-          ))}
-        </div>
-      ))}
-    </nav>
+          ))
+        )}
+      </nav>
+    </aside>
   )
 }
 
 /**
- * HU-14 y HU-19 · Asistente como chat (diseño D, mockup MK-14): barra izquierda con la navegación del curso, «+ Nueva conversación»
- * y el historial guardado en la base (GET /api/agente/conversaciones); bienvenida con sugerencias; burbuja del docente y texto del
- * asistente con tarjetas de los estudiantes nombrados (sus números salen de los indicadores reales), «Abrir en el panel», «Copiar»
- * y «Datos usados» en palabras del docente. Mientras espera, «Consultando…»; un 503 se ve como «El asistente no está disponible».
+ * HU-14, HU-19 y R.6 · Asistente dentro del curso (docs/sprint-3/diseno.md): a la izquierda «Nueva conversación» y el historial; a
+ * la derecha el chat con el contexto visible («Sabe: …» con el tramo y el estudiante elegidos), respuestas con Hechos, Inferencia y
+ * Recomendación, tarjetas de los estudiantes nombrados con «Abrir ficha», y el desplegable cerrado «Cómo llegó a esta respuesta».
+ * Desde una ficha llega con `?estudiante=` y la pregunta ya escrita. Un 503 se ve como «El asistente no está disponible».
  */
 export default function Asistente() {
   const { id } = useParams()
+  const tramo = useTramo()
+  const [parametros] = useSearchParams()
   const { curso } = useOutletContext() ?? {}
   const usuario = usuarioActual()
   const [mensaje, setMensaje] = useState('')
   const [turnos, setTurnos] = useState([])
   const [activa, setActiva] = useState(null)
   const [historial, setHistorial] = useState([])
-  const [estudiantes, setEstudiantes] = useState([])
+  const [indicadores, setIndicadores] = useState(null)
+  const [conAlertas, setConAlertas] = useState(null)
+  const [ficha, setFicha] = useState({ id: null, libro: null })
   const cuerpo = useRef(null)
   const consultando = turnos.some((t) => t.cargando)
+  const estudiantes = indicadores?.estudiantes ?? []
+  const enfocado = estudiantes.find((e) => e.id === Number(parametros.get('estudiante'))) ?? null
 
   useEffect(() => {
     let vigente = true
     listarConversaciones(id)
       .then((lista) => vigente && setHistorial(lista))
       .catch(() => vigente && setHistorial([]))
-    obtenerIndicadores(id)
-      .then((datos) => vigente && setEstudiantes(datos?.estudiantes ?? []))
-      .catch(() => vigente && setEstudiantes([]))
+    const pedido = Number(parametros.get('estudiante'))
+    obtenerIndicadores(id, tramo)
+      .then((datos) => {
+        if (!vigente) return
+        setIndicadores(datos)
+        // Desde la ficha: la pregunta sobre ese estudiante queda escrita para que el docente la revise y la envíe.
+        const elegido = datos?.estudiantes?.find((e) => e.id === pedido)
+        if (elegido) setMensaje((actual) => actual || `¿Cómo va ${elegido.nombre} ${elegido.apellido}? ¿En qué actividades le fue mal?`)
+      })
+      .catch(() => vigente && setIndicadores(null))
+    obtenerAlertas(id, 'ACTIVA', tramo)
+      .then((alertas) => vigente && setConAlertas(new Set(alertas.map((a) => a.estudiante?.id))))
+      .catch(() => vigente && setConAlertas(null))
     return () => {
       vigente = false
     }
-  }, [id])
+  }, [id, tramo, parametros])
 
   useEffect(() => {
     // Solo la columna de mensajes se desplaza: baja sola al último mensaje sin mover la página.
@@ -213,10 +257,8 @@ export default function Asistente() {
       const respuesta = await preguntarAlAsistente(id, pregunta)
       setTurnos((t) => [...t.slice(0, -1), { pregunta, respuesta }])
       setActiva(respuesta.conversacionId)
-      setHistorial((h) => [
-        { id: respuesta.conversacionId, fecha: new Date().toISOString(), pregunta },
-        ...h.filter((c) => c.id !== respuesta.conversacionId),
-      ])
+      const guardada = { id: respuesta.conversacionId, fecha: respuesta.fecha, pregunta }
+      setHistorial((h) => [guardada, ...h.filter((c) => c.id !== respuesta.conversacionId)])
     } catch (error) {
       setTurnos((t) => [...t.slice(0, -1), { pregunta, error: describirError(error) }])
     }
@@ -230,7 +272,7 @@ export default function Asistente() {
       setTurnos([
         {
           pregunta: c.pregunta,
-          respuesta: { conversacionId: c.id, respuesta: c.respuesta, herramientas: c.herramientas, modelo: c.modelo, duracionMs: c.duracionMs },
+          respuesta: { conversacionId: c.id, respuesta: c.respuesta, herramientas: c.herramientas, modelo: c.modelo, duracionMs: c.duracionMs, respaldo: c.respaldo },
         },
       ])
     } catch (error) {
@@ -245,42 +287,32 @@ export default function Asistente() {
     setMensaje('')
   }
 
+  const abrirFicha = useCallback(
+    (estudianteId) => {
+      setFicha((f) => ({ ...f, id: estudianteId }))
+      if (!ficha.libro) obtenerLibro(id, { tramo }).then((libro) => setFicha((f) => ({ ...f, libro }))).catch(() => {})
+    },
+    [ficha.libro, id, tramo],
+  )
+  const cerrarFicha = useCallback(() => setFicha((f) => ({ ...f, id: null })), [])
+
   const preguntadas = new Set(turnos.map((t) => t.pregunta))
   const seguimiento = SUGERENCIAS.filter((s) => !preguntadas.has(s.texto)).slice(0, 3)
   const codigo = curso?.nombreCorto ?? 'este curso'
+  const sabe = [nombreTramo(tramo, indicadores?.unidades), enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null].filter(Boolean).join(' · ')
+  const estudianteFicha = estudiantes.find((e) => e.id === ficha.id) ?? null
+  const columnas = actividadesDelLibro(ficha.libro)
+  const filaLibro = ficha.libro?.estudiantes.find((e) => e.id === ficha.id)
+  const celdas = filaLibro ? columnas.map((a, i) => ({ ...filaLibro.notas[i], nombre: a.nombre, fechaLimite: a.fechaLimite })) : []
 
   return (
-    <div className="chat">
-      <aside className="chat-lateral" aria-label="Navegación del asistente">
-        <div className="lateral-cabecera">
-          <Marca />
-          <span className="mono">{curso?.nombreCorto}</span>
-        </div>
-        <Link to="/cursos" className="suave">
-          ← Mis cursos
-        </Link>
-        <NavLink to={`/cursos/${id}/panel`}>Panel</NavLink>
-        <NavLink to={`/cursos/${id}/alertas`}>Alertas</NavLink>
-        <NavLink to={`/cursos/${id}/asistente`} className="activo">
-          Asistente
-        </NavLink>
-        <button type="button" className="chat-nueva" onClick={nueva} disabled={consultando}>
-          <span aria-hidden="true">+</span> Nueva conversación
-        </button>
-        <Historial conversaciones={historial} activa={activa} abrir={abrir} />
-        <div className="chat-lateral-pie">{usuario?.nombre}</div>
-      </aside>
+    <div className="asistente">
+      <Historial conversaciones={historial} activa={activa} abrir={abrir} nueva={nueva} consultando={consultando} />
 
-      <main className="chat-main">
-        <header className="chat-cabecera">
-          <div>
-            <span className="titulo-chat">{turnos[0]?.pregunta ?? 'Nueva conversación'}</span>
-            <span className="ayuda">
-              {curso?.nombre}
-              {curso?.ultimaSincronizacion?.fecha ? ` · datos del ${formatearFecha(curso.ultimaSincronizacion.fecha)}` : ''}
-            </span>
-          </div>
-          <span className="chat-pildora">Solo lectura · modelo local</span>
+      <section className="asistente-chat hoja" aria-label="Conversación con el asistente">
+        <header className="asistente-cabecera">
+          <span className="fuerte">{turnos[0]?.pregunta ?? 'Nueva conversación'}</span>
+          <span className="asistente-contexto">Sabe: {sabe}</span>
         </header>
 
         <div className="chat-cuerpo" ref={cuerpo}>
@@ -301,13 +333,7 @@ export default function Asistente() {
               </div>
             )}
             {turnos.map((turno, i) => (
-              <Turno
-                key={i}
-                turno={turno}
-                cursoId={id}
-                estudiantes={estudiantes}
-                sincronizacion={curso?.ultimaSincronizacion}
-              />
+              <Turno key={i} turno={turno} estudiantes={estudiantes} sincronizacion={curso?.ultimaSincronizacion} onAbrir={abrirFicha} />
             ))}
           </div>
         </div>
@@ -347,10 +373,21 @@ export default function Asistente() {
                 ↑
               </button>
             </form>
-            <span className="chat-nota">El asistente lee los datos del aula virtual y no modifica notas. Revisa antes de decidir.</span>
           </div>
         </div>
-      </main>
+      </section>
+
+      {estudianteFicha && (
+        <FichaLateral
+          cursoId={id}
+          estudiante={estudianteFicha}
+          requiereAtencion={conAlertas ? conAlertas.has(estudianteFicha.id) : null}
+          celdas={celdas}
+          tramo={tramo}
+          nombreTramo={nombreTramo(tramo, indicadores?.unidades)}
+          onCerrar={cerrarFicha}
+        />
+      )}
     </div>
   )
 }

@@ -1,37 +1,116 @@
-import { useEffect, useState } from 'react'
-import { useTramo } from '../../components/tramo'
-import { useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import FichaLateral from '../../components/FichaLateral'
 import { formatearFecha } from '../../components/formato'
 import { DESCRIPCION_REGLA, textoEvidencia } from '../../components/lenguaje'
+import { busquedaTramo, nombreTramo, useTramo } from '../../components/tramo'
 import { actualizarReglas, marcarAlerta, obtenerAlertas, obtenerReglas } from '../../services/alertas'
+import { obtenerIndicadores } from '../../services/indicadores'
+import { actividadesDelLibro, obtenerLibro } from '../../services/libro'
 import { describirError } from '../../services/errores'
 
-/** Alertas agrupadas por estudiante, en el orden en que llegan del backend. */
-function agruparPorEstudiante(alertas) {
-  const grupos = new Map()
+/** Chips por regla, en palabras del docente; el código de la regla es interno y no se muestra. */
+const CHIPS = [
+  { codigo: null, texto: 'Todas' },
+  { codigo: 'R4', texto: 'Promedio bajo' },
+  { codigo: 'R1', texto: 'Descenso reciente' },
+  { codigo: 'R2', texto: 'Atrasos' },
+]
+const CLASE_REGLA = { R4: 'chip-bajo', R2: 'chip-sin-entrega', R1: 'chip-descenso' }
+const ETIQUETA_UMBRAL = {
+  R4: 'Promedio bajo: menor a',
+  R1: 'Descenso reciente: baja de al menos (puntos)',
+  R2: 'Atrasos: actividades vencidas sin entregar desde',
+}
+
+/** Actividades vencidas sin entregar de cada estudiante, tomadas de la evidencia de su alerta de atrasos. */
+function deudasPorEstudiante(alertas) {
+  const deudas = new Map()
   for (const alerta of alertas) {
-    const clave = `${alerta.estudiante.apellido}, ${alerta.estudiante.nombre}`
-    if (!grupos.has(clave)) grupos.set(clave, [])
-    grupos.get(clave).push(alerta)
+    if (alerta.regla !== 'R2') continue
+    const nombres = (alerta.evidencia?.actividades ?? []).map((a) => (typeof a === 'string' ? a : a.nombre)).filter(Boolean)
+    deudas.set(alerta.estudiante.id, nombres)
   }
-  return [...grupos.entries()]
+  return deudas
+}
+
+function ModalUmbrales({ reglas, umbrales, setUmbrales, guardando, aviso, onGuardar, onCerrar }) {
+  const primero = useRef(null)
+  useEffect(() => {
+    primero.current?.focus()
+    function alPresionar(evento) {
+      if (evento.key === 'Escape') onCerrar()
+    }
+    window.addEventListener('keydown', alPresionar)
+    return () => window.removeEventListener('keydown', alPresionar)
+  }, [onCerrar])
+
+  return (
+    <div className="modal-fondo">
+      <form className="modal hoja" role="dialog" aria-modal="true" aria-labelledby="titulo-umbrales" onSubmit={onGuardar}>
+        <div>
+          <h2 id="titulo-umbrales">Umbrales de alerta</h2>
+          <p className="ayuda">Al guardar, las alertas del curso se recalculan con los valores nuevos.</p>
+        </div>
+        {reglas.map((regla, i) => (
+          <div key={regla.codigo} className="umbral">
+            <label htmlFor={`umbral-${regla.codigo}`}>{ETIQUETA_UMBRAL[regla.codigo] ?? regla.nombre}</label>
+            <input
+              id={`umbral-${regla.codigo}`}
+              ref={i === 0 ? primero : undefined}
+              className="campo num"
+              type="number"
+              step={regla.codigo === 'R2' ? '1' : '0.5'}
+              inputMode="decimal"
+              value={umbrales[regla.codigo] ?? ''}
+              onChange={(e) => setUmbrales((u) => ({ ...u, [regla.codigo]: e.target.value }))}
+              aria-describedby={`condicion-${regla.codigo}`}
+            />
+            <span id={`condicion-${regla.codigo}`} className="ayuda">
+              {DESCRIPCION_REGLA[regla.codigo] ?? regla.condicion}
+            </span>
+          </div>
+        ))}
+        {aviso?.tipo === 'error' && (
+          <div className="aviso aviso--error" role="alert">
+            <strong>{aviso.titulo}</strong>
+            {aviso.detalle}
+          </div>
+        )}
+        <div className="modal-acciones">
+          <button type="submit" className="boton" disabled={guardando}>
+            {guardando ? 'Guardando…' : 'Guardar'}
+          </button>
+          <button type="button" className="boton boton--secundario" onClick={onCerrar}>
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  )
 }
 
 /**
- * HU-12 · Pantalla Alertas (diseno.md): a la izquierda, la lista de alertas agrupada por estudiante con su evidencia
- * y el botón «Marcar como revisada»; a la derecha, el panel de umbrales con un campo por regla y «Guardar», que
- * recalcula las alertas en el backend. El título de toda alerta es «Requiere atención», nunca «reprobará».
+ * HU-12 y R.5 · Alertas en tarjetas (docs/sprint-3/diseno.md): chips por regla, una tarjeta por alerta con «Requiere atención», la
+ * evidencia en una frase con sus números, «Debe: …» con las actividades vencidas sin entregar, «Armar plan de refuerzo» y «Marcar
+ * revisada». El nombre abre la ficha lateral. «Umbrales de alerta» abre el modal que guarda y recalcula en el backend. Las alertas
+ * son las del tramo elegido en la barra del curso.
  */
 export default function Alertas() {
   const { id } = useParams()
+  const tramo = useTramo()
+  const navigate = useNavigate()
   const [reglas, setReglas] = useState({ id: null, datos: null, error: null })
-  const [lista, setLista] = useState({ id: null, datos: null, error: null })
-  const [filtro, setFiltro] = useState('ACTIVA')
+  const [lista, setLista] = useState({ clave: null, datos: null, error: null })
+  const [estado, setEstado] = useState('ACTIVA')
+  const [regla, setRegla] = useState(null)
   const [umbrales, setUmbrales] = useState({})
+  const [modal, setModal] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [marcando, setMarcando] = useState(null)
   const [aviso, setAviso] = useState(null)
-  const tramo = useTramo()
+  const [ficha, setFicha] = useState({ id: null, clave: null, indicadores: null, libro: null })
+  const clave = `${id}|${estado}|${tramo}`
 
   useEffect(() => {
     let vigente = true
@@ -49,18 +128,19 @@ export default function Alertas() {
 
   useEffect(() => {
     let vigente = true
-    obtenerAlertas(id, filtro, tramo)
-      .then((datos) => vigente && setLista({ id, filtro, tramo, datos, error: null }))
-      .catch((e) => vigente && setLista({ id, filtro, tramo, datos: null, error: describirError(e) }))
+    obtenerAlertas(id, estado, tramo)
+      .then((datos) => vigente && setLista({ clave, datos, error: null }))
+      .catch((e) => vigente && setLista({ clave, datos: null, error: describirError(e) }))
     return () => {
       vigente = false
     }
-  }, [id, filtro, tramo])
+  }, [id, estado, tramo, clave])
 
-  // Estado vigente: si cambió el curso o el filtro, lo que llegó antes no cuenta y se ve «Cargando…».
-  const reglasVigentes = reglas.id === id ? reglas : { id, datos: null, error: null }
-  const listaVigente = lista.id === id && lista.filtro === filtro && lista.tramo === tramo ? lista : { id, datos: null, error: null }
+  const cerrarModal = useCallback(() => setModal(false), [])
+  const cerrarFicha = useCallback(() => setFicha((f) => ({ ...f, id: null })), [])
 
+  const reglasVigentes = reglas.id === id ? reglas : { datos: null, error: null }
+  const listaVigente = lista.clave === clave ? lista : { datos: null, error: null }
   const error = reglasVigentes.error ?? listaVigente.error
   if (error) {
     return (
@@ -92,10 +172,11 @@ export default function Alertas() {
     setAviso(null)
     try {
       await actualizarReglas(id, cambios)
-      const [nuevasReglas, nuevasAlertas] = await Promise.all([obtenerReglas(id), obtenerAlertas(id, filtro, tramo)])
+      const [nuevasReglas, nuevasAlertas] = await Promise.all([obtenerReglas(id), obtenerAlertas(id, estado, tramo)])
       setReglas({ id, datos: nuevasReglas, error: null })
       setUmbrales(Object.fromEntries(nuevasReglas.map((r) => [r.codigo, String(r.umbral)])))
-      setLista({ id, filtro, tramo, datos: nuevasAlertas, error: null })
+      setLista({ clave, datos: nuevasAlertas, error: null })
+      setModal(false)
       setAviso({ tipo: 'ok', titulo: 'Umbrales guardados', detalle: 'Las alertas del curso se recalcularon.' })
     } catch (e) {
       setAviso({ tipo: 'error', ...describirError(e) })
@@ -109,8 +190,8 @@ export default function Alertas() {
     setAviso(null)
     try {
       await marcarAlerta(id, alerta.id, 'REVISADA')
-      const nuevasAlertas = await obtenerAlertas(id, filtro, tramo)
-      setLista({ id, filtro, tramo, datos: nuevasAlertas, error: null })
+      const nuevasAlertas = await obtenerAlertas(id, estado, tramo)
+      setLista({ clave, datos: nuevasAlertas, error: null })
       setAviso({ tipo: 'ok', titulo: 'Alerta marcada como revisada', detalle: 'Ya no aparece en las alertas activas.' })
     } catch (e) {
       setAviso({ tipo: 'error', ...describirError(e) })
@@ -119,117 +200,140 @@ export default function Alertas() {
     }
   }
 
+  async function abrirFicha(estudianteId) {
+    if (ficha.clave === `${id}|${tramo}`) {
+      setFicha((f) => ({ ...f, id: estudianteId }))
+      return
+    }
+    setFicha({ id: estudianteId, clave: `${id}|${tramo}`, indicadores: null, libro: null })
+    const [indicadores, libro] = await Promise.all([obtenerIndicadores(id, tramo).catch(() => null), obtenerLibro(id, { tramo }).catch(() => null)])
+    setFicha((f) => ({ ...f, indicadores, libro }))
+  }
+
   const nombreRegla = (codigo) => reglasVigentes.datos.find((r) => r.codigo === codigo)?.nombre ?? 'Regla del curso'
+  const deudas = deudasPorEstudiante(listaVigente.datos)
+  const visibles = listaVigente.datos.filter((a) => regla === null || a.regla === regla)
+  const estudianteFicha = ficha.indicadores?.estudiantes.find((e) => e.id === ficha.id) ?? null
+  const columnas = actividadesDelLibro(ficha.libro)
+  const filaLibro = ficha.libro?.estudiantes.find((e) => e.id === ficha.id)
+  const celdas = filaLibro ? columnas.map((a, i) => ({ ...filaLibro.notas[i], nombre: a.nombre, fechaLimite: a.fechaLimite })) : []
 
   return (
-    <div className="panel-medio">
-      <section className="seccion ancho-2" aria-labelledby="titulo-alertas">
-        <div className="regla" />
-        <div className="seccion-cabecera">
-          <h2 id="titulo-alertas" className="seccion-titulo">
-            Alertas
-          </h2>
-          <div className="alertas-filtros" role="group" aria-label="Filtrar alertas por estado">
-            <button
-              type="button"
-              className={`chip${filtro === 'ACTIVA' ? ' chip--activo' : ''}`}
-              aria-pressed={filtro === 'ACTIVA'}
-              onClick={() => setFiltro('ACTIVA')}
-            >
-              Activas
+    <div className="alertas-s3">
+      <div className="alertas-cabecera">
+        <h2>Alertas</h2>
+        <div className="chips-filtro" role="group" aria-label="Filtrar alertas por regla">
+          {CHIPS.map((c) => (
+            <button key={c.texto} type="button" className="chip-filtro" aria-pressed={regla === c.codigo} onClick={() => setRegla(c.codigo)}>
+              {c.texto}
             </button>
-            <button
-              type="button"
-              className={`chip${filtro === 'REVISADA' ? ' chip--activo' : ''}`}
-              aria-pressed={filtro === 'REVISADA'}
-              onClick={() => setFiltro('REVISADA')}
-            >
-              Revisadas
-            </button>
-          </div>
-        </div>
-
-        {aviso && (
-          <div className={`aviso aviso--${aviso.tipo === 'ok' ? 'ok' : 'error'}`} role={aviso.tipo === 'ok' ? 'status' : 'alert'}>
-            <strong>{aviso.titulo}</strong>
-            {aviso.detalle}
-          </div>
-        )}
-
-        {listaVigente.datos.length === 0 ? (
-          <p className="ayuda">
-            {filtro === 'ACTIVA'
-              ? 'No hay alertas activas. Al sincronizar el curso, las reglas detectan quiénes requieren atención.'
-              : 'Todavía no hay alertas revisadas.'}
-          </p>
-        ) : (
-          <div className="alertas-lista">
-            {agruparPorEstudiante(listaVigente.datos).map(([grupo, alertas], i) => (
-              <div key={grupo} className="alerta-grupo entra" style={{ animationDelay: `${Math.min(i * 40, 1200)}ms` }}>
-                <div>
-                  <h3>{grupo}</h3>
-                  <span className="alerta-titulo">{filtro === 'ACTIVA' ? 'Requiere atención' : 'Revisada'}</span>
-                </div>
-                <div className="alerta-grupo-items">
-                  {alertas.map((alerta) => (
-                    <article key={alerta.id} className="alerta" aria-label={`${nombreRegla(alerta.regla)} de ${grupo}`}>
-                      <div>
-                        <span className="alerta-regla">{nombreRegla(alerta.regla)}</span>
-                        <span className="alerta-evidencia">{textoEvidencia(alerta)}</span>
-                        <span className="alerta-fecha">
-                          Detectada el {formatearFecha(alerta.generada)}
-                          {alerta.revisada && ` · revisada el ${formatearFecha(alerta.revisada)}`}
-                        </span>
-                      </div>
-                      {alerta.estado === 'ACTIVA' && (
-                        <button
-                          type="button"
-                          className="boton boton--secundario boton--chico"
-                          disabled={marcando === alerta.id}
-                          onClick={() => revisar(alerta)}
-                        >
-                          {marcando === alerta.id ? 'Marcando…' : 'Marcar como revisada'}
-                        </button>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="seccion" aria-labelledby="titulo-umbrales">
-        <div className="regla" style={{ animationDelay: '80ms' }} />
-        <h2 id="titulo-umbrales" className="seccion-titulo">
-          Cuándo avisar
-        </h2>
-        <form className="umbrales" onSubmit={guardar}>
-          <p className="ayuda">Al guardar, las alertas del curso se recalculan con los valores nuevos.</p>
-          {reglasVigentes.datos.map((regla) => (
-            <div key={regla.codigo} className="umbral">
-              <label htmlFor={`umbral-${regla.codigo}`}>{regla.nombre}</label>
-              <input
-                id={`umbral-${regla.codigo}`}
-                className="campo"
-                type="number"
-                step="0.1"
-                inputMode="decimal"
-                value={umbrales[regla.codigo] ?? ''}
-                onChange={(e) => setUmbrales((u) => ({ ...u, [regla.codigo]: e.target.value }))}
-                aria-describedby={`condicion-${regla.codigo}`}
-              />
-              <span id={`condicion-${regla.codigo}`} className="ayuda">
-                {DESCRIPCION_REGLA[regla.codigo] ?? regla.condicion}
-              </span>
-            </div>
           ))}
-          <button type="submit" className="boton" disabled={guardando}>
-            {guardando ? 'Guardando…' : 'Guardar'}
+        </div>
+        <div className="chips-filtro" role="group" aria-label="Filtrar alertas por estado">
+          <button type="button" className="chip-filtro" aria-pressed={estado === 'ACTIVA'} onClick={() => setEstado('ACTIVA')}>
+            Activas
           </button>
-        </form>
-      </section>
+          <button type="button" className="chip-filtro" aria-pressed={estado === 'REVISADA'} onClick={() => setEstado('REVISADA')}>
+            Revisadas
+          </button>
+        </div>
+        <button type="button" className="boton boton--secundario alertas-umbrales" onClick={() => setModal(true)}>
+          Umbrales de alerta
+        </button>
+      </div>
+
+      {aviso && !modal && (
+        <div className={`aviso aviso--${aviso.tipo === 'ok' ? 'ok' : 'error'}`} role={aviso.tipo === 'ok' ? 'status' : 'alert'}>
+          <strong>{aviso.titulo}</strong>
+          {aviso.detalle}
+        </div>
+      )}
+
+      {visibles.length === 0 ? (
+        <div className="hoja hoja-vacia ayuda">
+          {listaVigente.datos.length > 0
+            ? 'No hay alertas con este filtro.'
+            : estado === 'ACTIVA'
+              ? `No hay alertas activas en ${nombreTramo(tramo, ficha.indicadores?.unidades)}. Al sincronizar el curso, las reglas detectan quiénes requieren atención.`
+              : 'Todavía no hay alertas revisadas.'}
+        </div>
+      ) : (
+        <div className="alertas-rejilla">
+          {visibles.map((alerta, i) => {
+            const nombre = `${alerta.estudiante.apellido}, ${alerta.estudiante.nombre}`
+            const debe = deudas.get(alerta.estudiante.id) ?? []
+            return (
+              <article
+                key={alerta.id}
+                className="hoja levanta alerta-tarjeta entra"
+                style={{ animationDelay: `${Math.min(i * 40, 1200)}ms` }}
+                aria-label={`${nombreRegla(alerta.regla)} de ${nombre}`}
+              >
+                <div className="alerta-tarjeta-cabeza">
+                  <span className={CLASE_REGLA[alerta.regla] ?? 'chip-bajo'}>{nombreRegla(alerta.regla)}</span>
+                  <span className="ayuda">Requiere atención</span>
+                  {alerta.estado === 'REVISADA' && <span className="alerta-revisada">Revisada</span>}
+                </div>
+                <button type="button" className="alerta-nombre" onClick={() => abrirFicha(alerta.estudiante.id)}>
+                  {nombre}
+                </button>
+                <p className="alerta-evidencia num">{textoEvidencia(alerta)}</p>
+                {debe.length > 0 && (
+                  <div className="chips">
+                    {debe.map((actividad) => (
+                      <span key={actividad} className="chip-sin-entrega">
+                        Debe: {actividad}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <span className="alerta-fecha">
+                  Detectada el {formatearFecha(alerta.generada)}
+                  {alerta.revisada && ` · revisada el ${formatearFecha(alerta.revisada)}`}
+                </span>
+                <div className="alerta-acciones">
+                  <button
+                    type="button"
+                    className="boton boton--ia"
+                    onClick={() => navigate(`/cursos/${id}/refuerzos?estudiante=${alerta.estudiante.id}${busquedaTramo(tramo).replace('?', '&')}`)}
+                  >
+                    Armar plan de refuerzo
+                  </button>
+                  {alerta.estado === 'ACTIVA' && (
+                    <button type="button" className="boton boton--secundario" disabled={marcando === alerta.id} onClick={() => revisar(alerta)}>
+                      {marcando === alerta.id ? 'Marcando…' : 'Marcar revisada'}
+                    </button>
+                  )}
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+
+      {modal && (
+        <ModalUmbrales
+          reglas={reglasVigentes.datos}
+          umbrales={umbrales}
+          setUmbrales={setUmbrales}
+          guardando={guardando}
+          aviso={aviso}
+          onGuardar={guardar}
+          onCerrar={cerrarModal}
+        />
+      )}
+
+      {ficha.id !== null && estudianteFicha && (
+        <FichaLateral
+          cursoId={id}
+          estudiante={estudianteFicha}
+          requiereAtencion={estado === 'ACTIVA'}
+          celdas={celdas}
+          tramo={tramo}
+          nombreTramo={nombreTramo(tramo, ficha.indicadores?.unidades)}
+          onCerrar={cerrarFicha}
+        />
+      )}
     </div>
   )
 }

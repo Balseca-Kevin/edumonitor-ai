@@ -59,7 +59,7 @@ public sealed class LibroService(IEduMonitorDbContext db, IndicadorService indic
                     {
                         var calificacion = calificaciones.GetValueOrDefault((e.Id, a.Id));
                         var nota = CalculadoraIndicadores.Redondear(CalculadoraIndicadores.NotaEnEscala(calificacion?.Nota, porId[a.Id].NotaMaxima));
-                        return new NotaLibroDto(a.Id, nota, calificacion?.Estado?.ToString());
+                        return new NotaLibroDto(a.Id, nota, EstadoNota(calificacion, porId[a.Id], datos.Ahora));
                     })
                     .ToList();
                 return new EstudianteLibroDto(e.Id, e.Nombre, e.Apellido, calculado?.PromedioPonderado, calculado?.Parcial ?? false, notas);
@@ -85,6 +85,14 @@ public sealed class LibroService(IEduMonitorDbContext db, IndicadorService indic
                 noDisponibles,
                 tramo.Codigo));
     }
+
+    public const string EstadoAunNoVence = "AUN_NO_VENCE";
+
+    /// <summary>Estado de la celda: el de la calificación, salvo una falta de entrega que todavía no vence, que es «aún no vence».</summary>
+    public static string? EstadoNota(Domain.Entities.Calificacion? calificacion, Domain.Entities.Actividad actividad, DateTimeOffset? ahora) =>
+        calificacion?.Estado == Domain.Enums.EstadoCalificacion.SIN_ENTREGA && CalculadoraIndicadores.AunNoVence(actividad, ahora)
+            ? EstadoAunNoVence
+            : calificacion?.Estado?.ToString();
 
     /// <summary>
     /// Parciales y unidades con actividades, en el orden del curso. Las actividades que no están en una sección de Moodle van al

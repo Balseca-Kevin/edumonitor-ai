@@ -5,13 +5,18 @@ using EduMonitor.Domain.Enums;
 
 namespace EduMonitor.Application.Indicadores;
 
-/// <summary>Datos guardados de un curso con los que se calculan los indicadores. Solo usa claves (UnidadId, ActividadId, EstudianteId), no navegaciones.</summary>
+/// <summary>
+/// Datos guardados de un curso con los que se calculan los indicadores. Solo usa claves (UnidadId, ActividadId, EstudianteId), no
+/// navegaciones. <see cref="Ahora"/> es la fecha del servidor: una actividad sin entrega cuya fecha límite todavía no llega cuenta como
+/// «aún no vence», no como sin entrega. Null cuenta todas como sin entrega (cálculos sin fecha, como las pruebas de la tabla 5).
+/// </summary>
 public sealed record DatosCurso(
     IReadOnlyList<Unidad> Unidades,
     IReadOnlyList<Actividad> Actividades,
     IReadOnlyList<Estudiante> Estudiantes,
     IReadOnlyList<Calificacion> Calificaciones,
-    bool FinalizacionDisponible = true);
+    bool FinalizacionDisponible = true,
+    DateTimeOffset? Ahora = null);
 
 /// <summary>Nota calificada de un estudiante, ya en escala 0 a 10, con su actividad.</summary>
 public sealed record NotaCalculo(Actividad Actividad, decimal Nota);
@@ -49,7 +54,7 @@ public static class CalculadoraIndicadores
         var porEstudiante = datos.Calificaciones.ToLookup(c => c.EstudianteId);
 
         var parciales = datos.Estudiantes
-            .Select(e => CalcularEstudiante(e, actividades, porEstudiante[e.Id].ToList(), datos.FinalizacionDisponible))
+            .Select(e => CalcularEstudiante(e, actividades, porEstudiante[e.Id].ToList(), datos.FinalizacionDisponible, datos.Ahora))
             .ToList();
 
         var promedios = parciales.Where(p => p.Promedio is not null).Select(p => p.Promedio!.Value).ToList();
@@ -66,7 +71,8 @@ public static class CalculadoraIndicadores
                 Grupo(Redondear(p.Promedio)),
                 p.Notas,
                 Redondear(p.TasaFinalizacion),
-                Redondear(p.Tendencia)))
+                Redondear(p.Tendencia),
+                p.Categorias))
             .ToList();
 
         var calificadas = datos.Calificaciones.Where(EsCalificada).ToList();
@@ -164,6 +170,34 @@ public static class CalculadoraIndicadores
         return (valor, porCategoria.Count < PesosCategoria.Count);
     }
 
+    /// <summary>
+    /// R.4 · Promedio de cada categoría ponderada con su peso (Exámenes 40 %, Tareas 30 %, APE 30 %), en el orden de la ponderación.
+    /// Una categoría sin notas calificadas va con promedio null: no entra al promedio ponderado y no es un 0.
+    /// </summary>
+    public static IReadOnlyList<CategoriaPromedioDto> PromediosPorCategoria(IEnumerable<(string? Categoria, decimal Nota)> calificadas)
+    {
+        var lista = calificadas.Select(c => (Clave: ClaveCategoria(c.Categoria), c.Categoria, c.Nota)).ToList();
+        return PesosCategoria
+            .Select(p =>
+            {
+                var notas = lista.Where(c => c.Clave == p.Key).ToList();
+                var nombre = notas.FirstOrDefault().Categoria ?? NombreCategoria(p.Key);
+                return new CategoriaPromedioDto(nombre, p.Value, notas.Count == 0 ? null : Redondear(notas.Average(n => n.Nota)), notas.Count);
+            })
+            .ToList();
+    }
+
+    private static string NombreCategoria(string clave) => clave switch
+    {
+        "EXAMENES" => "Exámenes",
+        "TAREAS" => "Tareas",
+        _ => clave,
+    };
+
+    /// <summary>Sin entrega y con fecha límite futura frente a <paramref name="ahora"/>: todavía no vence.</summary>
+    public static bool AunNoVence(Actividad actividad, DateTimeOffset? ahora) =>
+        ahora is not null && actividad.FechaLimite is not null && actividad.FechaLimite > ahora;
+
     /// <summary>Promedio de las últimas <paramref name="n"/> notas menos el promedio de las anteriores. Null si no hay al menos n + 1 notas.</summary>
     public static decimal? Tendencia(IReadOnlyList<decimal> notasOrdenadas, int n = NTendencia)
     {
@@ -242,18 +276,25 @@ public static class CalculadoraIndicadores
     private static bool EsCalificada(Calificacion c) => c.Estado == EstadoCalificacion.CALIFICADO && c.Nota is not null;
 
     private sealed record IndicadoresParciales(
-        Estudiante Estudiante, decimal? Promedio, bool Parcial, ConteoNotasDto Notas, decimal? TasaFinalizacion, decimal? Tendencia);
+        Estudiante Estudiante, decimal? Promedio, bool Parcial, ConteoNotasDto Notas, decimal? TasaFinalizacion, decimal? Tendencia,
+        IReadOnlyList<CategoriaPromedioDto> Categorias);
 
     private static IndicadoresParciales CalcularEstudiante(
-        Estudiante estudiante, IReadOnlyList<Actividad> actividades, List<Calificacion> calificaciones, bool finalizacionDisponible)
+        Estudiante estudiante, IReadOnlyList<Actividad> actividades, List<Calificacion> calificaciones, bool finalizacionDisponible,
+        DateTimeOffset? ahora)
     {
         var notas = NotasOrdenadas(actividades, calificaciones);
-        var (promedio, parcial) = PromedioPonderado(notas.Select(n => (n.Actividad.Categoria, n.Nota)));
+        var conCategoria = notas.Select(n => (n.Actividad.Categoria, n.Nota)).ToList();
+        var (promedio, parcial) = PromedioPonderado(conCategoria);
+        var porId = actividades.ToDictionary(a => a.Id);
+        var sinEntrega = calificaciones.Where(c => c.Estado == EstadoCalificacion.SIN_ENTREGA).ToList();
+        bool NoVence(Calificacion c) => porId.TryGetValue(c.ActividadId, out var a) && AunNoVence(a, ahora);
         var conteo = new ConteoNotasDto(
             notas.Count,
             calificaciones.Count(c => EsCalificada(c) && c.Nota == 0),
-            calificaciones.Count(c => c.Estado == EstadoCalificacion.SIN_ENTREGA),
-            calificaciones.Count(c => c.Estado == EstadoCalificacion.PENDIENTE));
+            sinEntrega.Count(c => !NoVence(c)),
+            calificaciones.Count(c => c.Estado == EstadoCalificacion.PENDIENTE),
+            sinEntrega.Count(NoVence));
 
         return new IndicadoresParciales(
             estudiante,
@@ -261,7 +302,8 @@ public static class CalculadoraIndicadores
             parcial,
             conteo,
             TasaFinalizacion(calificaciones, finalizacionDisponible),
-            Tendencia(notas.Select(n => n.Nota).ToList()));
+            Tendencia(notas.Select(n => n.Nota).ToList()),
+            PromediosPorCategoria(conCategoria));
     }
 
     private static List<NotaCalculo> NotasOrdenadas(IReadOnlyList<Actividad> actividadesOrdenadas, IReadOnlyCollection<Calificacion> calificaciones)

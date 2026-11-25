@@ -44,10 +44,17 @@ public sealed record IndicadoresEstudianteDto(
     string? Grupo,
     ConteoNotasDto Notas,
     decimal? TasaFinalizacion,
-    decimal? Tendencia);
+    decimal? Tendencia,
+    IReadOnlyList<CategoriaPromedioDto>? Categorias = null);
 
-/// <summary>Notas calificadas (incluidas las 0), cuántas de ellas son 0, actividades sin entrega y entregas pendientes de calificar.</summary>
-public sealed record ConteoNotasDto(int Calificadas, int Ceros, int SinEntrega, int Pendientes);
+/// <summary>
+/// Notas calificadas (incluidas las 0), cuántas de ellas son 0, actividades vencidas sin entrega, entregas pendientes de calificar y
+/// actividades sin entrega que todavía no vencen (R.4: no cuentan como sin entrega).
+/// </summary>
+public sealed record ConteoNotasDto(int Calificadas, int Ceros, int SinEntrega, int Pendientes, int AunNoVence = 0);
+
+/// <summary>R.4 · Promedio de una categoría ponderada (Exámenes, Tareas, APE) con su peso; null si no tiene notas calificadas.</summary>
+public sealed record CategoriaPromedioDto(string Categoria, decimal Peso, decimal? Promedio, int Notas);
 
 /// <summary>Resultado de consultar los indicadores: el curso no existe, nunca se sincronizó con datos, o los indicadores.</summary>
 public sealed record ConsultaIndicadores(EstadoConsultaIndicadores Estado, IndicadoresCursoDto? Indicadores = null, string? Detalle = null);
