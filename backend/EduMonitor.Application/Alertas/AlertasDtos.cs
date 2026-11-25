@@ -36,6 +36,7 @@ public enum EstadoConsultaAlertas
     Ok,
     CursoNoExiste,
     EstadoInvalido,
+    TramoInvalido,
 }
 
 /// <summary>Resultado del PATCH: actualizada, la alerta no es de ese curso (404) o el estado no es REVISADA (400).</summary>

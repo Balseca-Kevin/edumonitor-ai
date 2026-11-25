@@ -8,7 +8,8 @@ public sealed record LibroCalificacionesDto(
     SincronizacionLibroDto Sincronizacion,
     IReadOnlyList<ParcialLibroDto> Parciales,
     IReadOnlyList<EstudianteLibroDto> Estudiantes,
-    IReadOnlyList<string> NoDisponibles);
+    IReadOnlyList<string> NoDisponibles,
+    string Tramo = "todo");
 
 /// <summary>Sincronización de la que salen las notas, con el Moodle de origen para compararlas con él.</summary>
 public sealed record SincronizacionLibroDto(int Id, DateTimeOffset Fecha, string Estado, string Origen);
@@ -32,13 +33,14 @@ public sealed record EstudianteLibroDto(
 public sealed record NotaLibroDto(int ActividadId, decimal? Nota, string? Estado);
 
 /// <summary>Resultado de consultar el libro: el curso no existe, nunca se sincronizó con datos, o el libro.</summary>
-public sealed record ConsultaLibro(EstadoConsultaLibro Estado, LibroCalificacionesDto? Libro = null);
+public sealed record ConsultaLibro(EstadoConsultaLibro Estado, LibroCalificacionesDto? Libro = null, string? Detalle = null);
 
 public enum EstadoConsultaLibro
 {
     Armado,
     CursoNoExiste,
     SinSincronizar,
+    TramoInvalido,
 }
 
 /// <summary>Orden de los estudiantes: por apellido (por defecto) o por promedio, de menor a mayor.</summary>

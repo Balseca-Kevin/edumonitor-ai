@@ -13,7 +13,8 @@ public sealed record IndicadoresCursoDto(
     IReadOnlyList<TramoDistribucionDto> Distribucion,
     GruposRendimientoDto Grupos,
     IReadOnlyList<IndicadoresEstudianteDto> Estudiantes,
-    IReadOnlyList<string> NoDisponibles);
+    IReadOnlyList<string> NoDisponibles,
+    string Tramo = "todo");
 
 /// <summary>Resumen de una unidad: actividades que tiene y cuántas ya tienen al menos una nota calificada.</summary>
 public sealed record UnidadIndicadoresDto(int Numero, string Nombre, int Parcial, int Actividades, int Calificadas);
@@ -49,11 +50,12 @@ public sealed record IndicadoresEstudianteDto(
 public sealed record ConteoNotasDto(int Calificadas, int Ceros, int SinEntrega, int Pendientes);
 
 /// <summary>Resultado de consultar los indicadores: el curso no existe, nunca se sincronizó con datos, o los indicadores.</summary>
-public sealed record ConsultaIndicadores(EstadoConsultaIndicadores Estado, IndicadoresCursoDto? Indicadores = null);
+public sealed record ConsultaIndicadores(EstadoConsultaIndicadores Estado, IndicadoresCursoDto? Indicadores = null, string? Detalle = null);
 
 public enum EstadoConsultaIndicadores
 {
     Calculados,
     CursoNoExiste,
     SinSincronizar,
+    TramoInvalido,
 }

@@ -1,4 +1,5 @@
 using EduMonitor.Api.Autorizacion;
+using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Libro;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,8 +22,13 @@ public sealed class LibroController(LibroService libro) : ControllerBase
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Obtener(int id, [FromQuery] string? busqueda, [FromQuery] string? orden, CancellationToken ct)
+    public async Task<IActionResult> Obtener(int id, [FromQuery] string? busqueda, [FromQuery] string? orden, [FromQuery] string? tramo, CancellationToken ct)
     {
+        if (!Tramo.TryParse(tramo, out var elegido))
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El tramo solo acepta todo, p1, p2 o u1 a un.");
+        }
+
         OrdenLibro ordenLibro;
         switch (orden?.Trim().ToLowerInvariant())
         {
@@ -36,7 +42,7 @@ public sealed class LibroController(LibroService libro) : ControllerBase
                 return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El parámetro orden solo acepta «apellido» o «promedio».");
         }
 
-        var consulta = await libro.ConsultarAsync(id, busqueda, ordenLibro, ct);
+        var consulta = await libro.ConsultarAsync(id, busqueda, ordenLibro, elegido, ct);
         return consulta.Estado switch
         {
             EstadoConsultaLibro.CursoNoExiste =>
@@ -44,6 +50,7 @@ public sealed class LibroController(LibroService libro) : ControllerBase
             EstadoConsultaLibro.SinSincronizar =>
                 Problem(statusCode: StatusCodes.Status409Conflict, title: "Curso sin sincronizar",
                     detail: "El curso todavía no tiene datos de Moodle. Sincronízalo desde Mis cursos para ver su libro de calificaciones."),
+            EstadoConsultaLibro.TramoInvalido => Problem(statusCode: StatusCodes.Status400BadRequest, detail: consulta.Detalle),
             _ => Ok(consulta.Libro),
         };
     }

@@ -89,7 +89,7 @@ describe('Panel del curso', () => {
     expect(within(reparto).getByText('8,5 o más')).toBeInTheDocument()
     expect(within(reparto).getByText('18')).toBeInTheDocument()
     expect(within(reparto).getByText('Menos de 6,0')).toBeInTheDocument()
-    expect(obtenerIndicadores).toHaveBeenCalledWith('1')
+    expect(obtenerIndicadores).toHaveBeenCalledWith('1', 'todo')
   })
 
   it('no muestra términos estadísticos ni códigos internos', async () => {

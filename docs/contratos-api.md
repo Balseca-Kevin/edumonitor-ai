@@ -492,6 +492,7 @@ Reglas que valen para todo el bloque:
 
 - Todos los endpoints `/api/cursos/{id}/*` usan la política `CursoAutorizado`: 401 sin token, 403 en curso ajeno, 404 si el curso no existe, 409 si el curso nunca se sincronizó.
 - Escala 0 a 10, aprobación 7,0. Solo las notas `CALIFICADO` entran a promedios. Un dato que no se pudo obtener va en `noDisponibles`, nunca como 0.
+- Fechas, semanas y estados del período se calculan en el backend con la fecha del servidor (zona `America/Guayaquil`) y las fechas de Moodle (`startdate`, `enddate`, fecha límite de cada tarea). El frontend no calcula fechas.
 - Las respuestas de `/api/tools/*` que van al modelo externo llevan códigos (E-001, E-002…) en lugar de nombres, sin correos ni ids de Moodle (HU-23). La pantalla siempre recibe nombres.
 
 ## Libro de calificaciones (HU-21)
@@ -552,6 +553,30 @@ Detalle del 16 nov 2026 (TA-21.1, Kevin):
 - `estado` es `null` cuando el estudiante no tiene registro para esa actividad o Moodle no dio el dato; la pantalla lo muestra como «no disponible».
 - `noDisponibles` lleva `"estadosEntrega"` cuando la última sincronización no pudo leer `mod_assign_get_assignments` o `mod_assign_get_submissions`. Así la pantalla avisa que «sin entrega» y «pendiente» pueden no estar al día.
 
+## Tramo del período (R.2)
+
+El control segmentado de la barra del curso (Todo el ciclo, Parcial 1, Parcial 2, U1 … Un) filtra el libro, el panel y las alertas. El backend calcula con las actividades del tramo, con el mismo código del curso completo; el frontend solo elige el tramo.
+
+Parámetro opcional `tramo` en tres rutas:
+- `GET /api/cursos/{id}/indicadores?tramo=`
+- `GET /api/cursos/{id}/libro?tramo=`
+- `GET /api/cursos/{id}/alertas?tramo=`
+
+| Valor | Actividades que entran |
+|---|---|
+| `todo` (por defecto, o sin el parámetro) | Todas, incluidas las que no están en una unidad |
+| `p1`, `p2` | Las de las unidades de ese parcial |
+| `u1` … `un` | Las de esa unidad |
+
+Respuestas:
+- **Indicadores:** la forma no cambia y suma `"tramo": "u1"`. `curso`, `distribucion`, `grupos` y `estudiantes` se calculan con las actividades del tramo. `unidades` sigue con todas las unidades del curso, porque el control segmentado las necesita.
+- **Libro:** suma `"tramo"`. `parciales` trae solo las columnas del tramo, y `notas` y `promedioPonderado` salen de esas columnas (el mismo promedio de los indicadores del tramo).
+- **Alertas:** la misma lista sin campos nuevos. Con un tramo que no es `todo`, quedan las alertas del curso cuya regla también se cumple con las actividades de ese tramo, con los mismos umbrales. Cada una conserva su `id` y su `estado` (se puede marcar revisada) y trae la `evidencia` del tramo.
+
+Códigos:
+- 400 si `tramo` no es un código válido (`semana`, `x1`, `u0`) o si el curso no tiene ese parcial o esa unidad (`u9`).
+- 401, 403, 404 y 409 como en el resto del bloque.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega
@@ -583,10 +608,15 @@ Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nu
 | GET | `/api/auditoria` | ADMIN | HU-17 | Planificación |
 | GET/PUT | `/api/admin/modelo` | ADMIN | HU-23 | nueva |
 | POST/GET | `/api/admin/evaluacion-agente` | ADMIN | HU-18 (TA-18.A1) | nueva |
+| GET | `/api/cursos/{id}/periodo` | DOCENTE | HU-22 (TA-22.A4) | nueva |
+| GET | `/api/cursos/{id}/sync/{sid}/cambios` | DOCENTE | HU-21 (TA-21.A1) | nueva |
+| POST | `/api/cursos/{id}/refuerzos` | DOCENTE | HU-15 (TA-15.A3): guarda el plan (actividad, temas marcados, estudiantes) | nueva |
+| GET | `/api/tools/estado-periodo` | DOCENTE, AGENTE | HU-22 (TA-22.A4) | nueva |
 | GET | `/api/tools/actividad`, `/api/tools/desempeno-tematico`, `/api/tools/retroalimentacion`, `/api/tools/refuerzos-aplicados`, `/api/tools/nota-necesaria` | DOCENTE, AGENTE | HU-15, HU-22, HU-23 | nueva |
 
 Cambios propuestos en rutas existentes (se detallan en la primera tarea de HU-23):
 
 - `POST /api/agente/chat` suma `conversacionId` (para seguir una conversación) y `foco` (`actividadId` y `estudianteId` opcionales). La respuesta suma `respaldo` (true si respondió el modelo local por falla del externo) y `cifras` (valor, herramienta, fila y si quedó verificada).
-- `POST /chat` del agente recibe el foco y los últimos 4 turnos.
+- El `foco` también acepta `refuerzoId` (TA-15.A4): el asistente lee el plan guardado y responde con el borrador en esa conversación.
+- `POST /chat` del agente recibe el foco, el estado del período (TA-22.A4) y los últimos 4 turnos.
 - `GET /salud` del agente y `GET /api/admin/estado` muestran el modelo externo y el local por separado.

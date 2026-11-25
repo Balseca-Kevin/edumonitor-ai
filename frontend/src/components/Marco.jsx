@@ -22,11 +22,22 @@ export function Marca() {
 }
 
 /**
- * HU-19 · Estructura del diseño D (docs/sprint-2/diseno.md): barra lateral clara de 240 px con el nombre del sistema, las
- * secciones del curso abierto (Panel, Alertas, Asistente), las de ADMIN y cerrar sesión abajo. Dentro de un curso, la
- * cabecera oscura con la tira del período va arriba, a todo el ancho.
+ * Pantallas del curso en la barra lateral, en el orden de docs/sprint-3/diseno.md. Solo van las que ya existen en la aplicación;
+ * Libro de calificaciones, Mapa del curso y Plan de refuerzo se suman cuando su pantalla esté lista.
  */
-export default function Marco({ curso, cabecera, children }) {
+const PANTALLAS_CURSO = [
+  { ruta: 'panel', texto: 'Panel del curso' },
+  { ruta: 'alertas', texto: 'Alertas', contador: true },
+  { ruta: 'asistente', texto: 'Asistente' },
+]
+
+/**
+ * R.2 · Estructura del Sprint 3 (docs/sprint-3/diseno.md): barra lateral oscura de 236 px con «EduMonitor», el código y el período
+ * del curso, su navegación (Alertas con el contador de estudiantes que requieren atención), las pantallas de ADMIN, el usuario y
+ * «Cerrar sesión». Dentro de un curso, la cabecera oscura y la barra blanca con el control segmentado van arriba del contenido.
+ * La pantalla activa lleva una raya de 3 px en arena y la navegación conserva el tramo elegido (`?tramo=`).
+ */
+export default function Marco({ curso, cabecera, barra, alertas = null, busqueda = '', children }) {
   const navigate = useNavigate()
   const usuario = usuarioActual()
 
@@ -35,31 +46,37 @@ export default function Marco({ curso, cabecera, children }) {
     navigate('/login', { replace: true })
   }
 
-  const aplicacion = (
+  return (
     <div className="app">
       <aside className="lateral" aria-label="Navegación">
         <div className="lateral-cabecera">
           <Marca />
-          {curso?.nombreCorto && <span className="mono">{curso.nombreCorto}</span>}
+          {curso?.nombreCorto && (
+            <span className="mono">
+              {curso.nombreCorto}
+              {curso.periodo ? ` · ${curso.periodo}` : ''}
+            </span>
+          )}
         </div>
 
         <nav aria-label="General">
-          <NavLink to="/cursos" end className={({ isActive }) => (isActive ? 'activo' : curso ? 'suave' : undefined)}>
-            {curso ? '← Mis cursos' : 'Mis cursos'}
+          <NavLink to="/cursos" end className={claseEnlace}>
+            Mis cursos
           </NavLink>
         </nav>
 
         {curso && (
           <nav aria-label={`Curso ${curso.nombreCorto ?? ''}`}>
-            <NavLink to={`/cursos/${curso.id}/panel`} className={claseEnlace}>
-              Panel
-            </NavLink>
-            <NavLink to={`/cursos/${curso.id}/alertas`} className={claseEnlace}>
-              Alertas
-            </NavLink>
-            <NavLink to={`/cursos/${curso.id}/asistente`} className={claseEnlace}>
-              Asistente
-            </NavLink>
+            {PANTALLAS_CURSO.map((p) => (
+              <NavLink key={p.ruta} to={`/cursos/${curso.id}/${p.ruta}${busqueda}`} className={claseEnlace}>
+                <span>{p.texto}</span>
+                {p.contador && alertas > 0 && (
+                  <span className="lateral-contador num" aria-label={`${alertas} estudiantes requieren atención`}>
+                    {alertas}
+                  </span>
+                )}
+              </NavLink>
+            ))}
           </nav>
         )}
 
@@ -76,23 +93,22 @@ export default function Marco({ curso, cabecera, children }) {
         )}
 
         <div className="lateral-pie">
-          {usuario && <span>{usuario.nombre}</span>}
-          <button type="button" className="boton boton--secundario boton--chico" onClick={salir}>
+          {usuario && (
+            <span>
+              {usuario.usuario ?? usuario.nombre} · {usuario.rol === 'ADMIN' ? 'Administrador' : 'Docente'}
+            </span>
+          )}
+          <button type="button" className="lateral-salir" onClick={salir}>
             Cerrar sesión
           </button>
         </div>
       </aside>
 
-      <main className="contenido">{children}</main>
-    </div>
-  )
-
-  if (!cabecera) return aplicacion
-
-  return (
-    <div className="pagina-curso">
-      {cabecera}
-      {aplicacion}
+      <div className="principal">
+        {cabecera}
+        {barra}
+        <main className="contenido">{children}</main>
+      </div>
     </div>
   )
 }

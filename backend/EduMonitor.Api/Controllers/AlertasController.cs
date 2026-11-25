@@ -1,5 +1,6 @@
 using EduMonitor.Api.Autorizacion;
 using EduMonitor.Application.Alertas;
+using EduMonitor.Application.Indicadores;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -45,13 +46,18 @@ public sealed class AlertasController(AlertasService alertas) : ControllerBase
     [ProducesResponseType<IReadOnlyList<AlertaDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ObtenerAlertas(int id, [FromQuery] string? estado, CancellationToken ct)
+    public async Task<IActionResult> ObtenerAlertas(int id, [FromQuery] string? estado, [FromQuery] string? tramo, CancellationToken ct)
     {
-        var consulta = await alertas.ObtenerAlertasAsync(id, estado, ct);
+        if (!Tramo.TryParse(tramo, out var elegido))
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El tramo solo acepta todo, p1, p2 o u1 a un.");
+        }
+
+        var consulta = await alertas.ObtenerAlertasAsync(id, estado, elegido, ct);
         return consulta.Estado switch
         {
             EstadoConsultaAlertas.CursoNoExiste => CursoNoExiste(id),
-            EstadoConsultaAlertas.EstadoInvalido => Problem(statusCode: StatusCodes.Status400BadRequest, detail: consulta.Detalle),
+            EstadoConsultaAlertas.EstadoInvalido or EstadoConsultaAlertas.TramoInvalido => Problem(statusCode: StatusCodes.Status400BadRequest, detail: consulta.Detalle),
             _ => Ok(consulta.Alertas),
         };
     }

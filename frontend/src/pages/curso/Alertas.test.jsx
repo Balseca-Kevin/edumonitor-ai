@@ -99,7 +99,7 @@ describe('TA-12.4 · Pantalla Alertas', () => {
     expect(screen.getByText('Avisa cuando el promedio queda bajo este valor, con al menos 4 notas registradas.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Guardar' })).toBeInTheDocument()
 
-    expect(obtenerAlertas).toHaveBeenCalledWith('1', 'ACTIVA')
+    expect(obtenerAlertas).toHaveBeenCalledWith('1', 'ACTIVA', 'todo')
   })
 
   it('marca una alerta como revisada y sale de la lista de activas', async () => {
@@ -160,7 +160,7 @@ describe('TA-12.4 · Pantalla Alertas', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Revisadas' }))
 
     expect(await screen.findByText('Todavía no hay alertas revisadas.')).toBeInTheDocument()
-    expect(obtenerAlertas).toHaveBeenCalledWith('1', 'REVISADA')
+    expect(obtenerAlertas).toHaveBeenCalledWith('1', 'REVISADA', 'todo')
     expect(screen.getByRole('button', { name: 'Revisadas' })).toHaveAttribute('aria-pressed', 'true')
   })
 

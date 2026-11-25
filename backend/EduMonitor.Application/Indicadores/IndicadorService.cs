@@ -16,7 +16,11 @@ public sealed class IndicadorService(IEduMonitorDbContext db)
     public const string FuncionFinalizacion = "core_completion_get_activities_completion_status";
     public const string IndicadorTasaFinalizacion = "tasaFinalizacion";
 
-    public async Task<ConsultaIndicadores> ConsultarAsync(int cursoId, CancellationToken ct = default)
+    public async Task<ConsultaIndicadores> ConsultarAsync(int cursoId, CancellationToken ct = default) =>
+        await ConsultarAsync(cursoId, Tramo.Todo, ct);
+
+    /// <summary>R.2 · Con un <paramref name="tramo"/> que no es «todo», los cálculos usan solo las actividades de ese tramo; la lista de unidades sigue completa.</summary>
+    public async Task<ConsultaIndicadores> ConsultarAsync(int cursoId, Tramo tramo, CancellationToken ct = default)
     {
         if (!await db.Cursos.AnyAsync(c => c.Id == cursoId, ct))
         {
@@ -30,7 +34,13 @@ public sealed class IndicadorService(IEduMonitorDbContext db)
         }
 
         var datos = await CargarDatosAsync(cursoId, sincronizacion, ct);
-        var calculados = CalculadoraIndicadores.Calcular(datos);
+        if (!tramo.ExisteEn(datos))
+        {
+            return new ConsultaIndicadores(EstadoConsultaIndicadores.TramoInvalido, Detalle: tramo.NoExisteDetalle);
+        }
+
+        var unidadesCurso = CalculadoraIndicadores.Calcular(datos with { Estudiantes = Array.Empty<Estudiante>() }).Unidades;
+        var calculados = CalculadoraIndicadores.Calcular(tramo.Filtrar(datos));
 
         var noDisponibles = new List<string>();
         if (calculados.Curso.TasaFinalizacion is null)
@@ -45,12 +55,13 @@ public sealed class IndicadorService(IEduMonitorDbContext db)
                 CalculadoraIndicadores.Escala,
                 CalculadoraIndicadores.NotaAprobacion,
                 new ResumenSincronizacion(sincronizacion.Id, sincronizacion.Inicio, sincronizacion.Estado.ToString()),
-                calculados.Unidades,
+                unidadesCurso,
                 calculados.Curso,
                 calculados.Distribucion,
                 calculados.Grupos,
                 calculados.Estudiantes,
-                noDisponibles));
+                noDisponibles,
+                tramo.Codigo));
     }
 
     /// <summary>Datos guardados del curso para los cálculos; null si nunca se sincronizó con datos. Lo usan también las herramientas del agente y las alertas.</summary>

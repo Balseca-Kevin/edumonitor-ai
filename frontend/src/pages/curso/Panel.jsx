@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useOutletContext, useParams } from 'react-router-dom'
 import { Bar, BarChart, Cell, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import Estado from '../../components/Estado'
 import { formatearFecha, formatearNumero } from '../../components/formato'
@@ -7,6 +7,7 @@ import { sinMovimiento, useCuenta } from '../../components/movimiento'
 import { frenteAlCurso, ultimasNotas } from '../../components/lenguaje'
 import { contarAlertasActivas, obtenerIndicadores } from '../../services/indicadores'
 import { describirError } from '../../services/errores'
+import { busquedaTramo, nombreTramo, useTramo } from '../../components/tramo'
 
 const NO_DISPONIBLE = 'no disponible'
 const BAJO = 6 // por debajo de 6,0 el valor va en arena (diseño D)
@@ -33,7 +34,7 @@ function Bloque({ titulo, retraso, atencion = false, children }) {
   )
 }
 
-function Distribucion({ distribucion, aprobacion, estudiantes }) {
+function Distribucion({ distribucion, aprobacion, estudiantes, tramo }) {
   const datos = (distribucion ?? []).map((t) => ({ tramo: String(t.desde), desde: t.desde, cantidad: t.cantidad }))
   const quieto = sinMovimiento()
   return (
@@ -41,7 +42,7 @@ function Distribucion({ distribucion, aprobacion, estudiantes }) {
       <div className="regla" style={{ animationDelay: '400ms' }} />
       <div className="seccion-cabecera">
         <h2 className="seccion-titulo">Distribución de notas</h2>
-        <span className="ayuda">{estudiantes} estudiantes · tramos de 1 punto</span>
+        <span className="ayuda">{estudiantes} estudiantes · {tramo} · tramos de 1 punto</span>
       </div>
       <div className="histograma" role="img" aria-label={`Cuántos estudiantes hay en cada tramo de 1 punto, con la línea de aprobación en ${formatearNumero(aprobacion, 1)}`}>
         <ResponsiveContainer width="100%" height="100%">
@@ -151,19 +152,22 @@ function TablaEstudiantes({ estudiantes, promedioCurso }) {
  */
 export default function Panel() {
   const { id } = useParams()
-  const [cargado, setCargado] = useState({ id: null, datos: null, alertas: null, error: null })
+  const tramo = useTramo()
+  const { version = 0 } = useOutletContext() ?? {}
+  const clave = `${id}|${tramo}|${version}`
+  const [cargado, setCargado] = useState({ clave: null, datos: null, alertas: null, error: null })
 
   useEffect(() => {
     let vigente = true
-    Promise.all([obtenerIndicadores(id), contarAlertasActivas(id)])
-      .then(([datos, alertas]) => vigente && setCargado({ id, datos, alertas, error: null }))
-      .catch((e) => vigente && setCargado({ id, datos: null, alertas: null, error: describirError(e) }))
+    Promise.all([obtenerIndicadores(id, tramo), contarAlertasActivas(id, tramo)])
+      .then(([datos, alertas]) => vigente && setCargado({ clave, datos, alertas, error: null }))
+      .catch((e) => vigente && setCargado({ clave, datos: null, alertas: null, error: describirError(e) }))
     return () => {
       vigente = false
     }
-  }, [id])
+  }, [id, tramo, clave])
 
-  const { datos, alertas, error } = cargado.id === id ? cargado : { datos: null, alertas: null, error: null }
+  const { datos, alertas, error } = cargado.clave === clave ? cargado : { datos: null, alertas: null, error: null }
 
   if (error?.tipo === 'sin-sincronizar') {
     return (
@@ -222,7 +226,7 @@ export default function Panel() {
               'Las alertas de este curso no están disponibles.'
             ) : (
               <>
-                alertas activas · <Link to={`/cursos/${id}/alertas`}>ver alertas →</Link>
+                alertas activas · <Link to={`/cursos/${id}/alertas${busquedaTramo(tramo)}`}>ver alertas →</Link>
               </>
             )}
           </span>
@@ -230,7 +234,7 @@ export default function Panel() {
       </section>
 
       <div className="panel-medio">
-        <Distribucion distribucion={datos.distribucion} aprobacion={datos.aprobacion} estudiantes={curso.estudiantes} />
+        <Distribucion distribucion={datos.distribucion} aprobacion={datos.aprobacion} estudiantes={curso.estudiantes} tramo={nombreTramo(tramo, datos.unidades)} />
         <Reparto grupos={grupos} total={grupos.alto + grupos.medio + grupos.bajo} />
       </div>
 
