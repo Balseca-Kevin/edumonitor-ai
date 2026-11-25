@@ -189,16 +189,16 @@ Estado del Sprint 3. Detalle del Sprint 2 por tarea en `docs/sprint-2/PLAN.md`; 
 | HU-12 | Alertas académicas con reglas configurables | 2 | Sebastián | Hecha (#38) |
 | HU-13 | Herramientas del agente con trazas | 2 | Jeremy | Hecha (#21, #24, #28, #37, #39, #40) |
 | HU-14 | Consulta al asistente desde la aplicación | 2 | Kevin | Hecha (#25, #36, #35) |
-| HU-21 | Libro de calificaciones (nueva, por la Review del Sprint 2) | 3 | Santiago; endpoint de Kevin | Endpoint en PR #50 |
-| HU-10 | Ficha del estudiante | 3 | Santiago | Por hacer |
-| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 3 | Sebastián | Rúbricas en Moodle en PR #49 |
-| HU-22 | Mapa del curso y panel de actividad (nueva, absorbe HU-11) | 3 | Kevin; cálculos de Sebastián | Por hacer |
+| HU-21 | Libro de calificaciones (nueva, por la Review del Sprint 2) | 3 | Santiago; endpoint de Kevin | Hecha (pantalla adelantada por Kevin) |
+| HU-10 | Ficha del estudiante | 3 | Santiago | Hecha (adelantada por Kevin) |
+| HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 3 | Sebastián | Hecha (adelantada por Kevin) |
+| HU-22 | Mapa del curso y panel de actividad (nueva, absorbe HU-11) | 3 | Kevin; cálculos de Sebastián | Hecha |
 | HU-11 | Desempeño por tema y temas críticos | 3 | — | Fusionada en HU-22 |
-| HU-15 | Retroalimentación y refuerzo descargables | 3 | Jeremy; generador de documentos de Kevin | Por hacer |
-| HU-23 | Asistente con contexto, memoria, verificación de cifras y respaldo local (nueva) | 3 | Kevin; nodos del grafo de Jeremy | Filtros en PR #51 |
-| HU-16 | Informe del curso | 3 | Santiago | Por hacer |
-| HU-17 | Trazas visibles y auditoría | 3 | Kevin | Por hacer |
-| HU-18 | Pruebas, documentación y demostración final | 3 | Todo el equipo | Por hacer |
+| HU-15 | Retroalimentación y refuerzo descargables | 3 | Jeremy; generador de documentos de Kevin | Hecha (adelantada por Kevin) |
+| HU-23 | Asistente con contexto, memoria, verificación de cifras y respaldo local (nueva) | 3 | Kevin; nodos del grafo de Jeremy | Hecha |
+| HU-16 | Informe del curso | 3 | Santiago | Hecha (adelantada por Kevin) |
+| HU-17 | Trazas visibles y auditoría | 3 | Kevin | Hecha |
+| HU-18 | Pruebas, documentación y demostración final | 3 | Todo el equipo | Evaluación, «Calidad del asistente», matriz y guía hechas; faltan capturas, informe, video y ensayo |
 
 Los agregados del Sprint 3 (refuerzo antes y después, diagnóstico por criterio, nota necesaria, cifras enlazadas, «Calidad del asistente», preguntas fuera de alcance) son tareas TA-xx.A dentro de esas HU. Se activó la línea de corte: salen TA-22.A1 y TA-22.A2 y no entra ningún agregado TA-xx.B. El rediseño suma TA-08.A1, TA-21.A1, TA-21.A2, TA-22.A3, TA-22.A4, TA-22.A5, TA-15.A3 y TA-15.A4. Detalle en `docs/sprint-3/PLAN.md`.
 

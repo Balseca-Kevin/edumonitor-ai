@@ -61,7 +61,7 @@ Release Plan vigente, re-planificado el 8 nov 2026 ([docs/sprint-2/PLAN.md](docs
 |---|---|---|---|---|
 | 1 | 19 oct – 30 oct 2026 | Moodle de laboratorio, conexión por servicios web, modelo de datos, autenticación con autorización por curso, Mis cursos, primera sincronización y spike del agente | 39 | Cerrado · Review el 29 oct 2026 |
 | 2 | 2 nov – 12 nov 2026 | Panel de indicadores, alertas con evidencia, asistente en la app, herramientas del agente con trazas, identidad visual y entorno único con Docker | 39 de 39 hechos | Cerrado · Review el jueves 12 nov 2026 · v0.2.1 |
-| 3 | 16 nov – 27 nov 2026 | Libro de calificaciones con las notas reales, ficha del estudiante, mapeo temático, mapa del curso y panel de actividad, retroalimentación y refuerzo descargables, asistente con contexto y respaldo local, informe, auditoría y cierre (HU-21, HU-10, HU-08, HU-22, HU-15, HU-23, HU-16, HU-17, HU-18) | 50 propuestos | En curso · plan por bloques en [docs/sprint-3/PLAN.md](docs/sprint-3/PLAN.md) |
+| 3 | 16 nov – 27 nov 2026 | Libro de calificaciones con las notas reales, ficha del estudiante, mapeo temático, mapa del curso y panel de actividad, retroalimentación y refuerzo descargables, asistente con contexto y respaldo local, informe, auditoría y cierre (HU-21, HU-10, HU-08, HU-22, HU-15, HU-23, HU-16, HU-17, HU-18) | 50 propuestos | 8 HU hechas; HU-18 con capturas, informe, video y ensayo pendientes · plan en [docs/sprint-3/PLAN.md](docs/sprint-3/PLAN.md) |
 
 Cambio frente a la planificación inicial (110 SP), por la retroalimentación de la Review del Sprint 1: entran las HU nuevas HU-19 y HU-20, HU-14 se adelanta al Sprint 2, y HU-08, HU-10 y HU-11 pasan al Sprint 3.
 
@@ -107,6 +107,24 @@ Cambio de diseño del 09 nov 2026, 08:14 (decisión de Kevin):
 | HU-14 | Consulta al asistente desde la aplicación | Kevin Balseca | 8 | Hecha | [#25](https://github.com/Balseca-Kevin/edumonitor-ai/pull/25), [#36](https://github.com/Balseca-Kevin/edumonitor-ai/pull/36), [#35](https://github.com/Balseca-Kevin/edumonitor-ai/pull/35) |
 
 Evidencias: [docs/evidencias/sprint-2/](docs/evidencias/sprint-2/README.md). Guía para comprobar cada HU en el navegador: [docs/PRUEBAS.md](docs/PRUEBAS.md).
+
+### Sprint 3
+
+> **Sprint Goal:** El docente ve la nota real de cada estudiante en cada actividad, recorre su curso por parcial, unidad y actividad, y el asistente, con el contexto de la pantalla y la memoria de la conversación, explica en qué temas falla cada estudiante y prepara su retroalimentación y su refuerzo como documentos descargables. Si el modelo externo falla, responde el modelo local.
+
+| HU | Historia | Pantalla |
+|---|---|---|
+| HU-21 | Libro de calificaciones | Primera pantalla del curso |
+| HU-10 | Ficha del estudiante | Clic en un estudiante → «Abrir ficha completa» |
+| HU-08 | Mapeo temático | «Mapa del curso» |
+| HU-22 | Mapa del curso y panel de actividad | Cabecera del curso; clic en una actividad del libro; mapa de calor en «Mapa del curso» |
+| HU-15 | Retroalimentación y refuerzo | «Plan de refuerzo»; «Redactar retroalimentación» en el panel de actividad |
+| HU-23 | Asistente con contexto, memoria y respaldo | «Asistente»; «Modelo del asistente» en «Estado del sistema» |
+| HU-16 | Informe del curso | Panel → «Informe del curso» |
+| HU-17 | Trazas y auditoría | «Cómo llegó a esta respuesta»; «Auditoría» (ADMIN) |
+| HU-18 | Pruebas y calidad del asistente | «Calidad del asistente» (ADMIN) |
+
+Quién hizo cada parte: [docs/sprint-3/contribuciones.md](docs/sprint-3/contribuciones.md). Requisitos y pruebas: [docs/sprint-3/matriz-rf-rnf.md](docs/sprint-3/matriz-rf-rnf.md). Recorrido de la Review: [docs/PRUEBAS.md](docs/PRUEBAS.md#sprint-3). Evidencias: [docs/evidencias/sprint-3/](docs/evidencias/sprint-3/README.md).
 
 ## Contribuciones
 
@@ -225,6 +243,17 @@ cd agent; python -m pytest; cd ..
 
 Las pruebas de `MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests` llaman al Moodle real y necesitan el aula virtual encendida.
 
+### Entrega en carpeta
+
+El Product Owner revisa el proyecto como carpeta. Antes de copiarla a OneDrive se quitan:
+- `frontend/node_modules`;
+- los `bin` y `obj` de `backend/`;
+- los `__pycache__` y `.pytest_cache` de `agent/`;
+- el `.env`, que tiene contraseñas y claves;
+- los zip de entregas anteriores.
+
+Quien la recibe copia `.env.example` a `.env`, pone sus valores y sigue «Puesta en marcha».
+
 ## Documentación
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): Git Flow, commits, revisiones y Definition of Done.
@@ -233,6 +262,7 @@ Las pruebas de `MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests` 
 - [docs/diccionario-datos.md](docs/diccionario-datos.md): tablas y columnas de `EduMonitorDB`, con las migraciones del Sprint 2.
 - [docs/planificacion/](docs/planificacion/): planificación Scrum del Sprint 1 y especificación del docente.
 - [docs/sprint-2/](docs/sprint-2/PLAN.md): plan del Sprint 2 ([PLAN.md](docs/sprint-2/PLAN.md)), sistema de diseño ([diseno.md](docs/sprint-2/diseno.md)) y registro del daily ([daily.md](docs/sprint-2/daily.md)).
+- [docs/sprint-3/](docs/sprint-3/PLAN.md): plan del Sprint 3, sistema de diseño ([diseno.md](docs/sprint-3/diseno.md)), sílabos ([silabos.md](docs/sprint-3/silabos.md)), matriz RF/RNF ([matriz-rf-rnf.md](docs/sprint-3/matriz-rf-rnf.md)) y contribuciones ([contribuciones.md](docs/sprint-3/contribuciones.md)).
 - [docs/PRUEBAS.md](docs/PRUEBAS.md): cómo comprobar cada historia en el navegador y cuántas pruebas automatizadas pasan.
 - [docs/evidencias/sprint-1/](docs/evidencias/sprint-1/README.md) y [docs/evidencias/sprint-2/](docs/evidencias/sprint-2/README.md): evidencias de cada Sprint Review.
 - [frontend/README.md](frontend/README.md): rutas, servicios y pruebas de la interfaz.
