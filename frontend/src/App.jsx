@@ -10,8 +10,10 @@ import Alertas from './pages/curso/Alertas'
 import Libro from './pages/curso/Libro'
 import Mapa from './pages/curso/Mapa'
 import PlanRefuerzo from './pages/curso/PlanRefuerzo'
+import FichaEstudiante from './pages/curso/FichaEstudiante'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
+import Auditoria from './pages/admin/Auditoria'
 
 export default function App() {
   return (
@@ -23,6 +25,7 @@ export default function App() {
           <Route path="/cursos" element={<Cursos />} />
           <Route path="/admin/moodle" element={<ConfiguracionMoodle />} />
           <Route path="/admin/estado" element={<EstadoSistema />} />
+          <Route path="/admin/auditoria" element={<Auditoria />} />
           <Route path="/cursos/:id" element={<CursoMarco />}>
             <Route index element={<Navigate to="libro" replace />} />
             <Route path="libro" element={<Libro />} />
@@ -30,6 +33,7 @@ export default function App() {
             <Route path="mapa" element={<Mapa />} />
             <Route path="alertas" element={<Alertas />} />
             <Route path="refuerzos" element={<PlanRefuerzo />} />
+            <Route path="estudiantes/:eid" element={<FichaEstudiante />} />
             <Route path="asistente" element={<Asistente />} />
           </Route>
         </Route>

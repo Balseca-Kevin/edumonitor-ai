@@ -27,7 +27,7 @@ function textoNotaNecesaria(r) {
  * TA-10.A1 · «Para llegar a 7,0»: la nota mínima en las actividades pendientes, calculada por el backend con las notas actuales. Se
  * abre para ver qué actividades cuentan como pendientes. Nunca se dice «nota final».
  */
-function ParaLlegar({ cursoId, estudianteId }) {
+export function ParaLlegar({ cursoId, estudianteId }) {
   const clave = `${cursoId}|${estudianteId}`
   const [cargado, setCargado] = useState({ clave: null, datos: null, error: false })
 
@@ -74,7 +74,7 @@ function ParaLlegar({ cursoId, estudianteId }) {
   )
 }
 
-function Desglose({ categorias }) {
+export function Desglose({ categorias }) {
   if (!categorias?.length) return null
   return (
     <section className="ficha-bloque" aria-label="Por ponderación">
@@ -210,6 +210,9 @@ export default function FichaLateral({ cursoId, estudiante, requiereAtencion, ce
             </button>
             <button type="button" className="boton boton--secundario" onClick={() => navigate(`/cursos/${cursoId}/asistente${consulta}`)}>
               Preguntar al asistente por este estudiante
+            </button>
+            <button type="button" className="boton boton--secundario" onClick={() => navigate(`/cursos/${cursoId}/estudiantes/${estudiante.id}`)}>
+              Abrir ficha completa
             </button>
           </div>
         </div>

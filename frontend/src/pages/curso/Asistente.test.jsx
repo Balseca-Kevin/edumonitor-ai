@@ -135,7 +135,7 @@ describe('R.6 · Asistente dentro del curso', () => {
     await preguntar('¿Cómo le va a Karina Lara?')
 
     expect(await screen.findByText('Karina Lara tiene un promedio de 5,29 y requiere atención.')).toBeInTheDocument()
-    expect(preguntarAlAsistente).toHaveBeenCalledWith('1', '¿Cómo le va a Karina Lara?')
+    expect(preguntarAlAsistente).toHaveBeenCalledWith('1', '¿Cómo le va a Karina Lara?', { estudianteId: undefined, actividadId: null }, null)
     const tarjetas = screen.getByLabelText('Estudiantes mencionados')
     expect(within(tarjetas).getByText('Lara, Karina')).toBeInTheDocument()
     expect(within(tarjetas).getByText('5,29')).toBeInTheDocument()
@@ -303,5 +303,83 @@ describe('Lenguaje del asistente', () => {
 
   it('el motivo usa los conteos reales', () => {
     expect(motivo(estudiantes[1])).toBe('1 nota en cero · 4 sin entregar')
+  })
+})
+
+describe('HU-23 · Memoria, quién respondió y cifras enlazadas', () => {
+  it('una pregunta de seguimiento sigue el hilo de la anterior', async () => {
+    preguntarAlAsistente.mockResolvedValue({ ...respuestaChat, hiloId: 44 })
+    renderAsistente()
+
+    await preguntar('¿Cómo le va a Karina Lara?')
+    await screen.findByText('Karina Lara tiene un promedio de 5,29 y requiere atención.')
+    await preguntar('¿Y en qué actividad le fue peor?')
+
+    await waitFor(() => expect(preguntarAlAsistente).toHaveBeenCalledTimes(2))
+    expect(preguntarAlAsistente.mock.calls[1][3]).toBe(44)
+    expect(await screen.findByText(/2 preguntas de esta conversación/)).toBeInTheDocument()
+  })
+
+  it('el foco del estudiante de la ficha va con la pregunta', async () => {
+    preguntarAlAsistente.mockResolvedValue(respuestaChat)
+    renderAsistente('/cursos/1/asistente?estudiante=5')
+
+    await screen.findByDisplayValue(/Karina Lara/)
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
+
+    await waitFor(() => expect(preguntarAlAsistente).toHaveBeenCalled())
+    expect(preguntarAlAsistente.mock.calls[0][2]).toEqual({ estudianteId: 5, actividadId: null })
+  })
+
+  it('dice si respondió el modelo externo o el local de respaldo', async () => {
+    preguntarAlAsistente.mockResolvedValueOnce({ ...respuestaChat, proveedor: 'EXTERNO', modelo: 'modelo-externo', respaldo: false })
+    renderAsistente()
+    await preguntar('¿Cómo le va a Karina Lara?')
+    expect(await screen.findByText('Respondió: modelo externo · modelo-externo', { selector: '.respondio' })).toBeInTheDocument()
+
+    preguntarAlAsistente.mockResolvedValueOnce({ ...respuestaChat, proveedor: 'LOCAL', respaldo: true, respuesta: 'Otra respuesta.' })
+    await preguntar('¿Y Elena?')
+    expect(await screen.findByText('Respondió: modelo local (respaldo) · qwen2.5:7b', { selector: '.respondio' })).toBeInTheDocument()
+  })
+
+  it('cada cifra verificada abre su celda del libro y la no verificada queda marcada', async () => {
+    preguntarAlAsistente.mockResolvedValue({
+      ...respuestaChat,
+      respuesta: 'Karina Lara tiene 5,29 de promedio y 3,5 en la Tarea 3; su promedio anterior fue 9,9.',
+      cifras: [
+        { valor: '5,29', herramienta: 'obtener_calificaciones', campo: 'estudiantes[0].promedioPonderado', estudianteId: 5, actividadId: null, verificada: true },
+        { valor: '3,5', herramienta: 'obtener_calificaciones', campo: 'estudiantes[0].calificaciones[2].nota', estudianteId: 5, actividadId: 103, verificada: true },
+        { valor: '9,9', herramienta: null, campo: null, estudianteId: null, actividadId: null, verificada: false },
+      ],
+    })
+    renderAsistente()
+    await preguntar('¿Cómo le va a Karina Lara?')
+
+    const celda = await screen.findByRole('link', { name: '3,5' })
+    expect(celda).toHaveAttribute('href', '/cursos/1/libro?estudiante=5&actividad=103')
+    expect(screen.getByRole('link', { name: '5,29' })).toHaveAttribute('href', '/cursos/1/libro?estudiante=5')
+    expect(screen.getByText('9,9')).toHaveClass('cifra-enlace--no-verificada')
+    const como = screen.getByText('Cómo llegó a esta respuesta').closest('details')
+    expect(como).toHaveTextContent('Cifras verificadas en los datos: 2 de 3 · no verificadas: 9,9')
+  })
+
+  it('abrir una conversación guardada muestra todos los turnos de su hilo', async () => {
+    listarConversaciones.mockResolvedValue([
+      { id: 48, fecha: '2026-11-21T10:00:00-05:00', pregunta: '¿Cómo va Karina?', modelo: 'qwen2.5:7b', duracionMs: 1000, herramientas: 1, turnos: 2 },
+    ])
+    const turno = (id, pregunta, respuesta) => ({ id, cursoId: 1, fecha: '2026-11-21T10:00:00-05:00', pregunta, respuesta, modelo: 'qwen2.5:7b', duracionMs: 1000, herramientas: [], proveedor: 'LOCAL', respaldo: false, cifras: [] })
+    obtenerConversacion.mockResolvedValue({
+      ...turno(48, '¿Cómo va Karina?', 'Primera respuesta.'),
+      hiloId: 48,
+      turnos: [turno(48, '¿Cómo va Karina?', 'Primera respuesta.'), turno(49, '¿Y su peor nota?', 'Segunda respuesta.')],
+    })
+    renderAsistente()
+
+    const historial = await screen.findByRole('navigation', { name: 'Conversaciones' })
+    expect(await within(historial).findByText(/2 preguntas/)).toBeInTheDocument()
+    fireEvent.click(within(historial).getByRole('button', { name: /¿Cómo va Karina\?/ }))
+
+    expect(await screen.findByText('Primera respuesta.')).toBeInTheDocument()
+    expect(screen.getByText('Segunda respuesta.')).toBeInTheDocument()
   })
 })

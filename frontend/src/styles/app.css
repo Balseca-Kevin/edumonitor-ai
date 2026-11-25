@@ -718,3 +718,30 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 @media (max-width: 720px) { .alerta-grupo { grid-template-columns: 1fr; gap: var(--e-8); } }
 .chip--activo { background: var(--tinta); border-color: var(--tinta); color: var(--fondo); }
 .chip--activo:hover:not(:disabled) { background: var(--grafico); border-color: var(--grafico); }
+
+/* HU-23 · Cifras de la respuesta enlazadas al libro (TA-23.A2), quién respondió y la celda señalada en el libro. */
+.cifra-enlace { color: var(--ia-texto); font-weight: 600; text-decoration: underline; text-decoration-color: var(--ia); text-underline-offset: 2px; }
+.cifra-enlace--verificada { text-decoration-style: solid; }
+.cifra-enlace--no-verificada { color: var(--sin-entrega-texto); text-decoration: underline dotted var(--sin-entrega-texto); cursor: help; }
+.respondio { display: block; margin: var(--e-6) 0 0; font-family: var(--fuente-mono); font-size: var(--fs-11); }
+.libro-fila--senalada td, .libro-fila--senalada .libro-fijo { background: var(--ia-fondo); }
+.nota--senalada { outline: 2px solid var(--ia); outline-offset: 1px; }
+.modelo-interruptor { display: flex; align-items: center; gap: var(--e-8); font-size: var(--fs-14); }
+
+/* HU-17 · Filtros de «Auditoría». */
+.auditoria-filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--e-12); margin: 0 0 var(--e-16); }
+.auditoria-filtros label { display: flex; flex-direction: column; gap: var(--e-4); font-size: var(--fs-12); color: var(--tinta-2); }
+.auditoria-filtros select, .auditoria-filtros input { font: inherit; font-size: var(--fs-14); padding: var(--e-6) var(--e-8); border: 1px solid var(--linea-2); border-radius: var(--radio-6); background: var(--hoja); color: var(--tinta); }
+
+/* HU-10 · Ficha completa del estudiante. */
+.ficha-pagina { display: flex; flex-direction: column; gap: var(--e-16); }
+.ficha-pagina-cabecera { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--e-16); padding: var(--e-16); }
+.ficha-pagina-cabecera h1 { margin: var(--e-6) 0 var(--e-8); font-size: var(--fs-30); font-weight: 800; letter-spacing: -0.02em; }
+.ficha-pagina-cabecera .mono { font-size: var(--fs-11); color: var(--tinta-2); }
+.ficha-acciones--fila { flex-direction: row; flex-wrap: wrap; }
+.ficha-pagina-columnas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--e-16); }
+.ficha-pagina-bloque { padding: var(--e-16); display: flex; flex-direction: column; gap: var(--e-12); }
+.ficha-pagina-bloque h2 { margin: 0; font-size: var(--fs-16); font-weight: 800; }
+.ficha-criterios { margin: var(--e-4) 0 0; padding-left: var(--e-16); font-size: var(--fs-12); color: var(--tinta-2); }
+.ficha-comentario { white-space: pre-line; font-size: var(--fs-13); color: var(--tinta-4); max-width: 360px; }
+.ficha-temas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-10); font-size: var(--fs-14); }

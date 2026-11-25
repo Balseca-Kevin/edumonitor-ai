@@ -1,11 +1,20 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import EstadoSistema from './EstadoSistema'
 
-vi.mock('../../services/estado', () => ({ obtenerEstadoSistema: vi.fn() }))
+vi.mock('../../services/estado', () => ({ obtenerEstadoSistema: vi.fn(), obtenerModelo: vi.fn(), cambiarModelo: vi.fn() }))
 
-import { obtenerEstadoSistema } from '../../services/estado'
+import { cambiarModelo, obtenerEstadoSistema, obtenerModelo } from '../../services/estado'
+
+// Respuesta con la forma de GET /api/admin/modelo (HU-23).
+const modelo = (soloLocal) => ({
+  soloLocal,
+  activo: soloLocal ? 'LOCAL' : 'EXTERNO',
+  externo: { tipo: 'externo', proveedor: 'anthropic', modelo: 'modelo-externo', estado: 'OK', detalle: 'Configurado' },
+  local: { tipo: 'local', proveedor: 'ollama', modelo: 'qwen2.5:7b', estado: 'OK', detalle: 'Ollama responde' },
+  actualizado: null,
+})
 
 // Respuesta con la forma de GET /api/admin/estado (docs/contratos-api.md).
 const conAgenteCaido = {
@@ -30,6 +39,10 @@ function renderEstado() {
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+})
+
+beforeEach(() => {
+  obtenerModelo.mockResolvedValue(modelo(false))
 })
 
 describe('Estado del sistema', () => {
@@ -61,5 +74,22 @@ describe('Estado del sistema', () => {
     renderEstado()
 
     expect(await screen.findByRole('heading', { name: 'Acceso no permitido' })).toBeInTheDocument()
+  })
+
+  it('HU-23 · muestra los dos modelos y el interruptor «Usar solo el modelo local» cambia el que responde', async () => {
+    obtenerEstadoSistema.mockResolvedValue(conAgenteCaido)
+    cambiarModelo.mockResolvedValue(modelo(true))
+    renderEstado()
+
+    const tabla = await screen.findByRole('table', { name: 'Modelos del asistente' })
+    expect(within(tabla).getByText('modelo-externo')).toBeInTheDocument()
+    expect(within(tabla).getByText('qwen2.5:7b')).toBeInTheDocument()
+    expect(screen.getByText('modelo externo', { selector: 'strong' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Usar solo el modelo local' }))
+
+    await waitFor(() => expect(cambiarModelo).toHaveBeenCalledWith(true))
+    expect(await screen.findByText('modelo local', { selector: 'strong' })).toBeInTheDocument()
+    expect(screen.getByRole('switch', { name: 'Usar solo el modelo local' })).toBeChecked()
   })
 })

@@ -169,6 +169,15 @@ describe('HU-21 · Libro de calificaciones', () => {
     expect(within(luis).getAllByText('no disponible')).toHaveLength(2) // celda sin dato y promedio sin notas, nunca 0
   })
 
+  it('TA-23.A2 · una cifra del asistente abre el libro con la fila y la celda señaladas', async () => {
+    renderLibro('/cursos/1/libro?estudiante=5&actividad=103')
+
+    const ana = (await screen.findByRole('rowheader', { name: 'Pérez Ana' })).closest('tr')
+    expect(ana).toHaveAttribute('aria-current', 'true')
+    expect(within(ana).getByText(/8,50/)).toHaveClass('nota--senalada')
+    expect(within(ana).getByText('0,00')).not.toHaveClass('nota--senalada')
+  })
+
   it('marca con el anillo las celdas que cambiaron en la última sincronización y lo dice en la leyenda', async () => {
     renderLibro()
 
