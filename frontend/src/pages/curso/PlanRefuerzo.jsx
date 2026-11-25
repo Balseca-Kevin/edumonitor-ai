@@ -3,7 +3,7 @@ import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 
 import { formatearFecha, formatearNumero, formatearPorcentaje } from '../../components/formato'
 import { textoResultadoRefuerzo } from '../../components/lenguaje'
 import { obtenerMapeo, obtenerTematicas } from '../../services/tematicas'
-import { crearPlan, ESTADO_PLAN, listarPlanes } from '../../services/refuerzos'
+import { crearPlan, ESTADO_PLAN, listarPlanes, nombrePlan, obtenerAplicados } from '../../services/refuerzos'
 import { obtenerNotaNecesaria } from '../../services/notaNecesaria'
 import { describirError } from '../../services/errores'
 
@@ -33,9 +33,7 @@ function HistorialPlanes({ planes, cursoId }) {
       {planes.map((p) => (
         <li key={p.id} className="hoja plan-historial-item">
           <div className="plan-historial-cabeza">
-            <b>
-              Refuerzo de {p.actividad.nombre}: {p.temas.map((t) => t.nombre).join(', ')}
-            </b>
+            <b>{nombrePlan(p)}</b>
             <span className={`chip-estado chip-estado--${p.estado.toLowerCase()}`}>{ESTADO_PLAN[p.estado] ?? p.estado}</span>
           </div>
           <span className="ayuda num">
@@ -60,6 +58,37 @@ function HistorialPlanes({ planes, cursoId }) {
   )
 }
 
+const CONTEO_APLICADOS = [
+  ['subio', 'subieron'],
+  ['igual', 'quedaron igual'],
+  ['bajo', 'bajaron'],
+  ['sinNotasNuevas', 'sin notas nuevas'],
+]
+
+/**
+ * TA-15.A2 · Refuerzos aplicados: por estudiante y tema de cada refuerzo aprobado, la nota del tema al aprobar y la de hoy. Se dice el
+ * cambio, no que el refuerzo lo causó. Cada fila abre la ficha del estudiante.
+ */
+function RefuerzosAplicados({ aplicados, cursoId }) {
+  if (!aplicados) return <p className="ayuda">Refuerzos aplicados: no disponible.</p>
+  if (aplicados.filas.length === 0) return <p className="ayuda">Todavía no hay refuerzos aprobados en este curso.</p>
+  return (
+    <>
+      <p className="num" aria-label="Resultado de los refuerzos aprobados">
+        {CONTEO_APLICADOS.map(([clave, texto]) => `${aplicados.conteos[clave]} ${texto}`).join(' · ')}
+      </p>
+      <ul className="plan-resultados">
+        {aplicados.filas.map((r) => (
+          <li key={`${r.planId}-${r.estudianteId}-${r.temaId}`} className={`plan-resultado plan-resultado--${r.estado.toLowerCase()}`}>
+            <Link to={`/cursos/${cursoId}/estudiantes/${r.estudianteId}`}>{textoResultadoRefuerzo(r)}</Link>
+            <span className="ayuda"> · {r.actividad}, aprobado el {formatearFecha(r.aprobadoEn)}</span>
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
 /**
  * HU-15 · TA-15.A3 · Plan de refuerzo (docs/sprint-3/diseno.md): la actividad evaluada, las temáticas donde falló el curso con el
  * porcentaje que domina cada tema y quién quedó bajo 6,0, los estudiantes, dónde se vuelven a evaluar esos temas y la nota necesaria
@@ -78,6 +107,7 @@ export default function PlanRefuerzo() {
   const [marcados, setMarcados] = useState({ clave: null, temas: null, fuera: [] })
   const [necesarias, setNecesarias] = useState({})
   const [planes, setPlanes] = useState([])
+  const [aplicados, setAplicados] = useState(undefined)
   const pedidas = useRef(new Set())
   const [envio, setEnvio] = useState({ enviando: false, error: null })
   const claveMapeo = `${id}|${version}`
@@ -90,6 +120,9 @@ export default function PlanRefuerzo() {
     listarPlanes(id)
       .then((lista) => vigente && setPlanes(lista))
       .catch(() => vigente && setPlanes([]))
+    obtenerAplicados(id)
+      .then((datos) => vigente && setAplicados(datos))
+      .catch(() => vigente && setAplicados(null))
     return () => {
       vigente = false
     }
@@ -278,8 +311,14 @@ export default function PlanRefuerzo() {
       )}
 
       <div className="plan-historial-seccion">
-        <h3>Historial de refuerzos</h3>
-        <HistorialPlanes planes={planes} cursoId={id} />
+        <div>
+          <h3>Refuerzos aplicados</h3>
+          {aplicados === undefined ? <p className="ayuda">Cargando…</p> : <RefuerzosAplicados aplicados={aplicados} cursoId={id} />}
+        </div>
+        <div>
+          <h3>Historial de refuerzos y retroalimentaciones</h3>
+          <HistorialPlanes planes={planes} cursoId={id} />
+        </div>
       </div>
     </section>
   )

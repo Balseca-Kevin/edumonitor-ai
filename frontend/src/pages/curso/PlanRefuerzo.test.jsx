@@ -4,11 +4,11 @@ import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-d
 import PlanRefuerzo from './PlanRefuerzo'
 
 vi.mock('../../services/tematicas', () => ({ obtenerMapeo: vi.fn(), obtenerTematicas: vi.fn() }))
-vi.mock('../../services/refuerzos', async (original) => ({ ...(await original()), crearPlan: vi.fn(), listarPlanes: vi.fn() }))
+vi.mock('../../services/refuerzos', async (original) => ({ ...(await original()), crearPlan: vi.fn(), listarPlanes: vi.fn(), obtenerAplicados: vi.fn() }))
 vi.mock('../../services/notaNecesaria', () => ({ obtenerNotaNecesaria: vi.fn() }))
 
 import { obtenerMapeo, obtenerTematicas } from '../../services/tematicas'
-import { crearPlan, listarPlanes } from '../../services/refuerzos'
+import { crearPlan, listarPlanes, obtenerAplicados } from '../../services/refuerzos'
 import { obtenerNotaNecesaria } from '../../services/notaNecesaria'
 
 // Formas de GET /api/cursos/{id}/mapeo, /tematicas, /refuerzos y /nota-necesaria (docs/contratos-api.md).
@@ -66,6 +66,11 @@ beforeEach(() => {
   obtenerMapeo.mockResolvedValue(mapeo)
   obtenerTematicas.mockResolvedValue(tematicas)
   listarPlanes.mockResolvedValue([planAprobado])
+  obtenerAplicados.mockResolvedValue({
+    cursoId: 1,
+    conteos: { subio: 1, igual: 0, bajo: 0, sinNotasNuevas: 0 },
+    filas: [ { planId: 3, aprobadoEn: '2026-11-20T11:00:00-05:00', actividad: 'Tarea 3', estudianteId: 8, estudiante: 'Diego Díaz', temaId: 30, tema: 'Historias de usuario', antes: 5.2, ahora: 7.1, estado: 'SUBIO' } ],
+  })
   obtenerNotaNecesaria.mockImplementation((_, eid) =>
     Promise.resolve(eid === 8 ? { estado: 'NECESITA', notaNecesaria: 7.67, maximoPosible: 7.7 } : { estado: 'NO_ALCANZA', maximoPosible: 6.2 }),
   )
@@ -116,7 +121,7 @@ describe('TA-15.A3 · Plan de refuerzo', () => {
   it('el historial muestra el estado y lo que pasó con el tema, sin decir que el refuerzo lo causó', async () => {
     renderPlan()
 
-    const historial = (await screen.findByText('Historial de refuerzos')).parentElement
+    const historial = (await screen.findByText('Historial de refuerzos y retroalimentaciones')).parentElement
     expect(within(historial).getByText('Aprobado')).toBeInTheDocument()
     expect(within(historial).getByText('Diego Díaz: subió de 5,20 a 7,10 en Historias de usuario después del refuerzo')).toBeInTheDocument()
     expect(within(historial).getByRole('link', { name: 'Ver el plan y descargarlo' })).toHaveAttribute('href', '/cursos/1/asistente?refuerzo=3')
@@ -127,5 +132,20 @@ describe('TA-15.A3 · Plan de refuerzo', () => {
     renderPlan()
 
     expect(await screen.findByRole('link', { name: 'Asócialos en el Mapa del curso' })).toHaveAttribute('href', '/cursos/1/mapa')
+  })
+
+  it('TA-15.A2 · «Refuerzos aplicados» dice el cambio de cada estudiante en el tema y abre su ficha', async () => {
+    renderPlan()
+
+    expect(await screen.findByLabelText('Resultado de los refuerzos aprobados')).toHaveTextContent('1 subieron · 0 quedaron igual · 0 bajaron · 0 sin notas nuevas')
+    const enlace = screen.getAllByRole('link', { name: /Diego Díaz: subió de 5,20 a 7,10 en Historias de usuario después del refuerzo/ })[0]
+    expect(enlace).toHaveAttribute('href', '/cursos/1/estudiantes/8')
+  })
+
+  it('HU-15 · una retroalimentación se nombra como tal en el historial', async () => {
+    listarPlanes.mockResolvedValue([{ ...planAprobado, id: 4, tipo: 'RETROALIMENTACION', temas: [], resultados: [] }])
+    renderPlan()
+
+    expect(await screen.findByText('Retroalimentación de Tarea 3')).toBeInTheDocument()
   })
 })

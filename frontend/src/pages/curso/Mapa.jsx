@@ -133,7 +133,9 @@ function ActividadMapeo({ cursoId, actividad, unidades, onGuardada }) {
     <li className="mapa-actividad">
       <div className="mapa-actividad-cabeza">
         <div>
-          <b>{actividad.nombre}</b>
+          <Link to={`/cursos/${cursoId}/actividades/${actividad.id}`} className="mapa-actividad-enlace">
+            <b>{actividad.nombre}</b>
+          </Link>
           <span className="mono">
             {actividad.categoria ?? 'Sin categoría'}
             {actividad.fechaLimite ? ` · vence ${formatearFecha(actividad.fechaLimite)}` : ''}
@@ -192,6 +194,70 @@ function ActividadMapeo({ cursoId, actividad, unidades, onGuardada }) {
         </span>
       )}
     </li>
+  )
+}
+
+/** Tramo de color de una nota en el mapa de calor: bajo 6,0, de 6,0 a 6,99, o 7,0 o más. */
+function tramoCalor(nota) {
+  if (nota === null || nota === undefined) return 'vacio'
+  if (nota < 6) return 'bajo'
+  if (nota < 7) return 'medio'
+  return 'ok'
+}
+
+/**
+ * HU-22 · Mapa de calor estudiante × tema: cada celda es la nota del estudiante en el tema que calcula el backend («Desempeño por
+ * tema»). Una celda sin nota dice «sin nota», nunca 0. Cada fila abre la ficha del estudiante.
+ */
+export function MapaCalor({ cursoId, temas }) {
+  const conNotas = temas.filter((t) => t.estudiantes.length > 0)
+  if (conNotas.length === 0) return null
+  const estudiantes = new Map()
+  for (const t of conNotas) {
+    for (const e of t.estudiantes) {
+      if (!estudiantes.has(e.id)) estudiantes.set(e.id, { id: e.id, nombre: e.nombre, apellido: e.apellido, notas: new Map() })
+      estudiantes.get(e.id).notas.set(t.id, e.nota)
+    }
+  }
+  const filas = [...estudiantes.values()].sort((a, b) => a.apellido.localeCompare(b.apellido) || a.nombre.localeCompare(b.nombre))
+  return (
+    <section className="hoja mapa-calor-seccion" aria-labelledby="titulo-calor">
+      <h3 id="titulo-calor">Nota de cada estudiante en cada tema</h3>
+      <p className="ayuda">Bajo 6,0 en arena, de 6,0 a 6,99 en gris, 7,0 o más en verde. Haz clic en un estudiante para abrir su ficha.</p>
+      <div className="tabla-envoltura">
+        <table className="mapa-calor num" aria-label="Mapa de calor estudiante por tema">
+          <thead>
+            <tr>
+              <th scope="col">Estudiante</th>
+              {conNotas.map((t) => (
+                <th key={t.id} scope="col" title={t.nombre}>
+                  {t.nombre}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filas.map((e) => (
+              <tr key={e.id}>
+                <th scope="row">
+                  <Link to={`/cursos/${cursoId}/estudiantes/${e.id}`}>
+                    {e.apellido}, {e.nombre}
+                  </Link>
+                </th>
+                {conNotas.map((t) => {
+                  const nota = e.notas.get(t.id)
+                  return (
+                    <td key={t.id} className={`mapa-calor-celda mapa-calor-celda--${tramoCalor(nota)}`}>
+                      {nota === undefined || nota === null ? 'sin nota' : formatearNumero(nota)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   )
 }
 
@@ -310,6 +376,7 @@ export default function Mapa() {
           </ul>
         </article>
       )}
+      <MapaCalor cursoId={id} temas={tematicas?.temas ?? []} />
       <p className="fuente">Las notas y las rúbricas son las del aula virtual, de la última sincronización.</p>
     </section>
   )

@@ -152,6 +152,7 @@ describe('HU-21 · Libro de calificaciones', () => {
     expect(within(tabla).getByRole('columnheader', { name: /Tarea 1\s*Tareas · S2/ })).toBeInTheDocument()
     expect(within(tabla).getByRole('columnheader', { name: /Examen Parcial 1\s*Exámenes · S7/ })).toBeInTheDocument()
     expect(within(tabla).getByRole('columnheader', { name: 'Promedio 40/30/30' })).toBeInTheDocument()
+    expect(within(tabla).getByRole('link', { name: 'Tarea 1' })).toHaveAttribute('href', '/cursos/1/actividades/101') // HU-22: abre el panel de actividad
     expect(obtenerLibro).toHaveBeenCalledWith('1', { tramo: 'todo', busqueda: undefined, orden: undefined })
   })
 

@@ -11,6 +11,7 @@ import Libro from './pages/curso/Libro'
 import Mapa from './pages/curso/Mapa'
 import PlanRefuerzo from './pages/curso/PlanRefuerzo'
 import FichaEstudiante from './pages/curso/FichaEstudiante'
+import Actividad from './pages/curso/Actividad'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
 import Auditoria from './pages/admin/Auditoria'
@@ -34,6 +35,7 @@ export default function App() {
             <Route path="alertas" element={<Alertas />} />
             <Route path="refuerzos" element={<PlanRefuerzo />} />
             <Route path="estudiantes/:eid" element={<FichaEstudiante />} />
+            <Route path="actividades/:aid" element={<Actividad />} />
             <Route path="asistente" element={<Asistente />} />
           </Route>
         </Route>

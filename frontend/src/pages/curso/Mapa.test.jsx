@@ -130,3 +130,24 @@ describe('HU-08 · Mapa del curso', () => {
     expect(await screen.findByText('Curso sin sincronizar')).toBeInTheDocument()
   })
 })
+
+describe('HU-22 · Mapa de calor y panel de actividad', () => {
+  it('el mapa de calor pone la nota de cada estudiante en cada tema, con su tramo, y abre la ficha', async () => {
+    renderMapa()
+
+    const calor = await screen.findByRole('table', { name: 'Mapa de calor estudiante por tema' })
+    const diego = within(calor).getByRole('link', { name: 'Díaz, Diego' })
+    expect(diego).toHaveAttribute('href', '/cursos/1/estudiantes/8')
+    const filaDiego = diego.closest('tr')
+    expect(within(filaDiego).getByText('4,00')).toHaveClass('mapa-calor-celda--bajo')
+    const filaAna = within(calor).getByRole('link', { name: 'Acosta, Ana' }).closest('tr')
+    expect(within(filaAna).getByText('8,00')).toHaveClass('mapa-calor-celda--ok')
+  })
+
+  it('cada actividad del mapa abre su panel', async () => {
+    renderMapa()
+
+    const enlace = await screen.findByRole('link', { name: 'Tarea 1' })
+    expect(enlace).toHaveAttribute('href', '/cursos/1/actividades/101')
+  })
+})

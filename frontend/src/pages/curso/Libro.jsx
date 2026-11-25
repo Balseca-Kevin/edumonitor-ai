@@ -212,7 +212,9 @@ export default function Libro() {
                 <tr>
                   {columnas.map((a) => (
                     <th key={a.id} scope="col" className="libro-actividad" title={a.fechaLimite ? `Vence ${formatearFecha(a.fechaLimite)}` : undefined}>
-                      {a.nombre}
+                      <Link to={`/cursos/${id}/actividades/${a.id}`} className="libro-actividad-enlace">
+                        {a.nombre}
+                      </Link>
                       <span className="mono">
                         {a.categoria}
                         {semanaDe.get(a.id) ? ` · S${semanaDe.get(a.id)}` : ''}

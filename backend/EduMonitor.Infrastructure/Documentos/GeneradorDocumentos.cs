@@ -90,6 +90,58 @@ internal sealed class GeneradorDocumentos : IGeneradorDocumentos
         return memoria.ToArray();
     }
 
+    public byte[] Informe(DocumentoInforme d) =>
+        QuestPDF.Fluent.Document.Create(contenedor => contenedor.Page(pagina =>
+        {
+            pagina.Size(PageSizes.A4);
+            pagina.Margin(2, Unit.Centimetre);
+            pagina.DefaultTextStyle(t => t.FontSize(11));
+            pagina.Header().Column(c =>
+            {
+                c.Item().Text("Informe del curso").FontSize(20).Bold();
+                c.Item().Text(d.Curso).FontSize(12).FontColor(Colors.Grey.Darken2);
+                c.Item().Text($"{d.Periodo} · datos de la sincronización del {d.Sincronizacion.ToString("dd/MM/yyyy HH:mm", Ecuador)} ({d.EstadoSincronizacion})")
+                    .FontSize(10).FontColor(Colors.Grey.Darken1);
+            });
+            pagina.Content().PaddingVertical(12).Column(c =>
+            {
+                c.Spacing(8);
+                c.Item().Table(tabla =>
+                {
+                    tabla.ColumnsDefinition(columnas =>
+                    {
+                        columnas.RelativeColumn(3);
+                        columnas.RelativeColumn(2);
+                    });
+                    foreach (var (etiqueta, valor) in d.Cifras)
+                    {
+                        tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).Text(etiqueta);
+                        tabla.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).AlignRight().Text(valor).Bold();
+                    }
+                });
+                c.Item().PaddingTop(8).Text("Resumen del asistente").FontSize(14).Bold();
+                c.Item().Text(t =>
+                {
+                    t.Span("Pregunta: ").Bold();
+                    t.Span(d.Pregunta);
+                });
+                c.Item().PaddingTop(4).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
+                foreach (var linea in Lineas(d.Resumen))
+                {
+                    c.Item().Text(linea);
+                }
+
+                c.Item().PaddingTop(6).Text(d.Respondio).FontSize(9).FontColor(Colors.Grey.Darken1);
+            });
+            pagina.Footer().AlignCenter().Text(t =>
+            {
+                t.Span($"EduMonitor AI · generado el {d.Generado.ToString("dd/MM/yyyy HH:mm", Ecuador)} · página ");
+                t.CurrentPageNumber();
+                t.Span(" de ");
+                t.TotalPages();
+            });
+        })).GeneratePdf();
+
     private static IEnumerable<string> Lineas(string texto) =>
         texto.Replace("\r\n", "\n").Split('\n').Select(l => l.TrimEnd()).Select(l => l.Length == 0 ? " " : l);
 

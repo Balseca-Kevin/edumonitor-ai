@@ -5,7 +5,7 @@ import { formatearFecha, formatearNumero } from '../../components/formato'
 import { nombreTramo, useTramo } from '../../components/tramo'
 import { datoUsado, estudiantesMencionados, motivo, separarRespuesta } from '../../components/lenguaje'
 import { listarConversaciones, obtenerConversacion, preguntarAlAsistente } from '../../services/agente'
-import { ESTADO_PLAN, listarPlanes, obtenerPlan } from '../../services/refuerzos'
+import { ESTADO_PLAN, listarPlanes, nombrePlan, obtenerPlan } from '../../services/refuerzos'
 import PlanBorrador from '../../components/PlanBorrador'
 import { obtenerIndicadores } from '../../services/indicadores'
 import { obtenerAlertas } from '../../services/alertas'
@@ -240,9 +240,7 @@ function Historial({ conversaciones, planes, planActivo, abrirPlan, activa, abri
               onClick={() => abrirPlan(p.id)}
               disabled={consultando}
             >
-              <span>
-                Refuerzo de {p.actividad.nombre}: {p.temas.map((t) => t.nombre).join(', ')}
-              </span>
+              <span>{nombrePlan(p)}</span>
               <span className={`chip-estado chip-estado--${p.estado.toLowerCase()}`}>{ESTADO_PLAN[p.estado] ?? p.estado}</span>
             </button>
           ))}
@@ -476,7 +474,7 @@ export default function Asistente() {
     enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null,
     actividadEnfocada ? actividadEnfocada.nombre : null,
     activa && turnos.length > 0 ? `${turnos.length} ${turnos.length === 1 ? 'pregunta' : 'preguntas'} de esta conversación` : null,
-    planActual ? `plan de refuerzo de ${planActual.actividad.nombre}` : null,
+    planActual ? `${planActual.tipo === 'RETROALIMENTACION' ? 'retroalimentación' : 'plan de refuerzo'} de ${planActual.actividad.nombre}` : null,
   ]
     .filter(Boolean)
     .join(' · ')

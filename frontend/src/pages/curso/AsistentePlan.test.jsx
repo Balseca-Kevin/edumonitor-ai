@@ -113,4 +113,16 @@ describe('TA-15.A4 · El plan de refuerzo como foco del asistente', () => {
     const plan = screen.getByRole('region', { name: 'Plan de refuerzo en el asistente' })
     expect(within(plan).getByRole('button', { name: 'Redactar el borrador' })).toBeInTheDocument()
   })
+
+  it('HU-15 · el borrador de una retroalimentación lleva su título, sin temas', async () => {
+    const retro = { ...borrador, tipo: 'RETROALIMENTACION', temas: [] }
+    obtenerPlan.mockResolvedValue(retro)
+    listarPlanes.mockResolvedValue([retro])
+    renderAsistente()
+
+    const region = await screen.findByRole('region', { name: 'Retroalimentación en el asistente' })
+    expect(within(region).getByText(/RETROALIMENTACIÓN ·/)).toBeInTheDocument()
+    expect(within(region).getByText('Tarea 3')).toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'Planes de refuerzo' })).getByText('Retroalimentación de Tarea 3')).toBeInTheDocument()
+  })
 })

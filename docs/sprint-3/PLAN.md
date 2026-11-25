@@ -25,8 +25,8 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 | HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint y pantalla hechos (pantalla adelantada por Kevin) |
 | HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Hecha: `GET /api/cursos/{id}/estudiantes/{eid}` y pantalla «Ficha del estudiante» (adelantada por Kevin) |
 | HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Hecha: rúbricas en la sincronización, mapeo, desempeño por tema y «Mapa del curso» (adelantada por Kevin) |
-| HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Por hacer |
-| HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Por hacer |
+| HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Hecha: cabecera con el período, panel de actividad (enunciado, adjuntos, entregas, distribución, dominio por criterio, temas, quién requiere atención) y mapa de calor estudiante × tema (Kevin) |
+| HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Hecha: plan de refuerzo y retroalimentación por estudiante, borrador del asistente, aprobación, PDF y DOCX, refuerzos aplicados (adelantada por Kevin) |
 | HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Hecha: filtros, memoria de 4 turnos, foco, seudonimización, externo con respaldo local, interruptor, cifras verificadas y enlazadas, fuera de alcance (adelantada por Kevin) |
 | HU-16 | Informe del curso en PDF (solo el resumen del asistente, por la línea de corte) | 3 | Santiago | RF-11 | Por hacer |
 | HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | Hecha: «Cómo llegó a esta respuesta» con modelo, herramientas, parámetros, duración y cifras; auditoría y pantalla «Auditoría» (Kevin) |
@@ -125,16 +125,16 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 ### Bloque 4 · Retroalimentación, refuerzo y documentos
 
 - Kevin: generador de documentos PDF (QuestPDF) y DOCX. Hizo: Kevin (DOCX con DocumentFormat.OpenXml).
-- Jeremy, HU-15: borradores de retroalimentación y refuerzo por estudiante, editables, aprobados por el docente y descargables.
+- Jeremy, HU-15: borradores de retroalimentación y refuerzo por estudiante, editables, aprobados por el docente y descargables. Hizo: Kevin (retroalimentación como tipo del plan, desde el panel de actividad).
 - Sebastián, TA-15.A1: promedio del tema antes y después del refuerzo aprobado. Hizo: Kevin (foto del tema al aprobar y estado subió, igual, bajó o sin notas nuevas en el historial).
-- Jeremy, TA-15.A2: panel «Refuerzos aplicados» y su herramienta.
+- Jeremy, TA-15.A2: panel «Refuerzos aplicados» y su herramienta. Hizo: Kevin (sección en «Plan de refuerzo», ruta y herramienta `consultar_refuerzos_aplicados`).
 - Jeremy, TA-15.A3 y TA-15.A4: pantalla «Plan de refuerzo», envío del plan al asistente, borrador por estudiante, aprobación e historial. Hizo: Kevin.
 - Santiago, HU-16: informe del curso con el resumen del asistente; TA-16.A1 si entra TA-15.A1.
 
 ### Bloque 5 · Curso y actividad (Kevin, Sebastián)
 
-- Kevin: `GET /api/cursos/{id}/actividades/{aid}` (se detalla el contrato antes), panel de actividad (enunciado, archivos, entregas, distribución, dominio por criterio, alertas) y mapa del curso.
-- Sebastián: cálculos por actividad, criterio y tema; mapa de calor estudiante × tema.
+- Kevin: `GET /api/cursos/{id}/actividades/{aid}` (contrato en «Panel de actividad»), panel de actividad (enunciado, archivos, entregas, distribución, dominio por criterio, alertas) y mapa del curso. Hizo: Kevin.
+- Sebastián: cálculos por actividad, criterio y tema; mapa de calor estudiante × tema. Hizo: Kevin (`CalculadoraActividad` con pruebas y el mapa de calor en «Mapa del curso»).
 - Kevin, TA-22.A4 y TA-22.A5: estado del período (endpoint y herramienta) y cabecera del curso con la línea de tiempo.
 
 ### Bloque 6 · Trazas y auditoría (Kevin)

@@ -1175,6 +1175,90 @@ Migración `HU17_Auditoria_Detalle`:
 - `UsuarioId` pasa a opcional.
 - Se suman `CursoId`, `Detalle`, `Resultado` y el índice por `Accion`.
 
+## Panel de actividad (HU-22)
+
+La sincronización guarda, de cada tarea, el enunciado en texto plano (`intro`) y sus adjuntos (`introattachments`: nombre, tamaño y tipo, sin URL). Los trae `mod_assign_get_assignments`, que ya se usaba: no es una función nueva de Moodle.
+
+### GET /api/cursos/{id}/actividades/{aid} · DOCENTE
+
+```json
+{
+  "cursoId": 1,
+  "actividad": {
+    "id": 103, "nombre": "Tarea 3", "sigla": "T3", "categoria": "Tareas",
+    "unidad": { "numero": 1, "nombre": "Principios fundamentales de las metodologías ágiles", "parcial": 1 },
+    "fechaLimite": "2026-09-22T23:59:00-05:00", "estadoPeriodo": "VENCIDA", "semana": 4,
+    "enunciado": "Redacta 5 historias de usuario…", "archivos": [ { "nombre": "plantilla.docx", "tamano": 20480, "tipo": "application/…" } ]
+  },
+  "resumen": { "matriculados": 32, "calificadas": 30, "ceros": 1, "porCalificar": 0, "sinEntrega": 2, "aunNoVence": 0, "sinDato": 0,
+    "promedio": 6.42, "aprobados": 17, "bajo6": 9 },
+  "distribucion": [ { "desde": 0, "hasta": 1, "cantidad": 1 } ],
+  "criterios": [ { "id": 5, "orden": 1, "descripcion": "Criterios de aceptación", "puntajeMaximo": 2.5, "tema": "Historias de usuario",
+    "conNivel": 30, "domina": 0.2, "puntajePromedio": 1.1 } ],
+  "temas": [ { "id": 30, "nombre": "Historias de usuario", "domina": 0.55, "promedio": 6.42, "estudiantesConNota": 31 } ],
+  "requierenAtencion": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "nota": 4.0, "estado": "CALIFICADO", "alertaActiva": true } ],
+  "estudiantes": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "nota": 4.0, "estado": "CALIFICADO", "comentario": "…" } ],
+  "noDisponibles": []
+}
+```
+
+Los valores del ejemplo son ilustrativos.
+
+- **`estudiantes`:** la nota y el estado de cada matriculado, los mismos del libro, con el comentario del docente.
+- **`resumen`:** solo las notas calificadas entran a `promedio`; sin entrega no es 0. `aprobados` cuenta las notas de 7,0 o más y `bajo6`, las menores a 6,0.
+- **`distribucion`:** 10 tramos de 1 punto con las notas calificadas.
+- **`criterios`:** un criterio se domina con el 70 % de su puntaje máximo o más. `domina` es la parte de los estudiantes con nivel que lo logra, de 0 a 1. Sin niveles, `domina` y `puntajePromedio` van en `null`.
+- **`temas`:** el «Desempeño por tema» de esa actividad.
+- **`requierenAtencion`:** quienes quedaron bajo 6,0 y quienes no entregaron una actividad vencida. `alertaActiva` dice si tienen una alerta activa en el curso.
+- **`sigla`, `estadoPeriodo` y `semana`:** salen de «Estado del período».
+
+Códigos:
+- 401, 403 y 404 del curso, y 409 sin sincronizar.
+- 404 si la actividad no es del curso.
+
+### GET /api/tools/actividad?cursoId=1&actividadId=103 · DOCENTE, AGENTE
+
+Herramienta `obtener_detalle_actividad`: lo mismo sin `estudiantes` ni `distribucion`, con el enunciado cortado a 1500 caracteres. Responde 400 sin sus parámetros, 404 si la actividad no es del curso y 409 sin sincronizar.
+
+## Retroalimentación y refuerzos aplicados (HU-15, TA-15.A2)
+
+### Retroalimentación por estudiante
+
+`POST /api/cursos/{id}/refuerzos` acepta `tipo`:
+
+```json
+{ "actividadId": 103, "tipo": "RETROALIMENTACION", "estudiantes": [8, 12] }
+```
+
+- **`tipo`:** `REFUERZO` (por defecto) o `RETROALIMENTACION`. Responde 400 con otro valor.
+- **Temas:** la retroalimentación es de toda la actividad, así que `temas` puede ir vacío. El refuerzo sigue pidiendo al menos un tema.
+- **Respuesta:** todas las respuestas del plan suman `"tipo"`.
+- **Borrador:** con `foco.refuerzoId`, el asistente redacta, por estudiante, qué logró y qué le faltó según su rúbrica y el comentario del docente, y un paso concreto para mejorar. La pregunta guardada es «Redacta la retroalimentación de cada estudiante.».
+- **Herramienta:** `GET /api/tools/plan-refuerzo` suma `tipo`. En una retroalimentación, `criteriosFallados` toma todos los criterios de la actividad, no solo los de los temas.
+- **Al aprobar:** no se guarda la foto del tema ni se crean `TareaRefuerzo`, porque no es un refuerzo por tema.
+- **Documento:** se llama `retroalimentacion-<curso>-<id>.<formato>` y lleva el título «Retroalimentación».
+
+Migración `HU22_HU15_Enunciado_Retroalimentacion`: `PlanRefuerzo.Tipo` (por defecto `REFUERZO`), y `Actividad.Enunciado` y `Actividad.Archivos`.
+
+### GET /api/cursos/{id}/refuerzos/aplicados · DOCENTE
+
+Una fila por estudiante y tema de cada plan de refuerzo aprobado, del más reciente al más antiguo, con los conteos.
+
+```json
+{
+  "cursoId": 1,
+  "conteos": { "subio": 3, "igual": 1, "bajo": 0, "sinNotasNuevas": 4 },
+  "filas": [ { "planId": 7, "aprobadoEn": "2026-11-23T11:00:00-05:00", "actividad": "Tarea 3", "estudianteId": 8, "estudiante": "Diego Díaz",
+    "temaId": 30, "tema": "Historias de usuario", "antes": 5.2, "ahora": 7.1, "estado": "SUBIO" } ]
+}
+```
+
+`estado` y el cálculo de `antes` y `ahora` son los de «Resultado del refuerzo». En pantalla se dice el cambio, no que el refuerzo lo causó.
+
+### GET /api/tools/refuerzos-aplicados?cursoId=1 · DOCENTE, AGENTE
+
+Herramienta `consultar_refuerzos_aplicados`: `{ "herramienta", "generado", "conteos", "filas" }`, con la forma de la ruta anterior. Responde 400 sin `cursoId`.
+
 ## Rutas propuestas (se detallan antes de programarlas)
 
 Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nueva» no están en la planificación.
