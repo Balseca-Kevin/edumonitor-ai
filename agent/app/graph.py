@@ -108,8 +108,10 @@ HERRAMIENTAS = {
         "actividad", ParametrosDetalleActividad,
         "Panel de una actividad calculado por el backend: enunciado, entregas (calificadas, ceros, por calificar, sin entrega, aún no "
         "vence), promedio, cuántos llegan a 7,0 y cuántos quedan bajo 6,0, dominio de cada criterio de la rúbrica (domina de 0 a 1), "
-        "temas que evalúa y quiénes requieren atención en esa actividad. Úsala cuando el foco trae un actividadId o preguntan por una "
-        "actividad concreta."
+        "temas que evalúa y quiénes requieren atención en esa actividad. Cada criterio trae aviso: REVISAR_ENSENANZA (casi todo el "
+        "curso lo falló: revisar cómo se enseñó) o REVISAR_ENUNCIADO (no separa a quienes van bien del resto: revisar el enunciado); "
+        "dilo como algo a revisar, no como un veredicto. Si piden el enunciado corregido de un criterio, cambia solo lo que toca a "
+        "ese criterio, sin notas ni porcentajes. Úsala cuando el foco trae un actividadId o preguntan por una actividad concreta."
     ),
     "consultar_refuerzos_aplicados": (
         "refuerzos-aplicados", ParametrosRefuerzosAplicados,
