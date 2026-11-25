@@ -43,6 +43,11 @@ public sealed class SincronizacionService(
         };
         var pasosCorrectos = 0;
 
+        // TA-21.A1 · Foto de las calificaciones antes de importar, para guardar qué celdas cambiaron. En la primera
+        // sincronización del curso todo es nuevo y no se marca ninguna celda.
+        var hayAnterior = await db.Sincronizaciones.AnyAsync(s => s.CursoId == curso.Id, ct);
+        var antes = hayAnterior ? await ComparadorCalificaciones.FotoAsync(db, curso.Id, ct) : null;
+
         // Unidades va primero: su estructura asigna la unidad a cada actividad y traduce la finalización.
         EstructuraCurso? estructura = null;
         if (await IntentarAsync(registro, async () =>
@@ -94,8 +99,28 @@ public sealed class SincronizacionService(
             : pasosCorrectos > 0 ? EstadoSincronizacion.PARCIAL
             : EstadoSincronizacion.FALLIDA;
         registro.Fin = reloj.GetLocalNow();
+        registro.CambiosRegistrados = true;
 
         db.Sincronizaciones.Add(registro);
+        if (antes is not null)
+        {
+            var despues = await ComparadorCalificaciones.FotoAsync(db, curso.Id, ct);
+            foreach (var cambio in ComparadorCalificaciones.Comparar(antes, despues))
+            {
+                db.CambiosSincronizacion.Add(new CambioSincronizacion
+                {
+                    Sincronizacion = registro,
+                    ActividadId = cambio.ActividadId,
+                    EstudianteId = cambio.EstudianteId,
+                    Tipo = cambio.Tipo,
+                    NotaAntes = cambio.Antes?.Nota,
+                    EstadoAntes = cambio.Antes?.Estado,
+                    NotaAhora = cambio.Ahora.Nota,
+                    EstadoAhora = cambio.Ahora.Estado,
+                });
+            }
+        }
+
         await db.SaveChangesAsync(ct);
 
         // TA-12.3 · Al terminar la sincronización se recalculan las alertas del curso con los datos recién guardados.

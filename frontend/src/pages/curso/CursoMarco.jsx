@@ -2,27 +2,13 @@ import { useEffect, useState } from 'react'
 import { Outlet, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import Marco from '../../components/Marco'
 import PaginaError from '../../components/PaginaError'
-import TiraPeriodo from '../../components/TiraPeriodo'
+import CabeceraCurso from '../../components/CabeceraCurso'
 import { formatearFecha } from '../../components/formato'
 import { TODO, busquedaTramo, segmentosDe, useTramo } from '../../components/tramo'
 import { obtenerCurso, sincronizarCurso } from '../../services/cursos'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../../services/indicadores'
+import { obtenerPeriodo } from '../../services/periodo'
 import { describirError } from '../../services/errores'
-
-function CabeceraCurso({ curso }) {
-  return (
-    <header className="cabecera-curso">
-      <div className="entra" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--e-6)' }}>
-        <span className="mono">
-          {curso.nombreCorto}
-          {curso.periodo ? ` · ${curso.periodo}` : ''}
-        </span>
-        <h1>{curso.nombre}</h1>
-      </div>
-      <TiraPeriodo cursoId={curso.id} ultimaSincronizacion={curso.ultimaSincronizacion} />
-    </header>
-  )
-}
 
 /**
  * R.2 · Barra blanca bajo la cabecera: el control segmentado (Todo el ciclo, cada parcial y cada unidad del curso) que filtra de
@@ -79,15 +65,15 @@ export function BarraCurso({ curso, unidades, sincronizando, resultado, onSincro
 }
 
 /**
- * HU-19 y R.2 · Estructura de las pantallas de un curso: barra lateral oscura con la navegación del curso y el contador de alertas,
- * cabecera oscura con el código, el nombre y la tira del período, y la barra con el control segmentado; el Asistente va dentro de la
+ * HU-19, R.2 y TA-22.A5 · Estructura de las pantallas de un curso: barra lateral oscura con la navegación del curso y el contador de
+ * alertas, cabecera oscura con la semana del período y la línea de tiempo, y la barra con el control segmentado; el Asistente va dentro de la
  * misma estructura (R.6). 401, 403 y 404 se ven en pantalla completa, sin barra lateral.
  */
 export default function CursoMarco() {
   const { id } = useParams()
   const tramo = useTramo()
   const [cargado, setCargado] = useState({ id: null, curso: null, error: null })
-  const [contexto, setContexto] = useState({ id: null, unidades: [], alertas: null })
+  const [contexto, setContexto] = useState({ id: null, unidades: [], alertas: null, periodo: null, estudiantes: null })
   const [version, setVersion] = useState(0)
   const [sincronizando, setSincronizando] = useState(false)
   const [resultado, setResultado] = useState(null)
@@ -106,8 +92,10 @@ export default function CursoMarco() {
   // unidades y queda solo «Todo el ciclo»; el contador sin dato no se muestra, nunca como 0.
   useEffect(() => {
     let vigente = true
-    Promise.all([obtenerIndicadores(id).catch(() => null), contarEstudiantesConAlertas(id)]).then(
-      ([indicadores, alertas]) => vigente && setContexto({ id, unidades: indicadores?.unidades ?? [], alertas }),
+    Promise.all([obtenerIndicadores(id).catch(() => null), contarEstudiantesConAlertas(id), obtenerPeriodo(id).catch(() => null)]).then(
+      ([indicadores, alertas, periodo]) =>
+        vigente &&
+        setContexto({ id, unidades: indicadores?.unidades ?? [], alertas, periodo, estudiantes: indicadores?.curso?.estudiantes ?? null }),
     )
     return () => {
       vigente = false
@@ -137,7 +125,7 @@ export default function CursoMarco() {
 
   // Lo que llegó de otro curso no se muestra mientras carga el nuevo.
   const { curso, error } = cargado.id === id ? cargado : { curso: null, error: null }
-  const { unidades, alertas } = contexto.id === id ? contexto : { unidades: [], alertas: null }
+  const { unidades, alertas, periodo, estudiantes } = contexto.id === id ? contexto : { unidades: [], alertas: null, periodo: null, estudiantes: null }
 
   if (error && ['sesion', 'acceso', 'no-existe'].includes(error.tipo)) {
     return <PaginaError error={error} />
@@ -148,7 +136,7 @@ export default function CursoMarco() {
       curso={curso ?? { id }}
       alertas={alertas}
       busqueda={busquedaTramo(tramo)}
-      cabecera={curso ? <CabeceraCurso curso={curso} /> : null}
+      cabecera={curso ? <CabeceraCurso curso={curso} periodo={periodo} estudiantes={estudiantes} /> : null}
       barra={
         curso ? (
           <BarraCurso curso={curso} unidades={unidades} sincronizando={sincronizando} resultado={resultado} onSincronizar={sincronizar} />
@@ -162,7 +150,7 @@ export default function CursoMarco() {
         </div>
       )}
       {!curso && !error && <p className="ayuda">Cargando el curso…</p>}
-      {curso && <Outlet context={{ curso, version }} />}
+      {curso && <Outlet context={{ curso, version, periodo }} />}
     </Marco>
   )
 }

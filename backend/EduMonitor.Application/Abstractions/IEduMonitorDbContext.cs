@@ -17,6 +17,7 @@ public interface IEduMonitorDbContext
     DbSet<Actividad> Actividades { get; }
     DbSet<Calificacion> Calificaciones { get; }
     DbSet<Domain.Entities.Sincronizacion> Sincronizaciones { get; }
+    DbSet<CambioSincronizacion> CambiosSincronizacion { get; }
     DbSet<ReglaAlerta> ReglasAlerta { get; }
     DbSet<Alerta> Alertas { get; }
     DbSet<Conversacion> Conversaciones { get; }

@@ -9,7 +9,7 @@ namespace EduMonitor.Api.Controllers;
 [ApiController]
 [Route("api/cursos/{id:int}/sync")]
 [Authorize(Policy = CursoAutorizadoRequirement.Politica)]
-public sealed class SincronizacionController(SincronizacionService sincronizacion, CursoService cursos) : ControllerBase
+public sealed class SincronizacionController(SincronizacionService sincronizacion, CambiosSincronizacionService cambios, CursoService cursos) : ControllerBase
 {
     /// <summary>
     /// Sincroniza el curso con Moodle y responde al terminar. 200 con estado COMPLETADA o PARCIAL;
@@ -55,4 +55,25 @@ public sealed class SincronizacionController(SincronizacionService sincronizacio
         await cursos.ExisteAsync(id, ct)
             ? Ok(await sincronizacion.HistorialAsync(id, ct))
             : Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El curso {id} no existe.");
+
+    /// <summary>
+    /// TA-21.A1 · Celdas del libro que cambiaron en la sincronización <paramref name="sid"/> frente a la anterior, con sus conteos.
+    /// 404 si el curso no existe o la sincronización no es de ese curso.
+    /// </summary>
+    [HttpGet("{sid:int}/cambios")]
+    [ProducesResponseType<CambiosSincronizacionDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Cambios(int id, int sid, CancellationToken ct)
+    {
+        if (!await cursos.ExisteAsync(id, ct))
+        {
+            return Problem(statusCode: StatusCodes.Status404NotFound, detail: $"El curso {id} no existe.");
+        }
+
+        var resultado = await cambios.ConsultarAsync(id, sid, ct);
+        return resultado is null
+            ? Problem(statusCode: StatusCodes.Status404NotFound, detail: $"La sincronización {sid} no es del curso {id}.")
+            : Ok(resultado);
+    }
 }

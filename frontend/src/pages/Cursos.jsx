@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { obtenerCursos, obtenerHistorialSincronizaciones, sincronizarCurso } from '../services/cursos'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../services/indicadores'
+import { obtenerPeriodo } from '../services/periodo'
 import Marco from '../components/Marco'
 import Table from '../components/ui/Table'
 import StatusBadge from '../components/ui/StatusBadge'
@@ -71,6 +72,30 @@ function Historial({ curso, resultado, historial, cargando }) {
  * entregas calificadas y estado de la última sincronización, con «Abrir curso» y «Sincronizar y abrir». Las cifras salen de la API
  * (indicadores y alertas del curso); un curso sin sincronizar lo dice, nunca muestra 0.
  */
+/** Semana del período, unidad actual y lo que vence esta semana, tal como lo calcula GET /api/cursos/{id}/periodo (TA-22.A4). */
+function LineaPeriodo({ periodo }) {
+  const semana = periodo.semana
+  const vence = periodo.venceEstaSemana ?? []
+  return (
+    <div className="tarjeta-curso-periodo">
+      <div className="tarjeta-curso-periodo-fila">
+        <span className="mono num">{semana ? `Semana ${semana.actual} de ${semana.total}` : 'Semana no disponible'}</span>
+        {periodo.unidadActual && (
+          <span className="tarjeta-curso-unidad">
+            U{periodo.unidadActual.numero} · {periodo.unidadActual.nombre}
+          </span>
+        )}
+      </div>
+      {semana && (
+        <div className="tarjeta-curso-avance" role="progressbar" aria-label="Avance del período" aria-valuemin={1} aria-valuemax={semana.total} aria-valuenow={semana.actual}>
+          <div style={{ width: `${(semana.actual / semana.total) * 100}%` }} />
+        </div>
+      )}
+      <span className="ayuda">{vence.length === 0 ? 'Nada vence esta semana' : `Vence esta semana: ${vence.map((a) => a.nombre).join(', ')}`}</span>
+    </div>
+  )
+}
+
 function TarjetaCurso({ curso, resumen, sincronizando, ocupado, onAbrir, onSincronizar, onHistorial, historialAbierto, children }) {
   const ultima = curso.ultimaSincronizacion
   const sinDatos = resumen?.sinDatos
@@ -100,6 +125,8 @@ function TarjetaCurso({ curso, resumen, sincronizando, ocupado, onAbrir, onSincr
         </div>
       )}
 
+      {resumen?.periodo && <LineaPeriodo periodo={resumen.periodo} />}
+
       <div className="tarjeta-curso-sync">
         <span className={`punto-estado punto-estado--${tonoDeEstado(ultima?.estado) ?? 'neutro'}`} aria-hidden="true" />
         <span>{ultima ? `Última sincronización: ${formatearFecha(ultima.fecha)} · ${ultima.estado}` : 'Sin sincronizar'}</span>
@@ -121,13 +148,17 @@ function TarjetaCurso({ curso, resumen, sincronizando, ocupado, onAbrir, onSincr
   )
 }
 
-/** Resumen de la tarjeta: promedio y entregas calificadas del curso (indicadores) y estudiantes con alertas activas. */
+/** Resumen de la tarjeta: promedio y entregas calificadas del curso (indicadores), estudiantes con alertas activas y el estado del período. */
 async function resumirCurso(curso) {
   if (!curso.ultimaSincronizacion) return { sinDatos: true }
   try {
-    const [indicadores, atencion] = await Promise.all([obtenerIndicadores(curso.id), contarEstudiantesConAlertas(curso.id)])
+    const [indicadores, atencion, periodo] = await Promise.all([
+      obtenerIndicadores(curso.id),
+      contarEstudiantesConAlertas(curso.id),
+      obtenerPeriodo(curso.id).catch(() => null),
+    ])
     const calificadas = indicadores.estudiantes.reduce((total, e) => total + (e.notas?.calificadas ?? 0), 0)
-    return { promedio: indicadores.curso?.promedio ?? null, calificadas, atencion }
+    return { promedio: indicadores.curso?.promedio ?? null, calificadas, atencion, periodo }
   } catch (error) {
     return error?.response?.status === 409 ? { sinDatos: true } : { promedio: null, calificadas: null, atencion: null }
   }

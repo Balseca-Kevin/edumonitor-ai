@@ -15,13 +15,14 @@ vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn(), sincronizarCurs
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarEstudiantesConAlertas: vi.fn() }))
 vi.mock('../../services/alertas', () => ({ obtenerAlertas: vi.fn() }))
 vi.mock('../../services/libro', async (original) => ({ ...(await original()), obtenerLibro: vi.fn() }))
-vi.mock('../../components/TiraPeriodo', () => ({ default: () => null }))
+vi.mock('../../services/periodo', () => ({ obtenerPeriodo: vi.fn() }))
 
 import { listarConversaciones, obtenerConversacion, preguntarAlAsistente } from '../../services/agente'
 import { obtenerCurso } from '../../services/cursos'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../../services/indicadores'
 import { obtenerAlertas } from '../../services/alertas'
 import { obtenerLibro } from '../../services/libro'
+import { obtenerPeriodo } from '../../services/periodo'
 
 beforeAll(() => {
   globalThis.ResizeObserver ??= class {
@@ -38,6 +39,20 @@ const curso = {
   nombre: 'Metodologías Ágiles (lab)',
   periodo: '2026-2',
   ultimaSincronizacion: { id: 12, fecha: '2026-11-09T07:10:00-05:00', estado: 'COMPLETADA' },
+}
+
+// Forma de GET /api/cursos/{id}/periodo (docs/contratos-api.md, «Estado del período»).
+const periodo = {
+  cursoId: 1,
+  semana: { actual: 12, total: 15 },
+  estado: 'EN_CURSO',
+  unidadActual: { numero: 4, nombre: 'Herramientas ágiles del mercado', parcial: 2 },
+  unidades: [],
+  actividades: [],
+  vencidas: { actividades: 0, entregasQueFaltan: 0, conFaltas: [] },
+  venceEstaSemana: [],
+  siguiente: null,
+  noDisponibles: [],
 }
 
 // Estudiantes de GET /api/cursos/{id}/indicadores (docs/contratos-api.md).
@@ -85,6 +100,7 @@ beforeEach(() => {
   obtenerIndicadores.mockResolvedValue({ unidades, estudiantes })
   obtenerAlertas.mockResolvedValue([{ id: 31, regla: 'R4', estudiante: { id: 5 } }])
   contarEstudiantesConAlertas.mockResolvedValue(1)
+  obtenerPeriodo.mockResolvedValue(periodo)
 })
 
 afterEach(() => {
@@ -99,7 +115,7 @@ describe('R.6 · Asistente dentro del curso', () => {
 
     expect(await screen.findByRole('heading', { name: 'Hola, Docente Uno. ¿Qué quieres saber de AGIL-4B?' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Curso AGIL-4B' })).toBeInTheDocument() // barra lateral oscura del curso
-    expect(await screen.findByText('Sabe: Unidad 3 · Principales metodologías ágiles del mercado')).toBeInTheDocument()
+    expect(await screen.findByText('Sabe: semana 12 de 15 · Unidad 3 · Principales metodologías ágiles del mercado')).toBeInTheDocument()
     expect(obtenerIndicadores).toHaveBeenCalledWith('1', 'u3')
     expect(screen.queryByText(/E-0\d\d|Nada se envía/)).toBeNull() // las reglas del sistema no se escriben en pantalla
   })
@@ -158,7 +174,7 @@ describe('R.6 · Asistente dentro del curso', () => {
   it('desde la ficha llega con el estudiante en el contexto y la pregunta escrita', async () => {
     renderAsistente('/cursos/1/asistente?estudiante=6')
 
-    expect(await screen.findByText(/Sabe: Todo el ciclo · Elena Espinoza/)).toBeInTheDocument()
+    expect(await screen.findByText(/Sabe: semana 12 de 15 · Todo el ciclo · Elena Espinoza/)).toBeInTheDocument()
     await waitFor(() => expect(screen.getByLabelText('Tu pregunta')).toHaveValue('¿Cómo va Elena Espinoza? ¿En qué actividades le fue mal?'))
     expect(preguntarAlAsistente).not.toHaveBeenCalled() // el docente la revisa y la envía
   })

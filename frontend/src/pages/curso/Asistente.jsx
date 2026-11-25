@@ -205,7 +205,7 @@ export default function Asistente() {
   const { id } = useParams()
   const tramo = useTramo()
   const [parametros] = useSearchParams()
-  const { curso } = useOutletContext() ?? {}
+  const { curso, periodo } = useOutletContext() ?? {}
   const usuario = usuarioActual()
   const [mensaje, setMensaje] = useState('')
   const [turnos, setTurnos] = useState([])
@@ -299,7 +299,8 @@ export default function Asistente() {
   const preguntadas = new Set(turnos.map((t) => t.pregunta))
   const seguimiento = SUGERENCIAS.filter((s) => !preguntadas.has(s.texto)).slice(0, 3)
   const codigo = curso?.nombreCorto ?? 'este curso'
-  const sabe = [nombreTramo(tramo, indicadores?.unidades), enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null].filter(Boolean).join(' · ')
+  const semanaPeriodo = periodo?.semana ? `semana ${periodo.semana.actual} de ${periodo.semana.total}` : null
+  const sabe = [semanaPeriodo, nombreTramo(tramo, indicadores?.unidades), enfocado ? `${enfocado.nombre} ${enfocado.apellido}` : null].filter(Boolean).join(' · ')
   const estudianteFicha = estudiantes.find((e) => e.id === ficha.id) ?? null
   const columnas = actividadesDelLibro(ficha.libro)
   const filaLibro = ficha.libro?.estudiantes.find((e) => e.id === ficha.id)

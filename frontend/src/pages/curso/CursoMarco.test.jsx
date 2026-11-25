@@ -6,10 +6,11 @@ import { useTramo } from '../../components/tramo'
 
 vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn(), sincronizarCurso: vi.fn() }))
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarEstudiantesConAlertas: vi.fn() }))
-vi.mock('../../components/TiraPeriodo', () => ({ default: () => null }))
+vi.mock('../../services/periodo', () => ({ obtenerPeriodo: vi.fn() }))
 
 import { obtenerCurso, sincronizarCurso } from '../../services/cursos'
 import { contarEstudiantesConAlertas, obtenerIndicadores } from '../../services/indicadores'
+import { obtenerPeriodo } from '../../services/periodo'
 
 // Formas de GET /api/cursos/{id} y de las unidades de GET /api/cursos/{id}/indicadores (docs/contratos-api.md).
 const curso = {
@@ -19,6 +20,19 @@ const curso = {
   nombre: 'Metodologías Ágiles (lab)',
   periodo: '2026-2',
   ultimaSincronizacion: { id: 12, fecha: '2026-11-21T07:10:00-05:00', estado: 'COMPLETADA' },
+}
+// Forma de GET /api/cursos/{id}/periodo (docs/contratos-api.md, «Estado del período»).
+const periodo = {
+  cursoId: 1,
+  semana: { actual: 12, total: 15 },
+  estado: 'EN_CURSO',
+  unidadActual: { numero: 4, nombre: 'Herramientas ágiles del mercado', parcial: 2 },
+  unidades: [],
+  actividades: [],
+  vencidas: { actividades: 0, entregasQueFaltan: 0, conFaltas: [] },
+  venceEstaSemana: [],
+  siguiente: null,
+  noDisponibles: [],
 }
 const unidades = [
   { numero: 2, nombre: 'Filosofía y enfoques ágiles de la actualidad', parcial: 1, actividades: 4, calificadas: 4 },
@@ -51,6 +65,7 @@ beforeEach(() => {
   obtenerCurso.mockResolvedValue(curso)
   obtenerIndicadores.mockResolvedValue({ unidades })
   contarEstudiantesConAlertas.mockResolvedValue(3)
+  obtenerPeriodo.mockResolvedValue(periodo)
 })
 
 afterEach(() => {
@@ -124,5 +139,24 @@ describe('R.2 · Barra lateral oscura y barra del curso', () => {
   it('un tramo inválido en la URL se trata como «Todo el ciclo»', async () => {
     renderCurso('/cursos/1/panel?tramo=semana')
     expect(await screen.findByTestId('pantalla')).toHaveTextContent('tramo todo')
+  })
+})
+
+describe('TA-22.A5 · Cabecera del curso en el marco', () => {
+  it('muestra la semana del período que da el backend y los estudiantes del curso', async () => {
+    obtenerIndicadores.mockResolvedValue({ unidades, curso: { estudiantes: 32 } })
+    renderCurso()
+
+    expect(await screen.findByLabelText('Semana 12 de 15')).toBeInTheDocument()
+    expect(obtenerPeriodo).toHaveBeenCalledWith('1')
+    expect(screen.getByText('U4 · Herramientas ágiles del mercado', { selector: '.cabecera-unidad' })).toBeInTheDocument()
+  })
+
+  it('si el período no responde, la cabecera lo dice y el resto del curso sigue', async () => {
+    obtenerPeriodo.mockRejectedValue({ response: { status: 409 } })
+    renderCurso()
+
+    expect(await screen.findByText(/El estado del período aparece cuando el curso se sincroniza/)).toBeInTheDocument()
+    expect(screen.getByTestId('pantalla')).toBeInTheDocument()
   })
 })

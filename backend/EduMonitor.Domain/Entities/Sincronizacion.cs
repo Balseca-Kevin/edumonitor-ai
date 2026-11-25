@@ -26,6 +26,12 @@ public class Sincronizacion
     public int RegistrosCalificaciones { get; set; }
 
     public List<ErrorSincronizacion> Errores { get; set; } = new();
+
+    /// <summary>
+    /// TA-21.A1 · True cuando la sincronización guardó sus cambios frente a la anterior. Las hechas antes de existir el registro
+    /// quedan en false: sus cambios no se conocen, que no es lo mismo que no haber cambios.
+    /// </summary>
+    public bool CambiosRegistrados { get; set; }
 }
 
 /// <summary>Función de Moodle que falló en una sincronización y su mensaje.</summary>
