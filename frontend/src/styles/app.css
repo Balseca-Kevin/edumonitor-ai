@@ -745,3 +745,29 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .ficha-criterios { margin: var(--e-4) 0 0; padding-left: var(--e-16); font-size: var(--fs-12); color: var(--tinta-2); }
 .ficha-comentario { white-space: pre-line; font-size: var(--fs-13); color: var(--tinta-4); max-width: 360px; }
 .ficha-temas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-10); font-size: var(--fs-14); }
+
+/* HU-22 · Panel de actividad y mapa de calor estudiante × tema. */
+.libro-actividad-enlace { color: inherit; text-decoration: none; }
+.libro-actividad-enlace:hover, .mapa-actividad-enlace:hover { text-decoration: underline; }
+.mapa-actividad-enlace { color: inherit; text-decoration: none; }
+.actividad-pagina { display: flex; flex-direction: column; gap: var(--e-16); }
+.actividad-cabecera { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--e-16); padding: var(--e-16); }
+.actividad-cabecera h1 { margin: var(--e-6) 0 var(--e-8); font-size: var(--fs-30); font-weight: 800; letter-spacing: -0.02em; }
+.actividad-cabecera .mono { font-size: var(--fs-11); color: var(--tinta-2); }
+.actividad-enunciado { margin: 0; white-space: pre-line; font-size: var(--fs-14); color: var(--tinta-4); }
+.actividad-archivos { margin: 0; padding-left: var(--e-16); font-size: var(--fs-13); }
+.actividad-entregas { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--e-10); margin: 0; }
+.actividad-entregas div { display: flex; flex-direction: column; gap: var(--e-4); }
+.actividad-entregas dt { font-size: var(--fs-12); color: var(--tinta-2); }
+.actividad-entregas dd { margin: 0; font-size: var(--fs-20); font-weight: 800; }
+.actividad-criterios { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--e-12); font-size: var(--fs-14); }
+.mapa-calor-seccion { padding: var(--e-16); display: flex; flex-direction: column; gap: var(--e-8); }
+.mapa-calor-seccion h3 { margin: 0; font-size: var(--fs-16); font-weight: 800; }
+.mapa-calor { border-collapse: collapse; font-size: var(--fs-13); }
+.mapa-calor th, .mapa-calor td { padding: var(--e-6) var(--e-8); border: 1px solid var(--linea); text-align: center; }
+.mapa-calor thead th { font-size: var(--fs-12); color: var(--tinta-2); max-width: 140px; }
+.mapa-calor tbody th { text-align: left; white-space: nowrap; font-weight: 600; }
+.mapa-calor-celda--bajo { background: var(--bajo-fondo); color: var(--bajo-texto); font-weight: 700; }
+.mapa-calor-celda--medio { background: var(--pista); color: var(--tinta-4); }
+.mapa-calor-celda--ok { background: var(--ok-fondo); color: var(--ok); }
+.mapa-calor-celda--vacio { color: var(--tinta-3); font-size: var(--fs-11); }

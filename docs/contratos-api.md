@@ -1175,6 +1175,51 @@ Migración `HU17_Auditoria_Detalle`:
 - `UsuarioId` pasa a opcional.
 - Se suman `CursoId`, `Detalle`, `Resultado` y el índice por `Accion`.
 
+## Panel de actividad (HU-22)
+
+La sincronización guarda, de cada tarea, el enunciado en texto plano (`intro`) y sus adjuntos (`introattachments`: nombre, tamaño y tipo, sin URL). Los trae `mod_assign_get_assignments`, que ya se usaba: no es una función nueva de Moodle.
+
+### GET /api/cursos/{id}/actividades/{aid} · DOCENTE
+
+```json
+{
+  "cursoId": 1,
+  "actividad": {
+    "id": 103, "nombre": "Tarea 3", "sigla": "T3", "categoria": "Tareas",
+    "unidad": { "numero": 1, "nombre": "Principios fundamentales de las metodologías ágiles", "parcial": 1 },
+    "fechaLimite": "2026-09-22T23:59:00-05:00", "estadoPeriodo": "VENCIDA", "semana": 4,
+    "enunciado": "Redacta 5 historias de usuario…", "archivos": [ { "nombre": "plantilla.docx", "tamano": 20480, "tipo": "application/…" } ]
+  },
+  "resumen": { "matriculados": 32, "calificadas": 30, "ceros": 1, "porCalificar": 0, "sinEntrega": 2, "aunNoVence": 0, "sinDato": 0,
+    "promedio": 6.42, "aprobados": 17, "bajo6": 9 },
+  "distribucion": [ { "desde": 0, "hasta": 1, "cantidad": 1 } ],
+  "criterios": [ { "id": 5, "orden": 1, "descripcion": "Criterios de aceptación", "puntajeMaximo": 2.5, "tema": "Historias de usuario",
+    "conNivel": 30, "domina": 0.2, "puntajePromedio": 1.1 } ],
+  "temas": [ { "id": 30, "nombre": "Historias de usuario", "domina": 0.55, "promedio": 6.42, "estudiantesConNota": 31 } ],
+  "requierenAtencion": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "nota": 4.0, "estado": "CALIFICADO", "alertaActiva": true } ],
+  "estudiantes": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "nota": 4.0, "estado": "CALIFICADO", "comentario": "…" } ],
+  "noDisponibles": []
+}
+```
+
+Los valores del ejemplo son ilustrativos.
+
+- **`estudiantes`:** la nota y el estado de cada matriculado, los mismos del libro, con el comentario del docente.
+- **`resumen`:** solo las notas calificadas entran a `promedio`; sin entrega no es 0. `aprobados` cuenta las notas de 7,0 o más y `bajo6`, las menores a 6,0.
+- **`distribucion`:** 10 tramos de 1 punto con las notas calificadas.
+- **`criterios`:** un criterio se domina con el 70 % de su puntaje máximo o más. `domina` es la parte de los estudiantes con nivel que lo logra, de 0 a 1. Sin niveles, `domina` y `puntajePromedio` van en `null`.
+- **`temas`:** el «Desempeño por tema» de esa actividad.
+- **`requierenAtencion`:** quienes quedaron bajo 6,0 y quienes no entregaron una actividad vencida. `alertaActiva` dice si tienen una alerta activa en el curso.
+- **`sigla`, `estadoPeriodo` y `semana`:** salen de «Estado del período».
+
+Códigos:
+- 401, 403 y 404 del curso, y 409 sin sincronizar.
+- 404 si la actividad no es del curso.
+
+### GET /api/tools/actividad?cursoId=1&actividadId=103 · DOCENTE, AGENTE
+
+Herramienta `obtener_detalle_actividad`: lo mismo sin `estudiantes` ni `distribucion`, con el enunciado cortado a 1500 caracteres. Responde 400 sin sus parámetros, 404 si la actividad no es del curso y 409 sin sincronizar.
+
 ## Rutas propuestas (se detallan antes de programarlas)
 
 Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nueva» no están en la planificación.
