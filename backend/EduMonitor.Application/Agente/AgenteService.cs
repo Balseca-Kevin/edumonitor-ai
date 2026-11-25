@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Cursos;
+using EduMonitor.Application.Refuerzos;
 using EduMonitor.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -139,6 +140,7 @@ public sealed class AgenteService(
         var lineaPeriodo = await LineaPeriodoAsync(cursoId, ct);
 
         string? focoPlan = null;
+        string? focoEstilo = null;
         if (refuerzoId is int rid)
         {
             var plan = (await planes.ObtenerAsync(cursoId, rid, ct)).Valor;
@@ -166,6 +168,7 @@ public sealed class AgenteService(
                     + "Llama a obtener_plan_refuerzo con cursoId y refuerzoId y redacta un borrador por estudiante: qué repasar en cada tema según "
                     + "sus criterios fallados y el comentario del docente, una entrega sugerida antes de la próxima evaluación de esos temas y qué "
                     + "está en juego según su nota necesaria. Usa solo las notas y criterios que devuelve la herramienta.";
+            focoEstilo = await EstiloDocenteAsync(usuario.Id, rid, ct);
         }
 
         var token = jwt.EmitirTokenAgente(usuario.Id, cursoId);
@@ -181,6 +184,11 @@ public sealed class AgenteService(
         if (focoPlan is not null)
         {
             contexto.Add(focoPlan);
+        }
+
+        if (focoEstilo is not null)
+        {
+            contexto.Add(focoEstilo);
         }
 
         contexto.Add(Seudonimizador.Ocultar(pregunta, mapa));
@@ -207,12 +215,47 @@ public sealed class AgenteService(
             hiloId, respuesta.Proveedor ?? "LOCAL", respuesta.Respaldo, respuesta.Cifras ?? Array.Empty<CifraDto>());
         if (refuerzoId is int planId)
         {
-            await planes.GuardarBorradorAsync(planId, guardada.ConversacionId, respuesta.Respuesta, ct);
+            await planes.GuardarBorradorAsync(planId, guardada.ConversacionId, respuesta.Respuesta, focoEstilo is not null, ct);
             guardada = guardada with { RefuerzoId = planId };
         }
 
         return new ResultadoChat(EstadoChat.Respondido, guardada);
     }
+
+    /// <summary>
+    /// TA-15.B3 · Ejemplos de cómo el docente corrigió dos borradores anteriores, para que el nuevo imite su tono y su estructura. Cada
+    /// ejemplo se seudonimiza con el mapa de su propio curso y los códigos se cambian por «[estudiante]», para que el modelo no confunda
+    /// a los estudiantes de otro plan con los de este. Sin 2 ejemplos devuelve null y el borrador se redacta como siempre.
+    /// </summary>
+    private async Task<string?> EstiloDocenteAsync(int usuarioId, int planId, CancellationToken ct)
+    {
+        var ejemplos = await planes.EjemplosEstiloAsync(usuarioId, planId, ct);
+        if (ejemplos.Count == 0)
+        {
+            return null;
+        }
+
+        var partes = new List<string>
+        {
+            "Estilo del docente: abajo van dos borradores anteriores tal como los redactaste y tal como el docente los aprobó. Imita el tono, "
+                + "la extensión y la estructura de la versión aprobada. No copies sus estudiantes, notas, temas ni criterios: los datos de este "
+                + "borrador salen solo de obtener_plan_refuerzo.",
+        };
+        var n = 1;
+        foreach (var ejemplo in ejemplos)
+        {
+            var mapaEjemplo = await seudonimizador.MapaAsync(ejemplo.CursoId, ct);
+            partes.Add($"Ejemplo {n} · redactado:\n{SinCodigos(EjemplosEstilo.Recortar(Seudonimizador.Ocultar(ejemplo.Generado, mapaEjemplo)))}");
+            partes.Add($"Ejemplo {n} · aprobado por el docente:\n{SinCodigos(EjemplosEstilo.Recortar(Seudonimizador.Ocultar(ejemplo.Aprobado, mapaEjemplo)))}");
+            n++;
+        }
+
+        return string.Join("\n", partes);
+    }
+
+    private static string SinCodigos(string texto) => CodigoEstudiante.Replace(texto, "[estudiante]");
+
+    private static readonly Regex CodigoEstudiante = new(@"\bE-\d{3,}\b", RegexOptions.Compiled);
 
     /// <summary>
     /// HU-19 · Historial del docente en un curso, de la más reciente a la más antigua. Cada quien ve solo sus conversaciones.

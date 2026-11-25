@@ -43,6 +43,15 @@ public class PlanRefuerzo
 
     public DateTimeOffset? AprobadoEn { get; set; }
 
+    /// <summary>TA-15.B3 · Último texto que redactó el asistente, antes de que el docente lo edite.</summary>
+    public string? TextoGenerado { get; set; }
+
+    /// <summary>TA-15.B3 · Texto final que aprobó el docente. Con <see cref="TextoGenerado"/> muestra cómo escribe el docente.</summary>
+    public string? TextoAprobado { get; set; }
+
+    /// <summary>TA-15.B3 · El último borrador se redactó con ejemplos de estilo del mismo docente.</summary>
+    public bool ConEstilo { get; set; }
+
     public List<PlanRefuerzoTema> Temas { get; set; } = new();
     public List<PlanRefuerzoEstudiante> Estudiantes { get; set; } = new();
 }

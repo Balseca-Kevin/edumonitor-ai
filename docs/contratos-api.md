@@ -953,6 +953,17 @@ En pantalla se dice el cambio («subió de 5,2 a 7,1 en el tema después del ref
 - La respuesta suma `"refuerzoId": 7`. Su texto queda como borrador del plan, con estado `BORRADOR` y la conversación enlazada.
 - 400 si el plan no es del curso o ya está aprobado.
 
+### Estilo del docente (TA-15.B3)
+
+Cuando el docente ya editó y aprobó planes, el asistente imita cómo los corrige:
+
+- **Ejemplos:** los 2 planes aprobados más recientes del mismo docente (en cualquiera de sus cursos) donde el texto aprobado es distinto del último borrador del asistente, sin contar espacios. Con menos de 2 no se manda ningún ejemplo y el borrador se redacta como siempre.
+- **Qué se guarda:** `PlanRefuerzo` suma `TextoGenerado` (el último borrador del asistente), `TextoAprobado` (el texto al aprobar) y `ConEstilo`.
+- **Qué recibe el agente:** el texto redactado y el aprobado de cada ejemplo, de 1500 caracteres como máximo cada uno, con los nombres de los estudiantes cambiados por «[estudiante]». Nunca van nombres, códigos ni planes de otro docente.
+- **Respuesta:** todas las respuestas del plan suman `"conEstilo": true` cuando el último borrador se redactó con ejemplos. La pantalla lo marca con «Con tu estilo».
+
+Migración `TA15B3_Estilo_Docente`: las 3 columnas y el índice por docente y estado.
+
 ### GET /api/tools/plan-refuerzo?cursoId=1&refuerzoId=7 · DOCENTE, AGENTE
 
 Herramienta `obtener_plan_refuerzo`. Devuelve:
