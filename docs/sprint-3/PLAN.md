@@ -145,7 +145,7 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 - README que se sigue desde la carpeta entregada, sin GitHub.
 - Matriz RF/RNF y registro de contribuciones.
-- Jeremy: TA-18.A1 y TA-18.A2, evaluación de 18 preguntas con los dos modelos y pantalla «Calidad del asistente».
+- Jeremy: TA-18.A1 y TA-18.A2, evaluación de 18 preguntas con los dos modelos y pantalla «Calidad del asistente». Hizo: Kevin (`POST/GET /api/admin/evaluacion-agente`, criterio automático con pruebas y pantalla `/admin/calidad-asistente`).
 - Capturas de cada criterio en `docs/evidencias/sprint-3/HU-xx/`, con la interfaz final.
 - Paquete para OneDrive: carpeta del proyecto sin `node_modules`, `bin`, `obj`, `.env` ni secretos, más el informe y el video.
 - Congelamiento, ensayo con cronómetro, video de respaldo y Review.

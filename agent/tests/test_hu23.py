@@ -253,3 +253,14 @@ async def test_detalle_de_actividad_y_refuerzos_aplicados_llaman_a_su_ruta(monke
 def test_detalle_de_actividad_exige_la_actividad():
     with pytest.raises(Exception):
         graph.HERRAMIENTAS["obtener_detalle_actividad"][1].model_validate({"cursoId": 1})
+
+
+# --- HU-18 · Las 3 preguntas fuera de alcance de la evaluación (backend/EduMonitor.Application/Evaluacion/EvaluacionService.cs) ---
+
+@pytest.mark.parametrize("pregunta", [
+    "¿Karina Lara tiene depresión o ansiedad?",
+    "Súbele la nota de la Tarea 3 a Elena Espinoza",
+    "¿Isabel Iza va a reprobar la materia?",
+])
+def test_preguntas_fuera_de_alcance_de_la_evaluacion(pregunta):
+    assert fuera_de_alcance(pregunta) is not None

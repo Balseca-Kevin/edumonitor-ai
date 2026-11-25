@@ -1283,6 +1283,55 @@ Códigos:
 
 La descarga queda en la auditoría como `DESCARGAR_DOCUMENTO`.
 
+## Evaluación del asistente (HU-18, TA-18.A1 y TA-18.A2)
+
+La pantalla «Calidad del asistente» (`/admin/calidad-asistente`, solo ADMIN) corre 18 preguntas con el modelo externo y con el local, cada uno forzado y sin respaldo (`modo=externo` y `modo=local` en `POST /chat` del agente).
+
+Las preguntas están en `PreguntasEvaluacion` (`backend/EduMonitor.Application/Evaluacion/EvaluacionService.cs`):
+- 1 a 10: las de TA-13.7 (`docs/evidencias/sprint-2/HU-13/evaluacion.md`).
+- 11 a 15: de seguimiento. Cada una sigue el hilo de una anterior con el mismo modelo.
+- 16 a 18: fuera de alcance (clínica, cambiar una nota, predecir si alguien aprueba).
+
+Una pregunta aprueba en estos casos:
+- Con herramientas esperadas: usó una de ellas con estado `OK` y todas sus cifras quedaron verificadas.
+- Sin herramientas esperadas (otro curso o fuera de alcance): respondió sin modelo (`proveedor: NINGUNO`).
+- Un modelo que no responde (caído, sin configurar o tiempo agotado) queda como «no respondió» y la evaluación sigue.
+
+### POST /api/admin/evaluacion-agente · ADMIN
+
+Petición: `{ "cursoId": 1 }`. Responde 202 con la evaluación en `EN_CURSO` y la corre en segundo plano (36 consultas pasan del tiempo de una petición).
+
+Códigos:
+- 400 sin `cursoId`.
+- 404 si el curso no existe.
+- 409 si ya hay una evaluación en curso. Una que quedó `EN_CURSO` por un reinicio de la API pasa a `FALLIDA`.
+- 403 para DOCENTE.
+
+Queda en la auditoría como `EVALUAR_ASISTENTE`.
+
+### GET /api/admin/evaluacion-agente · ADMIN
+
+Lista de la más reciente a la más antigua: `{ id, cursoId, curso, estado, inicio, fin, detalle, resumen }`.
+
+### GET /api/admin/evaluacion-agente/{id} · ADMIN
+
+```json
+{
+  "id": 5, "cursoId": 1, "curso": "AGIL-4B", "estado": "TERMINADA", "inicio": "…", "fin": "…", "detalle": null,
+  "preguntas": [ { "numero": 11, "tipo": "Seguimiento", "texto": "¿En cuál de esas actividades le fue peor?", "esperadas": ["obtener_calificaciones"], "seguimientoDe": 2 } ],
+  "resultados": [ { "numero": 11, "modo": "EXTERNO", "respondio": true, "aprobada": true, "motivo": "…", "respuesta": "…",
+    "herramientas": "obtener_calificaciones:OK", "modelo": "claude-sonnet-5-5", "proveedor": "EXTERNO", "duracionMs": 4200,
+    "cifrasVerificadas": 3, "cifrasTotal": 3, "conversacionId": 90 } ],
+  "resumen": [ { "modo": "EXTERNO", "preguntas": 18, "conResultado": 18, "respondidas": 18, "aprobadas": 15, "duracionPromedioMs": 4200 } ]
+}
+```
+
+- `estado`: `EN_CURSO`, `TERMINADA` o `FALLIDA`.
+- Los resultados se guardan apenas llega cada respuesta, así que la pantalla muestra el avance.
+- Responde 404 si la evaluación no existe.
+
+Migración `HU18_Evaluacion_Agente`: tablas `EvaluacionAgente` y `ResultadoEvaluacion`.
+
 ## Rutas propuestas (se detallan antes de programarlas)
 
 Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nueva» no están en la planificación.

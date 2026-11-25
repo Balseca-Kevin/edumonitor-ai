@@ -15,6 +15,7 @@ import Actividad from './pages/curso/Actividad'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
 import Auditoria from './pages/admin/Auditoria'
+import CalidadAsistente from './pages/admin/CalidadAsistente'
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/admin/moodle" element={<ConfiguracionMoodle />} />
           <Route path="/admin/estado" element={<EstadoSistema />} />
           <Route path="/admin/auditoria" element={<Auditoria />} />
+          <Route path="/admin/calidad-asistente" element={<CalidadAsistente />} />
           <Route path="/cursos/:id" element={<CursoMarco />}>
             <Route index element={<Navigate to="libro" replace />} />
             <Route path="libro" element={<Libro />} />
