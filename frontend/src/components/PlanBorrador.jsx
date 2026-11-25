@@ -38,6 +38,9 @@ export default function PlanBorrador({ cursoId, plan, consultando, onRedactar, o
     }
   }
 
+  // HU-15 · La retroalimentación es de toda la actividad, sin temas.
+  const retro = plan.tipo === 'RETROALIMENTACION'
+
   async function descargar(formato) {
     setEstado({ ocupado: true, error: null, aviso: null })
     try {
@@ -49,13 +52,13 @@ export default function PlanBorrador({ cursoId, plan, consultando, onRedactar, o
   }
 
   return (
-    <section className="plan-borrador" aria-label="Plan de refuerzo en el asistente">
+    <section className="plan-borrador" aria-label={`${retro ? 'Retroalimentación' : 'Plan de refuerzo'} en el asistente`}>
       <div className="plan-borrador-cabeza">
         <div>
-          <span className="mono">PLAN DE REFUERZO · {formatearFecha(plan.creado)}</span>
-          <b>
-            {plan.actividad.nombre}: {plan.temas.map((t) => t.nombre).join(', ')}
-          </b>
+          <span className="mono">
+            {retro ? 'RETROALIMENTACIÓN' : 'PLAN DE REFUERZO'} · {formatearFecha(plan.creado)}
+          </span>
+          <b>{retro ? plan.actividad.nombre : `${plan.actividad.nombre}: ${plan.temas.map((t) => t.nombre).join(', ')}`}</b>
           <span className="ayuda">{plan.estudiantes.map((e) => `${e.nombre} ${e.apellido}`).join(', ')}</span>
         </div>
         <span className={`chip-estado chip-estado--${plan.estado.toLowerCase()}`}>{ESTADO_PLAN[plan.estado] ?? plan.estado}</span>
