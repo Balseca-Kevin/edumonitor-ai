@@ -1259,6 +1259,30 @@ Una fila por estudiante y tema de cada plan de refuerzo aprobado, del más recie
 
 Herramienta `consultar_refuerzos_aplicados`: `{ "herramienta", "generado", "conteos", "filas" }`, con la forma de la ruta anterior. Responde 400 sin `cursoId`.
 
+## Informe del curso (HU-16)
+
+Por la línea de corte, el informe exporta el resumen del asistente. Flujo:
+1. Desde el Panel, «Informe del curso» abre el asistente con la pregunta ya escrita: «Resume el estado del curso: promedio, quiénes requieren atención, temas donde falla y qué viene.».
+2. Cada respuesta del asistente tiene «Descargar como informe del curso (PDF)».
+
+### GET /api/cursos/{id}/informe?formato=pdf&conversacionId=44 · DOCENTE
+
+El PDF se genera con QuestPDF y se llama `informe-<curso>-<conversacionId>.pdf`. Lleva:
+- el curso y la semana del período (de «Estado del período»);
+- la fecha y el estado de la última sincronización;
+- las cifras del panel: estudiantes, actividades evaluadas, promedio, mediana en lenguaje docente, actividades completadas, cuántos requieren atención y el reparto en 8,5 o más, 6,0 a 8,4 y menos de 6,0;
+- la pregunta y la respuesta guardadas de esa conversación, con «Respondió: …».
+
+Una cifra que no se pudo obtener dice «no disponible», nunca 0.
+
+Códigos:
+- 400 si `formato` no es `pdf` o falta `conversacionId`.
+- 404 si la conversación no es del docente en ese curso.
+- 409 sin sincronizar.
+- 401, 403 y 404 del curso, como en el resto del bloque.
+
+La descarga queda en la auditoría como `DESCARGAR_DOCUMENTO`.
+
 ## Rutas propuestas (se detallan antes de programarlas)
 
 Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nueva» no están en la planificación.

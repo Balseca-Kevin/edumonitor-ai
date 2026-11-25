@@ -209,6 +209,13 @@ describe('R.4 · Panel del curso', () => {
     expect(within(cifras).getByText('Las alertas no están disponibles.')).toBeInTheDocument()
   })
 
+  it('HU-16 · «Informe del curso» abre el asistente con la pregunta del resumen ya escrita', async () => {
+    renderPanel()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Informe del curso' }))
+    expect(screen.getByTestId('ruta')).toHaveTextContent('/cursos/1/asistente?pregunta=Resume+el+estado+del+curso')
+  })
+
   it('un curso sin sincronizar lo dice con un enlace a Mis cursos', async () => {
     obtenerIndicadores.mockRejectedValue({ response: { status: 409, data: { title: 'Curso sin sincronizar', detail: 'El curso todavía no tiene datos de Moodle.' } } })
     renderPanel()

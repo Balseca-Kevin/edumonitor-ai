@@ -28,7 +28,7 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 | HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Hecha: cabecera con el período, panel de actividad (enunciado, adjuntos, entregas, distribución, dominio por criterio, temas, quién requiere atención) y mapa de calor estudiante × tema (Kevin) |
 | HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Hecha: plan de refuerzo y retroalimentación por estudiante, borrador del asistente, aprobación, PDF y DOCX, refuerzos aplicados (adelantada por Kevin) |
 | HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Hecha: filtros, memoria de 4 turnos, foco, seudonimización, externo con respaldo local, interruptor, cifras verificadas y enlazadas, fuera de alcance (adelantada por Kevin) |
-| HU-16 | Informe del curso en PDF (solo el resumen del asistente, por la línea de corte) | 3 | Santiago | RF-11 | Por hacer |
+| HU-16 | Informe del curso en PDF (solo el resumen del asistente, por la línea de corte) | 3 | Santiago | RF-11 | Hecha: «Informe del curso» desde el Panel y descarga en PDF de la respuesta del asistente con los indicadores (adelantada por Kevin) |
 | HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | Hecha: «Cómo llegó a esta respuesta» con modelo, herramientas, parámetros, duración y cifras; auditoría y pantalla «Auditoría» (Kevin) |
 | HU-18 | Pruebas, README, matriz RF/RNF, evaluación del agente, paquete de entrega y ensayo | 5 | Todo el equipo | RNF-05, RNF-06 | Por hacer |
 
@@ -129,7 +129,7 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 - Sebastián, TA-15.A1: promedio del tema antes y después del refuerzo aprobado. Hizo: Kevin (foto del tema al aprobar y estado subió, igual, bajó o sin notas nuevas en el historial).
 - Jeremy, TA-15.A2: panel «Refuerzos aplicados» y su herramienta. Hizo: Kevin (sección en «Plan de refuerzo», ruta y herramienta `consultar_refuerzos_aplicados`).
 - Jeremy, TA-15.A3 y TA-15.A4: pantalla «Plan de refuerzo», envío del plan al asistente, borrador por estudiante, aprobación e historial. Hizo: Kevin.
-- Santiago, HU-16: informe del curso con el resumen del asistente; TA-16.A1 si entra TA-15.A1.
+- Santiago, HU-16: informe del curso con el resumen del asistente; TA-16.A1 si entra TA-15.A1. Hizo: Kevin (`GET /api/cursos/{id}/informe`, botón en el Panel y descarga en el asistente).
 
 ### Bloque 5 · Curso y actividad (Kevin, Sebastián)
 

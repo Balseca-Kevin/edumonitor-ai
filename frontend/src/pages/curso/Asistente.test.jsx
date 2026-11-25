@@ -17,6 +17,7 @@ vi.mock('../../services/alertas', () => ({ obtenerAlertas: vi.fn() }))
 vi.mock('../../services/libro', async (original) => ({ ...(await original()), obtenerLibro: vi.fn() }))
 vi.mock('../../services/refuerzos', async (original) => ({ ...(await original()), listarPlanes: vi.fn().mockResolvedValue([]), obtenerPlan: vi.fn() }))
 vi.mock('../../services/periodo', () => ({ obtenerPeriodo: vi.fn() }))
+vi.mock('../../services/informe', async (original) => ({ ...(await original()), descargarInforme: vi.fn() }))
 vi.mock('../../services/notaNecesaria', () => ({
   // Forma de GET /api/cursos/{id}/estudiantes/{eid}/nota-necesaria (docs/contratos-api.md, «Nota necesaria»).
   obtenerNotaNecesaria: vi.fn().mockResolvedValue({
@@ -381,5 +382,22 @@ describe('HU-23 · Memoria, quién respondió y cifras enlazadas', () => {
 
     expect(await screen.findByText('Primera respuesta.')).toBeInTheDocument()
     expect(screen.getByText('Segunda respuesta.')).toBeInTheDocument()
+  })
+})
+
+describe('HU-16 · Informe del curso desde el asistente', () => {
+  it('la pregunta del Panel llega escrita y cada respuesta se descarga como informe en PDF', async () => {
+    const { descargarInforme, PREGUNTA_INFORME } = await import('../../services/informe')
+    descargarInforme.mockResolvedValue({ blob: new Blob(['%PDF']), nombre: 'informe-AGIL-4B-44.pdf' })
+    globalThis.URL.createObjectURL ??= () => 'blob:informe'
+    globalThis.URL.revokeObjectURL ??= () => {}
+    preguntarAlAsistente.mockResolvedValue(respuestaChat)
+    renderAsistente(`/cursos/1/asistente?${new URLSearchParams({ pregunta: PREGUNTA_INFORME })}`)
+
+    expect(await screen.findByDisplayValue(PREGUNTA_INFORME)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Descargar como informe del curso (PDF)' }))
+
+    await waitFor(() => expect(descargarInforme).toHaveBeenCalledWith('1', 44))
   })
 })
