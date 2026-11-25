@@ -23,13 +23,13 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 | HU | Historia | SP | Responsable | RF | Estado |
 |---|---|---|---|---|---|
 | HU-21 | Libro de calificaciones: nota de cada estudiante en cada actividad, agrupada por parcial y unidad | 5 | Santiago (pantalla); Kevin (endpoint) | RF-03, RF-05, RF-06 | Endpoint y pantalla hechos (pantalla adelantada por Kevin) |
-| HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Por hacer |
+| HU-10 | Ficha del estudiante: notas por actividad, estados, evolución frente a 7,0, temas débiles y comentarios del docente | 5 | Santiago | RF-04, RF-06 | Hecha: `GET /api/cursos/{id}/estudiantes/{eid}` y pantalla «Ficha del estudiante» (adelantada por Kevin) |
 | HU-08 | Mapeo de actividades y criterios de rúbrica a temas | 8 | Sebastián | RF-13 | Hecha: rúbricas en la sincronización, mapeo, desempeño por tema y «Mapa del curso» (adelantada por Kevin) |
 | HU-22 | Mapa del curso (parcial, unidad, actividad) y panel de actividad; absorbe HU-11 | 8 | Kevin (pantallas); Sebastián (cálculos) | RF-08, RF-14 | Por hacer |
 | HU-15 | Retroalimentación y refuerzo por estudiante, descargables en PDF y DOCX | 8 | Jeremy; Kevin (generador de documentos) | RF-10, RF-15 | Por hacer |
-| HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Filtros en PR #51; falta el resto |
+| HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Hecha: filtros, memoria de 4 turnos, foco, seudonimización, externo con respaldo local, interruptor, cifras verificadas y enlazadas, fuera de alcance (adelantada por Kevin) |
 | HU-16 | Informe del curso en PDF (solo el resumen del asistente, por la línea de corte) | 3 | Santiago | RF-11 | Por hacer |
-| HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | Por hacer |
+| HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | Hecha: «Cómo llegó a esta respuesta» con modelo, herramientas, parámetros, duración y cifras; auditoría y pantalla «Auditoría» (Kevin) |
 | HU-18 | Pruebas, README, matriz RF/RNF, evaluación del agente, paquete de entrega y ensayo | 5 | Todo el equipo | RNF-05, RNF-06 | Por hacer |
 
 HU-11 se cierra en Jira como fusionada en HU-22. Formato de las HU: «Como [rol], se requiere … para …».
@@ -106,7 +106,7 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 - TA-21.2 Pantalla `Libro.jsx`, primera del curso, con cero, sin entrega y pendiente diferenciados y «no disponible» cuando falta el dato. Hizo: Kevin, con «aún no vence», el tramo, la búsqueda, el orden, la ficha al hacer clic y las celdas nuevas de TA-21.A2.
 - TA-21.3 Prueba de interfaz del libro. Hizo: Kevin (`Libro.test.jsx`).
-- HU-10 Ficha del estudiante (`GET /api/cursos/{id}/estudiantes/{eid}`; se detalla el contrato antes).
+- HU-10 Ficha del estudiante (`GET /api/cursos/{id}/estudiantes/{eid}`, contrato en «Ficha del estudiante»). Hizo: Kevin (endpoint, evolución frente a 7,0 con pruebas, pantalla `/cursos/:id/estudiantes/:eid` y «Abrir ficha completa» en la ficha lateral).
 - TA-10.A1 Cálculo de la nota necesaria para llegar a 7,0, con pruebas y herramienta del asistente (Kevin). Hizo: Kevin.
 - TA-10.A2 Bloque «Para llegar a 7,0» en la ficha (Santiago). Hizo: Kevin, en la ficha lateral del panel, las alertas y el libro.
 - TA-21.A1 Diferencias entre sincronizaciones (Kevin) y TA-21.A2 pantalla de carga, aviso y celdas nuevas en el libro (Santiago).
@@ -118,9 +118,9 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 ### Bloque 3 · Asistente con contexto y respaldo (Kevin, Jeremy)
 
-- Kevin: contrato de `POST /api/agente/chat` con `conversacionId`, `foco`, `respaldo` y `cifras`; foco de la pantalla y últimos 4 turnos hacia el agente; seudonimización (E-001…); modelo externo con respaldo local (20 s, 3 fallos en 5 minutos, variables en `.env.example`); `GET/PUT /api/admin/modelo` y el interruptor en «Estado del sistema»; «Respondió: modelo externo / local».
-- Jeremy: verificador de cifras (TA-23.A1); preguntas fuera de alcance (TA-23.A3).
-- Kevin: cada cifra de la respuesta abre la celda del libro de donde sale (TA-23.A2).
+- Kevin: contrato de `POST /api/agente/chat` con `conversacionId`, `foco`, `respaldo` y `cifras`; foco de la pantalla y últimos 4 turnos hacia el agente; seudonimización (E-001…); modelo externo con respaldo local (20 s, 3 fallos en 5 minutos, variables en `.env.example`); `GET/PUT /api/admin/modelo` y el interruptor en «Estado del sistema»; «Respondió: modelo externo / local». Hizo: Kevin.
+- Jeremy: verificador de cifras (TA-23.A1); preguntas fuera de alcance (TA-23.A3). Hizo: Kevin (nodo `verificar` del grafo y reglas de `alcance.py`, con pruebas pytest).
+- Kevin: cada cifra de la respuesta abre la celda del libro de donde sale (TA-23.A2). Hizo: Kevin.
 
 ### Bloque 4 · Retroalimentación, refuerzo y documentos
 
@@ -139,7 +139,7 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 ### Bloque 6 · Trazas y auditoría (Kevin)
 
-- HU-17: «Cómo llegó a esta respuesta» (herramientas, parámetros, modelo y duración) y pantalla de auditoría para ADMIN.
+- HU-17: «Cómo llegó a esta respuesta» (herramientas, parámetros, modelo y duración) y pantalla de auditoría para ADMIN. Hizo: Kevin (filtro de auditoría, `GET /api/auditoria` y pantalla `/admin/auditoria`).
 
 ### Bloque 7 · Cierre y entrega en carpeta (todo el equipo)
 

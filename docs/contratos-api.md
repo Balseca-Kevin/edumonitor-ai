@@ -977,6 +977,204 @@ Parámetros nuevos, opcionales, solo para el resumen sin `estudianteId`:
 
 La forma de la respuesta no cambia. Corrige las preguntas 5, 6 y 9 de la evaluación de TA-13.7, donde el modelo filtraba u ordenaba la lista de 32 estudiantes.
 
+## Asistente con contexto, memoria y respaldo (HU-23)
+
+### POST /api/agente/chat · DOCENTE
+
+Petición:
+```json
+{ "cursoId": 1, "mensaje": "¿Y en qué actividad le fue peor?", "conversacionId": 44, "foco": { "estudianteId": 8, "actividadId": 103 } }
+```
+
+- `conversacionId` (opcional): sigue el hilo de esa conversación. La API envía al agente los últimos 4 turnos del hilo. Responde 400 si la conversación no es del docente o no es de ese curso.
+- `foco` (opcional): `refuerzoId` (TA-15.A4), `estudianteId` y `actividadId` de la pantalla abierta. Responde 400 si el estudiante no está matriculado o la actividad no es del curso.
+
+Respuesta 200: la del Sprint 2 más estos campos.
+```json
+{
+  "conversacionId": 45, "hiloId": 44, "fecha": "2026-11-23T10:00:00-05:00",
+  "respuesta": "Diego Díaz sacó 4,00 en la Tarea 3.",
+  "herramientas": [ { "nombre": "obtener_calificaciones", "parametros": { "cursoId": 1, "nombre": "E-005" }, "estado": "OK", "duracionMs": 90 } ],
+  "modelo": "claude-sonnet-5-5", "duracionMs": 5400,
+  "proveedor": "EXTERNO", "respaldo": false,
+  "cifras": [ { "valor": "4,00", "herramienta": "obtener_calificaciones", "campo": "estudiantes[0].calificaciones[2].nota", "estudianteId": 8, "actividadId": 103, "verificada": true } ]
+}
+```
+
+- `hiloId`: id de la primera pregunta del hilo. Se manda como `conversacionId` en la pregunta siguiente.
+- `proveedor`: `EXTERNO`, `LOCAL` o `NINGUNO`. `NINGUNO` es una respuesta sin modelo: otro curso en la pregunta, o una pregunta fuera de alcance.
+- `respaldo`: `true` si respondió el modelo local porque el externo falló o estaba en pausa.
+- `cifras` (TA-23.A1): cada número de la respuesta, con la herramienta y el campo de donde sale. `verificada: false` si no está en los datos que devolvieron las herramientas, después de un segundo intento de redacción. Con `estudianteId` la pantalla enlaza la cifra con el libro (TA-23.A2).
+
+Seudonimización:
+- La pregunta y los turnos anteriores van al agente con códigos E-001, E-002… El código de cada estudiante es fijo dentro del curso, en el orden de su id.
+- Con el token de servicio (rol `AGENTE`), las respuestas de `/api/tools/*` cambian `nombre` y `apellido` de cada estudiante por `codigo` y quitan los campos `moodleId` y `correo`.
+- `GET /api/tools/calificaciones` acepta el código en `nombre` (`nombre=E-005`). La API cambia los códigos de la respuesta por nombres antes de guardarla y mostrarla.
+- `GET /api/tools/calificaciones` con un solo estudiante suma `actividadId` en cada nota.
+
+### GET /api/agente/conversaciones?cursoId=1 y GET /api/agente/conversaciones/{id}
+
+- La lista trae solo la primera pregunta de cada hilo, con `turnos` (preguntas del hilo).
+- El detalle suma `proveedor`, `respaldo`, `cifras`, `hiloId` y `turnos`: todos los turnos del hilo, del primero al último, con la misma forma.
+
+### POST /chat del agente
+
+```json
+{ "mensaje": "Curso: AGIL-4B (cursoId 1)
+Período: semana 12 de 15, …
+Foco: estudiante E-005 (estudianteId 8).
+¿Cómo va?",
+  "cursoId": 1, "token": "<token de servicio>",
+  "historial": [ { "pregunta": "¿Cómo va E-005?", "respuesta": "E-005 tiene 6,10." } ],
+  "modo": "auto" }
+```
+
+- `historial`: hasta 4 turnos, del más antiguo al más reciente.
+- `modo`:
+  - `auto`: el externo y, si falla, el local;
+  - `local`: «Usar solo el modelo local»;
+  - `externo`: solo el externo, sin respaldo; lo usa la evaluación del asistente (TA-18.A1).
+- Respuesta: la del Sprint 2 más `proveedor`, `respaldo` y `cifras`.
+
+Tolerancia a fallos:
+- El externo tiene 20 s.
+- Error, tiempo agotado, 429 o una respuesta sin el formato esperado (sin texto, o con una herramienta desconocida): la misma pregunta va al modelo local.
+- 3 fallos en 5 minutos: 5 minutos directo al local.
+- Con `modo=externo` y el externo caído o sin configurar, el agente responde 503.
+
+Preguntas fuera de alcance (TA-23.A3): las preguntas clínicas o psicológicas, cambiar notas o escribir en Moodle, enviar mensajes a estudiantes o predecir si alguien aprueba se responden con reglas, sin modelo (`proveedor: NINGUNO`). La respuesta dice que no puede y ofrece lo que muestran los datos.
+
+### GET /salud del agente
+
+Suma `externo` y `activo`:
+```json
+{ "estado": "OK", "modelo": "qwen2.5:7b", "ollama": "OK",
+  "externo": { "proveedor": "anthropic", "modelo": "claude-sonnet-5-5", "estado": "OK", "pausaSegundos": 0 }, "activo": "EXTERNO" }
+```
+- `externo.estado`: `OK`, `NO_CONFIGURADO` o `EN_PAUSA`.
+- El agente no llama al externo para responder `/salud`.
+
+### GET /api/admin/modelo · ADMIN
+
+```json
+{
+  "soloLocal": false, "activo": "EXTERNO",
+  "externo": { "tipo": "externo", "proveedor": "anthropic", "modelo": "claude-sonnet-5-5", "estado": "OK", "detalle": "Configurado" },
+  "local": { "tipo": "local", "proveedor": "ollama", "modelo": "qwen2.5:7b", "estado": "OK", "detalle": "Ollama responde" },
+  "actualizado": "2026-11-23T10:00:00-05:00"
+}
+```
+
+- `activo`: `EXTERNO`, `LOCAL` o `NINGUNO` (agente caído).
+- Con el agente caído responde 200 con los dos modelos en `NO_DISPONIBLE`.
+- 403 para DOCENTE.
+
+### PUT /api/admin/modelo · ADMIN
+
+Petición: `{ "soloLocal": true }`. Responde 200 con la forma del GET. El interruptor se guarda en la tabla `ConfiguracionAsistente`.
+
+### GET /api/admin/estado
+
+Suma el servicio `"modelo externo"` (`OK`, o `NO_DISPONIBLE` si está sin configurar o en pausa). `"modelo"` sigue siendo el local.
+
+Migración `HU23_Asistente_Memoria_Respaldo`:
+- `Conversacion` suma `HiloId`, `Proveedor`, `Respaldo` y `Cifras` (JSON).
+- Tabla nueva `ConfiguracionAsistente` (`SoloModeloLocal`, `Actualizado`).
+
+## Ficha del estudiante (HU-10)
+
+### GET /api/cursos/{id}/estudiantes/{eid} · DOCENTE
+
+Se arma con lo que guardó la última sincronización; no llama a Moodle.
+
+```json
+{
+  "cursoId": 1,
+  "estudiante": { "id": 8, "nombre": "Diego", "apellido": "Díaz" },
+  "aprobacion": 7.0,
+  "promedioPonderado": 5.4, "parcial": false, "grupo": "BAJO",
+  "notas": { "calificadas": 9, "ceros": 1, "sinEntrega": 2, "pendientes": 0, "aunNoVence": 3 },
+  "categorias": [ { "categoria": "Tareas", "peso": 0.30, "promedio": 5.1, "notas": 6 } ],
+  "actividades": [
+    { "id": 103, "nombre": "Tarea 3", "categoria": "Tareas", "unidad": 1, "nombreUnidad": "Principios fundamentales de las metodologías ágiles",
+      "fechaLimite": "2026-09-22T23:59:00-05:00", "nota": 4.0, "estado": "CALIFICADO", "comentario": "• Faltan criterios de aceptación",
+      "criterios": [ { "descripcion": "Criterios de aceptación de las historias", "nivel": "Insuficiente", "puntaje": 1.0, "puntajeMaximo": 2.5 } ] }
+  ],
+  "evolucion": [ { "actividadId": 103, "actividad": "Tarea 3", "fechaLimite": "2026-09-22T23:59:00-05:00", "nota": 4.0, "promedio": 5.2 } ],
+  "temasDebiles": [
+    { "id": 30, "nombre": "Historias de usuario", "unidad": 1, "nota": 4.0, "promedioCurso": 6.42,
+      "notas": [ { "actividadId": 103, "actividad": "Tarea 3", "nota": 4.0 } ],
+      "proximas": [ { "actividadId": 118, "nombre": "Tarea 9", "fechaLimite": "2026-11-28T23:59:00-05:00" } ] }
+  ],
+  "alertas": [ { "id": 31, "regla": "R4", "evidencia": { "promedio": 5.4, "notas": 9, "umbral": 7.0 }, "generada": "2026-11-20T07:12:00-05:00" } ],
+  "noDisponibles": []
+}
+```
+
+Los valores del ejemplo son ilustrativos.
+
+- **`actividades`:** las del libro, en su orden, con la misma `nota` y el mismo `estado`. Cada una lleva su comentario del docente y los niveles de su rúbrica (vacío si no tiene).
+- **Promedio y conteos:** `promedioPonderado`, `parcial`, `notas` y `categorias` son los mismos de `GET /api/cursos/{id}/indicadores`.
+- **`evolucion`:** cada nota calificada en el orden del curso, con el promedio 40/30/30 de las notas hasta esa actividad, normalizado si todavía falta una categoría.
+- **`temasDebiles`:** los temas del mapeo de HU-08 donde la nota del estudiante queda bajo 7,0, de menor a mayor, con el cálculo de «Desempeño por tema».
+- **`alertas`:** las alertas activas del estudiante.
+
+Códigos:
+- 401, 403 y 404 del curso, y 409 sin sincronizar, como en el resto del bloque.
+- 404 si el estudiante no está matriculado.
+
+## Auditoría (HU-17)
+
+Cada acción marcada queda en la tabla `Auditoria` al terminar. Se guarda:
+- el usuario (o null, sin sesión);
+- la acción y la ruta sin la consulta;
+- el curso;
+- un detalle de una línea;
+- el código HTTP.
+
+El detalle pasa por un filtro que enmascara tokens, `Bearer`, claves de API y pares como `token=` o `contrasena=`. Nunca se guardan contraseñas, tokens ni la clave del modelo externo. Si la auditoría falla, la petición sigue.
+
+| Acción | Cuándo | Detalle |
+|---|---|---|
+| `INICIAR_SESION` | `POST /api/auth/login` | `usuario doc01` |
+| `SINCRONIZAR` | `POST /api/cursos/{id}/sync` | Estado, estudiantes, actividades, calificaciones y errores |
+| `CONSULTAR_ASISTENTE` | `POST /api/agente/chat` | `Respondió: modelo externo / local / local (respaldo) / sin modelo`, el modelo, la duración y las herramientas |
+| `HERRAMIENTA` | `/api/tools/*` | Herramienta y si la pidió el asistente o el docente. Con el token de servicio, el usuario es el docente que preguntó |
+| `CAMBIAR_REGLAS`, `REVISAR_ALERTA` | `PUT /reglas`, `PATCH /alertas/{id}` | |
+| `CAMBIAR_MODELO` | `PUT /api/admin/modelo` | `Usar solo el modelo local: activado` o `desactivado` |
+| `CONFIGURAR_MOODLE` | `PUT /api/admin/moodle-config` | Sin el token |
+| `CREAR_REFUERZO`, `EDITAR_REFUERZO`, `DESCARGAR_DOCUMENTO` | Plan de refuerzo | Plan y estado |
+| `ACCESO_DENEGADO` | Cualquier 403 | Motivo del 403 |
+
+### GET /api/auditoria · ADMIN
+
+Parámetros opcionales:
+- `accion`;
+- `usuario` (parte del nombre de usuario);
+- `limite` (1 a 500, 200 por defecto).
+
+Del más reciente al más antiguo.
+
+```json
+{
+  "total": 152,
+  "acciones": ["ACCESO_DENEGADO", "CONSULTAR_ASISTENTE", "HERRAMIENTA", "INICIAR_SESION", "SINCRONIZAR"],
+  "registros": [
+    { "id": 152, "fecha": "2026-11-23T10:01:00-05:00", "usuario": { "id": 2, "usuario": "doc01", "nombre": "Docente Uno" },
+      "accion": "CONSULTAR_ASISTENTE", "entidad": "/api/agente/chat", "cursoId": 1,
+      "detalle": "Respondió: modelo local (respaldo) · qwen2.5:7b · 5400 ms · herramientas: obtener_calificaciones", "resultado": "200" }
+  ]
+}
+```
+
+Códigos:
+- 400 si `limite` sale de 1 a 500.
+- 403 para DOCENTE.
+
+Migración `HU17_Auditoria_Detalle`:
+- `UsuarioId` pasa a opcional.
+- Se suman `CursoId`, `Detalle`, `Resultado` y el índice por `Accion`.
+
 ## Rutas propuestas (se detallan antes de programarlas)
 
 Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nueva» no están en la planificación.
