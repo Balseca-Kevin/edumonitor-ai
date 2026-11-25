@@ -19,6 +19,9 @@ internal sealed class PlanRefuerzoConfiguracion : IEntityTypeConfiguration<PlanR
         builder.Property(p => p.Estado).HasMaxLength(20).IsRequired();
         builder.Property(p => p.Tipo).HasMaxLength(20).IsRequired().HasDefaultValue(PlanRefuerzo.TipoRefuerzo);
         builder.Property(p => p.Texto).HasMaxLength(20000);
+        builder.Property(p => p.TextoGenerado).HasMaxLength(20000);
+        builder.Property(p => p.TextoAprobado).HasMaxLength(20000);
+        builder.HasIndex(p => new { p.UsuarioId, p.Estado });
     }
 }
 

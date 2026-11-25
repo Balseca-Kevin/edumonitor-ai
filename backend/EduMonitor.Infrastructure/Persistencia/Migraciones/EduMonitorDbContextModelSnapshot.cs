@@ -635,6 +635,9 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Property<DateTimeOffset?>("AprobadoEn")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("ConEstilo")
+                        .HasColumnType("bit");
+
                     b.Property<int?>("ConversacionId")
                         .HasColumnType("int");
 
@@ -650,6 +653,14 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Texto")
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TextoAprobado")
+                        .HasMaxLength(20000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TextoGenerado")
                         .HasMaxLength(20000)
                         .HasColumnType("nvarchar(max)");
 
@@ -671,7 +682,7 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
 
                     b.HasIndex("CursoId");
 
-                    b.HasIndex("UsuarioId");
+                    b.HasIndex("UsuarioId", "Estado");
 
                     b.ToTable("PlanRefuerzo", (string)null);
                 });

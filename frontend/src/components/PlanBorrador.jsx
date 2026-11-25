@@ -69,6 +69,11 @@ export default function PlanBorrador({ cursoId, plan, consultando, onRedactar, o
         <>
           <label className="plan-borrador-texto">
             <span className="mono">BORRADOR · puedes editarlo antes de aprobarlo</span>
+            {plan.conEstilo && (
+              <span className="plan-borrador-estilo" title="Redactado siguiendo cómo corregiste tus dos últimos borradores aprobados">
+                Con tu estilo
+              </span>
+            )}
             <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={10} maxLength={20000} />
           </label>
           <div className="plan-borrador-acciones">

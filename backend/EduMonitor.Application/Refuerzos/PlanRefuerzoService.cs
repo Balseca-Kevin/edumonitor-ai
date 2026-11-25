@@ -35,6 +35,9 @@ public sealed record PlanRefuerzoDto(
 {
     /// <summary>HU-15 · <c>REFUERZO</c> o <c>RETROALIMENTACION</c>.</summary>
     public string Tipo { get; init; } = PlanRefuerzo.TipoRefuerzo;
+
+    /// <summary>TA-15.B3 · El borrador se redactó con ejemplos de cómo el docente corrigió sus planes anteriores.</summary>
+    public bool ConEstilo { get; init; }
 }
 
 /// <summary>TA-15.A2 · Respuesta de <c>GET /api/cursos/{id}/refuerzos/aplicados</c>: cuántos subieron, quedaron igual, bajaron o no tienen notas nuevas.</summary>
@@ -200,7 +203,7 @@ public sealed class PlanRefuerzoService(
     }
 
     /// <summary>TA-15.A4 · Guarda el borrador que redactó el asistente en su conversación. No cambia un plan aprobado.</summary>
-    public async Task GuardarBorradorAsync(int planId, int conversacionId, string texto, CancellationToken ct = default)
+    public async Task GuardarBorradorAsync(int planId, int conversacionId, string texto, bool conEstilo = false, CancellationToken ct = default)
     {
         var plan = await db.PlanesRefuerzo.SingleOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null || plan.Estado == PlanRefuerzo.Aprobado)
@@ -209,6 +212,8 @@ public sealed class PlanRefuerzoService(
         }
 
         plan.Texto = texto.Length > LargoMaximoTexto ? texto[..LargoMaximoTexto] : texto;
+        plan.TextoGenerado = plan.Texto;
+        plan.ConEstilo = conEstilo;
         plan.ConversacionId = conversacionId;
         plan.Estado = PlanRefuerzo.Borrador;
         await db.SaveChangesAsync(ct);
@@ -369,6 +374,7 @@ public sealed class PlanRefuerzoService(
         if (plan.Tipo == PlanRefuerzo.TipoRetroalimentacion)
         {
             // La retroalimentación no es un refuerzo por tema: no guarda foto del tema ni tareas de refuerzo.
+            plan.TextoAprobado = plan.Texto;
             plan.Estado = PlanRefuerzo.Aprobado;
             plan.AprobadoEn = reloj.GetLocalNow();
             return;
@@ -389,8 +395,25 @@ public sealed class PlanRefuerzoService(
             }
         }
 
+        plan.TextoAprobado = plan.Texto;
         plan.Estado = PlanRefuerzo.Aprobado;
         plan.AprobadoEn = reloj.GetLocalNow();
+    }
+
+    /// <summary>
+    /// TA-15.B3 · Los 2 planes aprobados más recientes del mismo docente donde corrigió el borrador del asistente, para que el siguiente
+    /// borrador imite su tono y su estructura. Sin 2 ejemplos no se usa ninguno.
+    /// </summary>
+    public async Task<IReadOnlyList<EjemploEstilo>> EjemplosEstiloAsync(int usuarioId, int excluirPlanId, CancellationToken ct = default)
+    {
+        var candidatos = await db.PlanesRefuerzo.AsNoTracking()
+            .Where(p => p.UsuarioId == usuarioId && p.Estado == PlanRefuerzo.Aprobado && p.Id != excluirPlanId
+                && p.TextoGenerado != null && p.TextoAprobado != null)
+            .OrderByDescending(p => p.Id)
+            .Take(EjemplosEstilo.Maximo * 5)
+            .Select(p => new EjemploEstilo(p.Id, p.CursoId, p.TextoGenerado!, p.TextoAprobado!))
+            .ToListAsync(ct);
+        return EjemplosEstilo.Elegir(candidatos);
     }
 
     private async Task<IReadOnlyList<ResultadoRefuerzoDto>> ResultadosAsync(PlanRefuerzo plan, CancellationToken ct)
@@ -438,6 +461,7 @@ public sealed class PlanRefuerzoService(
         resultados)
     {
         Tipo = p.Tipo,
+        ConEstilo = p.ConEstilo,
     };
 
     /// <summary>

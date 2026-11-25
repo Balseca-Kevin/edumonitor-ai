@@ -219,6 +219,58 @@ public class RefuerzosApiTests
         Assert.Equal(HttpStatusCode.BadRequest, (await e.Doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = e.Curso, mensaje = "", foco = new { refuerzoId = 9999 } })).StatusCode);
     }
 
+    [Fact]
+    public async Task El_borrador_imita_el_estilo_de_los_dos_ultimos_planes_que_el_docente_edito_sin_nombres_reales()
+    {
+        var e = await PrepararAsync();
+        await using var _f = e.Factory;
+
+        async Task<int> PlanAsync()
+        {
+            var plan = await (await e.Doc01.PostAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos", new { actividadId = e.Tarea, temas = new[] { e.Tema }, estudiantes = new[] { e.Ana } }))
+                .Content.ReadFromJsonAsync<JsonElement>();
+            var id = plan.GetProperty("id").GetInt32();
+            (await e.Doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = e.Curso, mensaje = "", foco = new { refuerzoId = id } })).EnsureSuccessStatusCode();
+            return id;
+        }
+
+        // Dos planes editados y aprobados. El primero todavía no tiene ejemplos: con uno solo no hay estilo.
+        var primero = await PlanAsync();
+        Assert.DoesNotContain("Estilo del docente", e.Factory.Agente.Peticiones.Last().Mensaje);
+        (await e.Doc01.PatchAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos/{primero}", new { texto = "Ana Pérez: repasa historias de usuario con dos ejemplos propios.", estado = "APROBADO" })).EnsureSuccessStatusCode();
+        var segundo = await PlanAsync();
+        Assert.DoesNotContain("Estilo del docente", e.Factory.Agente.Peticiones.Last().Mensaje);
+        (await e.Doc01.PatchAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos/{segundo}", new { texto = "Ana Pérez: entrega un resumen corto antes del examen.", estado = "APROBADO" })).EnsureSuccessStatusCode();
+
+        // El tercero lleva los dos ejemplos, sin el nombre de la estudiante ni su código.
+        var tercero = await PlanAsync();
+        var mensaje = e.Factory.Agente.Peticiones.Last().Mensaje;
+        Assert.Contains("Estilo del docente", mensaje);
+        Assert.Contains("[estudiante]: entrega un resumen corto antes del examen.", mensaje);
+        Assert.Contains("[estudiante]: repasa historias de usuario con dos ejemplos propios.", mensaje);
+        Assert.DoesNotContain("Ana", mensaje);
+        Assert.DoesNotContain("Pérez", mensaje);
+        Assert.True((await e.Doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{e.Curso}/refuerzos/{tercero}")).GetProperty("conEstilo").GetBoolean());
+        Assert.False((await e.Doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{e.Curso}/refuerzos/{primero}")).GetProperty("conEstilo").GetBoolean());
+
+        // Los ejemplos son solo del mismo docente: si los planes aprobados son de otro, no se usan.
+        using (var alcance = e.Factory.Services.CreateScope())
+        {
+            var db = alcance.ServiceProvider.GetRequiredService<EduMonitorDbContext>();
+            var otro = db.Usuarios.Single(u => u.NombreUsuario == "doc02").Id;
+            foreach (var plan in db.PlanesRefuerzo.Where(p => p.Id == primero || p.Id == segundo))
+            {
+                plan.UsuarioId = otro;
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        var cuarto = await PlanAsync();
+        Assert.DoesNotContain("Estilo del docente", e.Factory.Agente.Peticiones.Last().Mensaje);
+        Assert.False((await e.Doc01.GetFromJsonAsync<JsonElement>($"/api/cursos/{e.Curso}/refuerzos/{cuarto}")).GetProperty("conEstilo").GetBoolean());
+    }
+
     // --- TA-16.A1 · Refuerzos aplicados en el informe del curso ---
 
     private static async Task<DocumentoInforme> DescargarInformeAsync(Escenario e)

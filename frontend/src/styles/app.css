@@ -268,6 +268,7 @@ thead .libro-fijo { background: var(--hoja-2); font-weight: 700; }
 .plan-borrador-cabeza .mono { font-size: var(--fs-11); color: var(--ia-texto); letter-spacing: 0.06em; }
 .plan-borrador-texto { display: flex; flex-direction: column; gap: var(--e-6); }
 .plan-borrador-texto .mono { font-size: var(--fs-11); color: var(--ia-texto); }
+.plan-borrador-estilo { align-self: flex-start; font-size: var(--fs-11); color: var(--ia-texto); border: var(--grosor-linea) solid var(--ia); border-radius: 999px; padding: 2px var(--e-8); background: var(--hoja); }
 .plan-borrador-texto textarea { width: 100%; box-sizing: border-box; padding: var(--e-10) var(--e-12); border: var(--grosor-linea) solid var(--linea); border-radius: 8px; font: inherit; font-size: var(--fs-14); background: var(--hoja); resize: vertical; }
 .plan-borrador-aprobado { white-space: pre-wrap; background: var(--hoja); border-radius: 8px; padding: var(--e-12); font-size: var(--fs-14); }
 .plan-borrador-acciones { display: flex; gap: var(--e-8); flex-wrap: wrap; align-items: center; }
