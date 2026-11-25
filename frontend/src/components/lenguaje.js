@@ -83,6 +83,13 @@ export function datoUsado(herramienta, estudiantes) {
   let texto = 'Datos del curso'
   if (herramienta.nombre === 'listar_cursos_autorizados') texto = 'Tus cursos asignados'
   else if (herramienta.nombre === 'identificar_alertas') texto = 'Alertas del curso'
+  else if (herramienta.nombre === 'consultar_estado_periodo') texto = 'Semana del período y lo que vence'
+  else if (herramienta.nombre === 'obtener_desempeno_tematico') texto = 'Desempeño por tema'
+  else if (herramienta.nombre === 'obtener_plan_refuerzo') texto = 'Plan de refuerzo con sus notas y criterios'
+  else if (herramienta.nombre === 'calcular_nota_necesaria') {
+    const porId = (estudiantes ?? []).find((e) => e.id === Number(p.estudianteId))
+    texto = porId ? `Nota necesaria de ${porId.nombre} ${porId.apellido}` : 'Nota necesaria de un estudiante'
+  }
   else if (herramienta.nombre === 'obtener_calificaciones') {
     const porId = p.estudianteId ? (estudiantes ?? []).find((e) => e.id === Number(p.estudianteId)) : null
     if (p.nombre) texto = `Notas de ${p.nombre}`
@@ -110,4 +117,23 @@ export function separarRespuesta(texto) {
   })
   const antes = texto.slice(0, marcas[0].index).trim()
   return { antes, ...bloques }
+}
+
+/**
+ * TA-15.A1 · Lo que pasó con el tema después de aprobar el refuerzo, dicho como cambio y no como causa: «subió de 5,20 a 7,10 en el
+ * tema después del refuerzo». Sin notas nuevas lo dice.
+ */
+export function textoResultadoRefuerzo(r) {
+  const antes = formatearNumero(r.antes) ?? 'sin nota'
+  const ahora = formatearNumero(r.ahora) ?? 'sin nota'
+  switch (r.estado) {
+    case 'SUBIO':
+      return `${r.estudiante}: subió de ${antes} a ${ahora} en ${r.tema} después del refuerzo`
+    case 'BAJO':
+      return `${r.estudiante}: bajó de ${antes} a ${ahora} en ${r.tema} después del refuerzo`
+    case 'IGUAL':
+      return `${r.estudiante}: sigue en ${ahora} en ${r.tema} después del refuerzo`
+    default:
+      return `${r.estudiante}: sin notas nuevas en ${r.tema} desde que se aprobó (${antes})`
+  }
 }

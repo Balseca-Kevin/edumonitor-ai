@@ -30,6 +30,7 @@ const PANTALLAS_CURSO = [
   { ruta: 'panel', texto: 'Panel del curso' },
   { ruta: 'mapa', texto: 'Mapa del curso' },
   { ruta: 'alertas', texto: 'Alertas', contador: true },
+  { ruta: 'refuerzos', texto: 'Plan de refuerzo' },
   { ruta: 'asistente', texto: 'Asistente' },
 ]
 

@@ -15,6 +15,7 @@ vi.mock('../../services/cursos', () => ({ obtenerCurso: vi.fn(), sincronizarCurs
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn(), contarEstudiantesConAlertas: vi.fn() }))
 vi.mock('../../services/alertas', () => ({ obtenerAlertas: vi.fn() }))
 vi.mock('../../services/libro', async (original) => ({ ...(await original()), obtenerLibro: vi.fn() }))
+vi.mock('../../services/refuerzos', async (original) => ({ ...(await original()), listarPlanes: vi.fn().mockResolvedValue([]), obtenerPlan: vi.fn() }))
 vi.mock('../../services/periodo', () => ({ obtenerPeriodo: vi.fn() }))
 vi.mock('../../services/notaNecesaria', () => ({
   // Forma de GET /api/cursos/{id}/estudiantes/{eid}/nota-necesaria (docs/contratos-api.md, «Nota necesaria»).

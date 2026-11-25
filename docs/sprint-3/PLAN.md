@@ -57,8 +57,8 @@ Lo que pide el prototipo y no estaba en el plan entra como tareas de HU que ya e
 | TA-22.A5 | HU-22 | Cabecera del curso con la línea de tiempo, los tres bloques y la leyenda, según `diseno.md` | Kevin | Kevin (también la semana en las tarjetas de Mis cursos y en «Sabe: …» del asistente) |
 | TA-21.A1 | HU-21 | Diferencias entre sincronizaciones: la sincronización guarda qué calificaciones y entregas cambiaron frente a la anterior; `GET /api/cursos/{id}/sync/{sid}/cambios` con los conteos y las celdas | Kevin | Kevin (la pantalla que lo muestra es TA-21.A2) |
 | TA-21.A2 | HU-21 | Pantalla de carga («Abriendo curso…» y «Sincronizando curso…»), aviso grande al terminar con las cifras de TA-21.A1 y celdas nuevas marcadas en el libro | Santiago | Kevin (pantalla de carga, aviso y celdas nuevas marcadas en el libro) |
-| TA-15.A3 | HU-15 | Pantalla «Plan de refuerzo»: actividad evaluada, temáticas donde falló con el porcentaje que domina cada tema y quién quedó bajo 6,0, estudiantes, dónde se vuelven a evaluar esos temas, nota necesaria; «Enviar el plan al asistente» guarda el plan (`POST /api/cursos/{id}/refuerzos`) | Jeremy | |
-| TA-15.A4 | HU-15 | El asistente recibe el plan como foco, redacta el borrador por estudiante (tareas por tema, entrega sugerida antes de la próxima evaluación de esos temas, qué está en juego) en una conversación propia; «Aprobar borrador» habilita PDF y DOCX; «Historial de refuerzos» en el plan y en el asistente con su estado y el resultado de TA-15.A1 | Jeremy; Kevin (contrato del chat) | |
+| TA-15.A3 | HU-15 | Pantalla «Plan de refuerzo»: actividad evaluada, temáticas donde falló con el porcentaje que domina cada tema y quién quedó bajo 6,0, estudiantes, dónde se vuelven a evaluar esos temas, nota necesaria; «Enviar el plan al asistente» guarda el plan (`POST /api/cursos/{id}/refuerzos`) | Jeremy | Kevin (pantalla, ruta y herramienta del plan) |
+| TA-15.A4 | HU-15 | El asistente recibe el plan como foco, redacta el borrador por estudiante (tareas por tema, entrega sugerida antes de la próxima evaluación de esos temas, qué está en juego) en una conversación propia; «Aprobar borrador» habilita PDF y DOCX; «Historial de refuerzos» en el plan y en el asistente con su estado y el resultado de TA-15.A1 | Jeremy; Kevin (contrato del chat) | Kevin (foco del plan en el chat, `obtener_plan_refuerzo`, borrador editable, aprobación, PDF y DOCX, historial) |
 
 TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kevin lo reincorpora como tarea de HU-21. La línea de corte sigue vigente para TA-22.A1, TA-22.A2, TA-15.B1, TA-15.B2 y TA-15.B3.
 
@@ -124,11 +124,11 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 ### Bloque 4 · Retroalimentación, refuerzo y documentos
 
-- Kevin: generador de documentos PDF (QuestPDF) y DOCX.
+- Kevin: generador de documentos PDF (QuestPDF) y DOCX. Hizo: Kevin (DOCX con DocumentFormat.OpenXml).
 - Jeremy, HU-15: borradores de retroalimentación y refuerzo por estudiante, editables, aprobados por el docente y descargables.
-- Sebastián, TA-15.A1: promedio del tema antes y después del refuerzo aprobado.
+- Sebastián, TA-15.A1: promedio del tema antes y después del refuerzo aprobado. Hizo: Kevin (foto del tema al aprobar y estado subió, igual, bajó o sin notas nuevas en el historial).
 - Jeremy, TA-15.A2: panel «Refuerzos aplicados» y su herramienta.
-- Jeremy, TA-15.A3 y TA-15.A4: pantalla «Plan de refuerzo», envío del plan al asistente, borrador por estudiante, aprobación e historial.
+- Jeremy, TA-15.A3 y TA-15.A4: pantalla «Plan de refuerzo», envío del plan al asistente, borrador por estudiante, aprobación e historial. Hizo: Kevin.
 - Santiago, HU-16: informe del curso con el resumen del asistente; TA-16.A1 si entra TA-15.A1.
 
 ### Bloque 5 · Curso y actividad (Kevin, Sebastián)

@@ -9,6 +9,7 @@ import Asistente from './pages/curso/Asistente'
 import Alertas from './pages/curso/Alertas'
 import Libro from './pages/curso/Libro'
 import Mapa from './pages/curso/Mapa'
+import PlanRefuerzo from './pages/curso/PlanRefuerzo'
 import Panel from './pages/curso/Panel'
 import EstadoSistema from './pages/admin/EstadoSistema'
 
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="panel" element={<Panel />} />
             <Route path="mapa" element={<Mapa />} />
             <Route path="alertas" element={<Alertas />} />
+            <Route path="refuerzos" element={<PlanRefuerzo />} />
             <Route path="asistente" element={<Asistente />} />
           </Route>
         </Route>
