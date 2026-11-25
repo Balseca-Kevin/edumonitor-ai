@@ -40,4 +40,17 @@ public sealed record DocumentoInforme(
     string Pregunta,
     string Resumen,
     string Respondio,
-    DateTimeOffset Generado);
+    DateTimeOffset Generado)
+{
+    /// <summary>
+    /// TA-16.A1 · Refuerzos aplicados del curso: una fila por estudiante y tema de cada plan aprobado. Vacía si todavía no hay; el
+    /// informe dice entonces «Aún no hay refuerzos aplicados».
+    /// </summary>
+    public IReadOnlyList<FilaRefuerzoInforme> Refuerzos { get; init; } = [];
+}
+
+/// <summary>
+/// TA-16.A1 · Una fila de «Refuerzos aplicados» en el informe. <see cref="Cambio"/> dice el cambio del tema, no que el refuerzo lo
+/// causó («subió de 5,20 a 7,10 en el tema después del refuerzo»).
+/// </summary>
+public sealed record FilaRefuerzoInforme(string Tema, string Estudiante, string Antes, string Ahora, string Estado, string Cambio);
