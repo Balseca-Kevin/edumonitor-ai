@@ -30,7 +30,7 @@ En la Review del Sprint 2 el Product Owner señaló un solo error: la aplicació
 | HU-23 | Asistente con contexto de pantalla, memoria, filtros en el backend, verificación de cifras y respaldo local | 5 | Kevin; Jeremy (nodos del grafo) | RF-09, RNF-03, RNF-08 | Hecha: filtros, memoria de 4 turnos, foco, seudonimización, externo con respaldo local, interruptor, cifras verificadas y enlazadas, fuera de alcance (adelantada por Kevin) |
 | HU-16 | Informe del curso en PDF (solo el resumen del asistente, por la línea de corte) | 3 | Santiago | RF-11 | Hecha: «Informe del curso» desde el Panel y descarga en PDF de la respuesta del asistente con los indicadores (adelantada por Kevin) |
 | HU-17 | Trazas visibles («Cómo llegó a esta respuesta») y auditoría sin secretos | 3 | Kevin | RF-12 | Hecha: «Cómo llegó a esta respuesta» con modelo, herramientas, parámetros, duración y cifras; auditoría y pantalla «Auditoría» (Kevin) |
-| HU-18 | Pruebas, README, matriz RF/RNF, evaluación del agente, paquete de entrega y ensayo | 5 | Todo el equipo | RNF-05, RNF-06 | Por hacer |
+| HU-18 | Pruebas, README, matriz RF/RNF, evaluación del agente, paquete de entrega y ensayo | 5 | Todo el equipo | RNF-05, RNF-06 | Evaluación y «Calidad del asistente», matriz RF/RNF (`matriz-rf-rnf.md`), registro de contribuciones (`contribuciones.md`) y guía del Sprint 3 en `docs/PRUEBAS.md` hechos (Kevin); faltan capturas, informe, video y ensayo |
 
 HU-11 se cierra en Jira como fusionada en HU-22. Formato de las HU: «Como [rol], se requiere … para …».
 
@@ -143,9 +143,9 @@ Límites que no cambian: las alertas dicen «Requiere atención», nunca «riesg
 
 ### Bloque 7 · Cierre y entrega en carpeta (todo el equipo)
 
-- README que se sigue desde la carpeta entregada, sin GitHub.
-- Matriz RF/RNF y registro de contribuciones.
-- Jeremy: TA-18.A1 y TA-18.A2, evaluación de 18 preguntas con los dos modelos y pantalla «Calidad del asistente».
+- README que se sigue desde la carpeta entregada, sin GitHub. Hizo: Kevin.
+- Matriz RF/RNF y registro de contribuciones. Hizo: Kevin ([matriz-rf-rnf.md](matriz-rf-rnf.md), [contribuciones.md](contribuciones.md)).
+- Jeremy: TA-18.A1 y TA-18.A2, evaluación de 18 preguntas con los dos modelos y pantalla «Calidad del asistente». Hizo: Kevin (`POST/GET /api/admin/evaluacion-agente`, criterio automático con pruebas y pantalla `/admin/calidad-asistente`).
 - Capturas de cada criterio en `docs/evidencias/sprint-3/HU-xx/`, con la interfaz final.
 - Paquete para OneDrive: carpeta del proyecto sin `node_modules`, `bin`, `obj`, `.env` ni secretos, más el informe y el video.
 - Congelamiento, ensayo con cronómetro, video de respaldo y Review.

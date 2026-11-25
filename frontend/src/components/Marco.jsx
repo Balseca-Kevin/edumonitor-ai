@@ -95,6 +95,9 @@ export default function Marco({ curso, cabecera, barra, alertas = null, busqueda
             <NavLink to="/admin/auditoria" className={claseEnlace}>
               Auditoría
             </NavLink>
+            <NavLink to="/admin/calidad-asistente" className={claseEnlace}>
+              Calidad del asistente
+            </NavLink>
           </nav>
         )}
 

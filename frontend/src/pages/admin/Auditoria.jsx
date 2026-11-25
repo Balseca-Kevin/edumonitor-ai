@@ -19,6 +19,7 @@ export const ACCIONES = {
   CREAR_REFUERZO: 'Plan de refuerzo creado',
   EDITAR_REFUERZO: 'Plan de refuerzo editado o aprobado',
   DESCARGAR_DOCUMENTO: 'Descarga de documento',
+  EVALUAR_ASISTENTE: 'Evaluación del asistente',
   ACCESO_DENEGADO: 'Acceso no permitido',
 }
 

@@ -244,14 +244,87 @@ Las listas largas («promedio bajo 6», «quién tiene más sin entregar») pued
 
 - **Evidencia:** [HU-13](evidencias/sprint-2/HU-13/README.md), [HU-14](evidencias/sprint-2/HU-14/README.md) y [CA-7 de HU-19](evidencias/sprint-2/HU-19/README.md).
 
+## Sprint 3
+
+Recorrido de la Review del Sprint 3. Cada historia se muestra en la aplicación, con los datos de AGIL-4B y doc01, salvo las pantallas de ADMIN. Los criterios están en «Criterio que se muestra en la Review» de [docs/sprint-3/PLAN.md](sprint-3/PLAN.md) y las capturas van en [docs/evidencias/sprint-3/](evidencias/sprint-3/README.md).
+
+Antes de la Review:
+1. Con el aula virtual encendida, abre «Mis cursos» y usa «Sincronizar y abrir» en AGIL-4B. Así llegan los enunciados, las rúbricas y los comentarios.
+2. En «Mapa del curso», revisa que la Tarea 3 y sus criterios tengan temas. Sin temas no hay plan de refuerzo ni mapa de calor.
+3. Para el modelo externo, pon `MODELO_EXTERNO_API_KEY` en `.env` y reinicia el agente (`docker compose up -d agent`). Sin clave, responde solo el modelo local.
+
+### HU-21 · Libro de calificaciones
+
+1. Abre AGIL-4B. La primera pantalla es el libro, con las actividades agrupadas por parcial y unidad.
+2. El Product Owner elige 3 notas y se comparan con Moodle abierto al lado (<http://localhost:8080>, «Calificaciones» del curso).
+3. Elena Espinoza tiene 0,00 en la Tarea 3: es un cero, no «Sin entrega». Gabriela Guerrero tiene «Sin entrega». Isabel Iza tiene «Por calificar».
+4. Las celdas que cambiaron en la última sincronización llevan anillo y la leyenda lo explica.
+
+### HU-10 · Ficha del estudiante
+
+1. En el libro, clic en Karina Lara → ficha lateral → «Abrir ficha completa».
+2. Las notas de «Notas por actividad» son las mismas del libro. Cada nota abre su celda del libro, señalada.
+3. Se ven la evolución frente a 7,0, «Para llegar a 7,0» con «cálculo con las notas actuales», los temas bajo 7,0 con las actividades de donde salen, los comentarios del docente y la rúbrica.
+
+### HU-08 · Mapeo temático
+
+1. «Mapa del curso»: parciales, unidades con los temas del sílabo y actividades.
+2. Asocia un criterio de la Tarea 3 a un tema y guarda. El desempeño del tema se abre para ver de qué notas sale.
+
+### HU-22 · Mapa del curso y panel de actividad
+
+1. La cabecera del curso muestra la semana real del período, las actividades vencidas con las entregas que faltan y la siguiente evaluación.
+2. En el libro, clic en el encabezado «Tarea 3» para abrir el panel de actividad. Muestra el enunciado y los adjuntos de Moodle, las entregas, la distribución con la línea de 7,0, el dominio por criterio, los temas y quién requiere atención.
+3. «Mapa del curso» → «Nota de cada estudiante en cada tema»: mapa de calor. Cada fila abre la ficha.
+
+### HU-15 · Retroalimentación y refuerzo
+
+1. «Plan de refuerzo»: elige la Tarea 3. Quedan marcados los temas que domina menos del 70 % del curso.
+2. «Enviar el plan al asistente». El asistente redacta el borrador con los criterios fallados y las notas reales.
+3. Edita el borrador, «Aprobar borrador», y descarga el PDF y el DOCX.
+4. En el panel de la Tarea 3, marca estudiantes → «Redactar retroalimentación». Se redacta, aprueba y descarga igual, con el título «Retroalimentación».
+5. «Plan de refuerzo» → «Refuerzos aplicados»: cuántos subieron, quedaron igual, bajaron o no tienen notas nuevas. Cada cambio se dice sin atribuirlo al refuerzo.
+
+### HU-23 · Asistente con contexto, memoria y respaldo
+
+1. Desde la ficha de Karina Lara, «Preguntar al asistente por este estudiante». En «Sabe: …» aparece su nombre.
+2. Pregunta «¿Cómo le va a Karina Lara?» y después «¿Qué nota necesita para llegar a 7,0?». La segunda pregunta usa el hilo sin repetir el nombre.
+3. Las cifras verificadas son enlaces a su celda del libro. «Cómo llegó a esta respuesta» dice «Respondió: modelo externo» o «Respondió: modelo local (respaldo)».
+4. Como admin, abre «Estado del sistema» → «Modelo del asistente» y activa «Usar solo el modelo local». Vuelve como doc01 y pregunta: la respuesta dice «Respondió: modelo local».
+5. Pregunta «¿Karina Lara tiene ansiedad?». El asistente dice que no puede evaluarlo y ofrece lo que muestran los datos.
+
+### HU-16 · Informe del curso
+
+1. Panel → «Informe del curso». Se abre el asistente con la pregunta del resumen ya escrita. Envíala.
+2. Debajo de la respuesta, «Descargar como informe del curso (PDF)». El PDF lleva el curso, la semana, la sincronización, las cifras del panel y el resumen.
+
+### HU-17 · Trazas y auditoría
+
+1. En una respuesta del asistente, abre «Cómo llegó a esta respuesta». Muestra el modelo, las herramientas con sus parámetros, la duración, las cifras verificadas y la sincronización.
+2. Como admin, «Auditoría» muestra:
+   - el inicio de sesión;
+   - la sincronización;
+   - la pregunta con el modelo que respondió;
+   - las consultas del asistente a los datos;
+   - un acceso no permitido. Para generarlo, doc02 abre `/cursos/1/libro`.
+3. No aparecen contraseñas ni tokens.
+
+### HU-18 · Calidad del asistente
+
+1. Como admin, «Calidad del asistente» → curso AGIL-4B → «Correr evaluación». La tabla se llena sola mientras avanza.
+2. Al terminar se ve cuántas de las 18 preguntas aprobó cada modelo, con sus herramientas, sus cifras verificadas y su tiempo. Cada respuesta se puede desplegar.
+3. Sin clave del modelo externo, su columna dice «No respondió» y la evaluación sigue con el local.
+
 ## Pruebas automatizadas
 
-Resultados del 12 nov 2026, 08:25, en `develop` después de fusionar #35:
+Resultados al cierre del código del Sprint 3, en la rama de trabajo antes de los Pull Request:
 
 | Parte | Comando, desde la raíz | Pruebas que pasan |
 |---|---|---|
-| Backend (xUnit) | `dotnet test backend/EduMonitor.sln` | 172 de 172. Seis de ellas (`MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests`) llaman al Moodle real y necesitan el aula virtual encendida |
-| Frontend (Vitest) | `cd frontend; npm test -- --run` | 71 de 71, en 12 archivos |
-| Agente (pytest) | `cd agent; python -m pytest` | 23 de 23 |
+| Backend (xUnit) | `dotnet test backend/EduMonitor.sln` | 309 de 317 con el aula virtual apagada. Las 8 restantes (`MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests`) llaman al Moodle real y pasan con el aula virtual encendida |
+| Frontend (Vitest) | `cd frontend; npm test -- --run` | 186 de 186, en 23 archivos |
+| Agente (pytest) | `cd agent; python -m pytest` | 61 de 61 |
+
+Resultados del Sprint 2 (12 nov 2026): 172 de 172 en el backend, 71 de 71 en el frontend y 23 de 23 en el agente.
 
 La integración continua de GitHub (`.github/workflows/ci.yml`) corre las tres en cada Pull Request (trabajos `backend`, `frontend` y `agent`).
