@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using EduMonitor.Application.Abstractions;
@@ -36,6 +37,17 @@ public class RefuerzosApiTests
             services.AddSingleton<IMoodleClient>(Moodle);
             services.RemoveAll<IAgenteClient>();
             services.AddSingleton<IAgenteClient>(Agente);
+        }
+
+        /// <summary>Cliente con el token de servicio del asistente (rol AGENTE) para doc01, como lo emite el chat.</summary>
+        public HttpClient ClienteAgente(int cursoId)
+        {
+            using var alcance = Services.CreateScope();
+            var docente = alcance.ServiceProvider.GetRequiredService<EduMonitorDbContext>().Usuarios.Single(u => u.NombreUsuario == "doc01");
+            var token = alcance.ServiceProvider.GetRequiredService<IJwtService>().EmitirTokenAgente(docente.Id, cursoId);
+            var cliente = CreateClient();
+            cliente.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+            return cliente;
         }
     }
 
@@ -278,5 +290,57 @@ public class RefuerzosApiTests
 
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(vacio[..4]));
         Assert.True(conFilas.Length > vacio.Length);
+    }
+
+    [Fact]
+    public async Task Los_grupos_por_tema_juntan_a_quienes_quedan_bajo_6_y_responden_401_403_y_409()
+    {
+        var sinSincronizar = new ApiConMoodleFalso();
+        await using (sinSincronizar)
+        {
+            var doc = await sinSincronizar.ClienteConSesionAsync("doc01");
+            var problema = await doc.GetAsync($"/api/cursos/{sinSincronizar.IdCurso("AGIL-4B")}/refuerzos/grupos");
+            Assert.Equal(HttpStatusCode.Conflict, problema.StatusCode);
+            Assert.Equal("Curso sin sincronizar", (await problema.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("title").GetString());
+        }
+
+        var e = await PrepararAsync();
+        await using var _f = e.Factory;
+        var ruta = $"/api/cursos/{e.Curso}/refuerzos/grupos";
+        Assert.Empty((await e.Doc01.GetFromJsonAsync<JsonElement>(ruta)).GetProperty("grupos").EnumerateArray()); // solo Ana tiene nota en el tema
+
+        // TA-15.B1 · El examen se asocia al tema y Luis saca 5,0 en él: con Ana (4,0 por el criterio y 0 en el examen) forman el grupo.
+        var luis = e.Factory.Moodle.Calificaciones.FindIndex(c => c.UsuarioId == 102);
+        var items = e.Factory.Moodle.Calificaciones[luis].Items.Select(i => i.Nombre == "Examen P1" ? i with { Nota = 5m } : i).ToList();
+        e.Factory.Moodle.Calificaciones[luis] = new CalificacionesUsuarioMoodle(102, items);
+        (await e.Doc01.PostAsync($"/api/cursos/{e.Curso}/sync", null)).EnsureSuccessStatusCode();
+        (await e.Doc01.PutAsJsonAsync($"/api/cursos/{e.Curso}/actividades/{e.Examen}/temas", new { temas = new[] { e.Tema } })).EnsureSuccessStatusCode();
+
+        var respuesta = await e.Doc01.GetFromJsonAsync<JsonElement>(ruta);
+        Assert.Equal(6.0m, respuesta.GetProperty("umbral").GetDecimal());
+        var grupo = Assert.Single(respuesta.GetProperty("grupos").EnumerateArray());
+        Assert.Equal((e.Tema, "Historias de usuario"), (grupo.GetProperty("temaId").GetInt32(), grupo.GetProperty("tema").GetString()));
+        Assert.Equal(e.Examen, grupo.GetProperty("actividad").GetProperty("id").GetInt32()); // la última del tema con notas
+        Assert.Equal(new[] { e.Ana, e.Luis }, grupo.GetProperty("estudiantes").EnumerateArray().Select(x => x.GetProperty("id").GetInt32()));
+
+        // El plan grupal se arma con el flujo de siempre.
+        var creado = await e.Doc01.PostAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos", new { actividadId = e.Examen, temas = new[] { e.Tema }, estudiantes = new[] { e.Ana, e.Luis } });
+        Assert.Equal(HttpStatusCode.Created, creado.StatusCode);
+        var rid = (await creado.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+
+        // El asistente lee el plan grupal con códigos, nunca con nombres.
+        var herramienta = (await e.Factory.ClienteAgente(e.Curso).GetFromJsonAsync<JsonElement>($"/api/tools/plan-refuerzo?cursoId={e.Curso}&refuerzoId={rid}")).ToString();
+        Assert.Contains("E-0", herramienta);
+        Assert.DoesNotContain("\"Ana\"", herramienta);
+        Assert.DoesNotContain("\"Luis\"", herramienta);
+
+        // Borrador, aprobación y foto del tema por cada estudiante del grupo.
+        (await e.Doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = e.Curso, mensaje = "", foco = new { refuerzoId = rid } })).EnsureSuccessStatusCode();
+        var aprobado = await (await e.Doc01.PatchAsJsonAsync($"/api/cursos/{e.Curso}/refuerzos/{rid}", new { estado = "APROBADO" })).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("APROBADO", aprobado.GetProperty("estado").GetString());
+        Assert.Equal(new[] { e.Ana, e.Luis }.OrderBy(x => x), aprobado.GetProperty("resultados").EnumerateArray().Select(r => r.GetProperty("estudianteId").GetInt32()).OrderBy(x => x));
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await e.Doc01.GetAsync($"/api/cursos/{e.Factory.IdCurso("BDD-4B")}/refuerzos/grupos")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await e.Factory.CreateClient().GetAsync(ruta)).StatusCode);
     }
 }

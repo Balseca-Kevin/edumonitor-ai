@@ -462,6 +462,15 @@ public sealed class PlanRefuerzoService(
         return new RefuerzosAplicadosDto(cursoId, ContarAplicados(filas), filas);
     }
 
+    /// <summary>TA-15.B1 · Grupos de refuerzo por tema: estudiantes con promedio del tema menor a 6,0, en temas con 2 o más.</summary>
+    public async Task<ResultadoTematica<GruposRefuerzoDto>> GruposAsync(int cursoId, CancellationToken ct = default)
+    {
+        var desempeno = await tematicas.DesempenoAsync(cursoId, null, ct);
+        return desempeno.Estado == EstadoConsultaTematica.Correcta
+            ? new(EstadoConsultaTematica.Correcta, CalculadoraGruposRefuerzo.Agrupar(desempeno.Valor!))
+            : new(desempeno.Estado, Detalle: desempeno.Detalle);
+    }
+
     public static ConteoAplicadosDto ContarAplicados(IReadOnlyList<RefuerzoAplicadoDto> filas) => new(
         filas.Count(f => f.Estado == Subio),
         filas.Count(f => f.Estado == Igual),
