@@ -714,6 +714,115 @@ Reglas:
 
 Códigos: 401 sin token, 403 en curso ajeno, 404 si el curso no existe o la sincronización `sid` no es de ese curso.
 
+## Rúbricas y comentarios en la sincronización (HU-08, bloque 2)
+
+`POST /api/cursos/{id}/sync` suma un paso después de las notas. La forma de la respuesta no cambia.
+
+1. `mod_assign_get_assignments` da el cmid de cada tarea.
+2. `core_grading_get_definitions` (`cmids`, `areaname=submissions`, `activeonly=0`) da las rúbricas. Solo cuentan las áreas con `activemethod: "rubric"`; con `activeonly=1` Moodle responde `invalid_method_name` en las tareas sin método avanzado.
+3. `core_grading_get_gradingform_instances` (`definitionid`, `since=0`) da los niveles elegidos en cada nota. Vale la instancia activa (`status: 1`) más reciente de cada `itemid`.
+4. `mod_assign_get_submission_status` (`assignid`, `userid`), solo para los estudiantes con nota en una tarea con rúbrica, enlaza `feedback.grade.id` (el `itemid`) con el estudiante y trae el comentario del docente.
+
+Se guarda:
+
+- `CriterioRubrica`: actividad, id del criterio en Moodle, orden, descripción en texto y puntaje máximo. El `TemaId` lo asocia el docente (HU-08) y la sincronización no lo cambia.
+- `CalificacionCriterio`: criterio, estudiante, puntaje y nombre del nivel.
+- `Calificacion.Comentario`: el comentario del docente en texto; cada elemento de lista empieza con «• » en su propia línea.
+
+Si una de estas funciones falla, la sincronización queda `PARCIAL` con su error. Las notas y entregas se guardan igual, y los criterios quedan como estaban.
+
+## Mapeo temático (HU-08)
+
+El docente asocia a cada tema de la unidad las actividades que lo evalúan y, en las tareas con rúbrica, cada criterio. Los temas iniciales de cada unidad vienen del sílabo cargado en Moodle (TA-08.A1), y el docente puede agregar los suyos. Nada de esto se escribe en Moodle.
+
+### GET /api/cursos/{id}/mapeo · DOCENTE
+
+```json
+{
+  "cursoId": 1,
+  "unidades": [
+    { "id": 7, "numero": 1, "nombre": "Principios fundamentales de las metodologías ágiles", "parcial": 1,
+      "temas": [ { "id": 21, "nombre": "1.3 Manifiesto Ágil" } ] }
+  ],
+  "actividades": [
+    {
+      "id": 101, "nombre": "Tarea 1", "categoria": "Tareas", "unidad": 1, "fechaLimite": "2026-09-08T23:59:00-05:00",
+      "temas": [21],
+      "criterios": [ { "id": 5, "orden": 1, "descripcion": "Redacción de historias de usuario", "puntajeMaximo": 2.5, "temaId": 21 } ]
+    }
+  ]
+}
+```
+
+- Las actividades van en el orden del libro. `temas` lleva los temas de la actividad, incluidos los que llegan por sus criterios.
+- `criterios` va vacío si la tarea no tiene rúbrica.
+- Códigos: 401, 403, 404 y 409, como en el resto del bloque.
+
+### GET /api/cursos/{id}/unidades/{uid}/temas · DOCENTE
+
+Devuelve los temas de la unidad: `[ { "id": 21, "nombre": "1.3 Manifiesto Ágil" } ]`. Responde 404 si la unidad no es del curso.
+
+### POST /api/cursos/{id}/unidades/{uid}/temas · DOCENTE
+
+Petición: `{ "nombre": "Historias de usuario" }`. Responde 201 con `{ "id": 30, "nombre": "Historias de usuario" }`.
+
+- 400 si el nombre está vacío, pasa de 200 caracteres o ya existe en la unidad (sin distinguir mayúsculas ni espacios).
+- 404 si la unidad no es del curso.
+
+### PUT /api/cursos/{id}/actividades/{aid}/temas · DOCENTE
+
+Petición:
+```json
+{ "temas": [21], "criterios": [ { "id": 5, "temaId": 21 }, { "id": 6, "temaId": null } ] }
+```
+
+- Reemplaza los temas de la actividad. Los temas de los criterios se suman solos a los de la actividad.
+- Responde 200 con la actividad en la forma de `GET /api/cursos/{id}/mapeo`.
+- 400 si un tema no es de una unidad del curso o un criterio no es de esa actividad.
+- 404 si la actividad no es del curso.
+
+## Desempeño por tema (HU-08, HU-22)
+
+### GET /api/cursos/{id}/tematicas?actividadId= · DOCENTE
+
+Cuánto domina el curso cada tema, quiénes quedaron bajo 6,0 y dónde se vuelve a evaluar. Sin `actividadId` va el curso completo; con `actividadId`, solo los temas de esa actividad y solo con sus notas. Se calcula con lo que guardó la última sincronización y la fecha del servidor; no llama a Moodle.
+
+```json
+{
+  "cursoId": 1,
+  "actividadId": 103,
+  "temas": [
+    {
+      "id": 30, "nombre": "Historias de usuario", "unidad": { "numero": 1, "nombre": "Principios fundamentales de las metodologías ágiles" },
+      "evaluaciones": [
+        { "actividadId": 103, "actividad": "Tarea 3", "fuente": "CRITERIOS", "criterios": ["Criterios de aceptación de las historias"] }
+      ],
+      "estudiantesConNota": 31,
+      "promedio": 6.42,
+      "domina": 0.55,
+      "bajo6": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "nota": 4.0 } ],
+      "estudiantes": [ { "id": 8, "nombre": "Diego", "apellido": "Díaz", "nota": 4.0, "notas": [ { "actividadId": 103, "nota": 4.0 } ] } ],
+      "proximas": [ { "actividadId": 118, "nombre": "Tarea 9", "fechaLimite": "2026-11-28T23:59:00-05:00" } ]
+    }
+  ],
+  "sinTemas": [ { "actividadId": 104, "nombre": "Tarea 4" } ]
+}
+```
+
+Reglas del cálculo, todas en Application y con pruebas:
+
+- **Nota de un estudiante en un tema y una actividad:**
+  - Si la actividad tiene criterios de rúbrica asociados al tema y el estudiante tiene sus niveles, es la suma de sus puntajes en esos criterios entre la suma de los puntajes máximos, por 10 (`fuente: CRITERIOS`).
+  - Si no, cuando la actividad está asociada al tema y la nota del estudiante es `CALIFICADO`, es su nota (`fuente: NOTA`).
+  - Sin entrega, por calificar o sin dato no dan nota, nunca 0.
+- **Nota del estudiante en el tema:** el promedio simple de sus notas en las actividades del tema.
+- **`promedio`:** el promedio de esas notas. **`domina`:** la parte de los estudiantes con nota que tiene 7,0 o más, de 0 a 1. Si nadie tiene nota, los dos van en `null`.
+- **`bajo6`:** los estudiantes con nota menor a 6,0, de menor a mayor.
+- **`proximas`:** las actividades asociadas al tema cuya fecha límite todavía no llega.
+- **`sinTemas`:** las actividades con nota que no tienen ningún tema asociado (en el curso, o la actividad pedida).
+
+Códigos: 401, 403, 404 (curso, o `actividadId` que no es del curso) y 409, como en el resto del bloque.
+
 ## Filtros de la herramienta de calificaciones (HU-23)
 
 ### GET /api/tools/calificaciones?cursoId=1&promedioMenorA=7&orden=sinEntrega
@@ -733,9 +842,9 @@ Los nombres de la planificación (tabla 4) se conservan. Las rutas marcadas «nu
 |---|---|---|---|---|
 | GET | `/api/cursos/{id}/estudiantes/{eid}` | DOCENTE | HU-10 | Planificación |
 | GET | `/api/cursos/{id}/estudiantes/{eid}/nota-necesaria` | DOCENTE | HU-10 (TA-10.A1) | nueva |
-| GET/POST | `/api/cursos/{id}/unidades/{uid}/temas` | DOCENTE | HU-08 | Planificación |
+| GET/POST | `/api/cursos/{id}/unidades/{uid}/temas` | DOCENTE | HU-08 | Planificación (detallada en «Mapeo temático», con `GET /api/cursos/{id}/mapeo`) |
 | PUT | `/api/cursos/{id}/actividades/{aid}/temas` | DOCENTE | HU-08 | Planificación (suma criterios de rúbrica) |
-| GET | `/api/cursos/{id}/tematicas` | DOCENTE | HU-22 (antes HU-11) | Planificación |
+| GET | `/api/cursos/{id}/tematicas` | DOCENTE | HU-22 (antes HU-11) | Planificación (detallada en «Desempeño por tema») |
 | GET | `/api/cursos/{id}/analisis-grupal` | DOCENTE | HU-22 (antes HU-11) | Planificación |
 | GET | `/api/cursos/{id}/actividades/{aid}` | DOCENTE | HU-22 | nueva |
 | GET/PATCH | `/api/cursos/{id}/refuerzos` | DOCENTE | HU-15 | Planificación |

@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<IndicadorService>();
         services.AddScoped<LibroService>();
         services.AddScoped<PeriodoService>();
+        services.AddScoped<EduMonitor.Application.Tematicas.TematicaService>();
         services.AddScoped<AlertasService>();
         services.AddScoped<HerramientasService>();
         services.AddScoped<AgenteService>();
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<ImportadorCalificaciones>();
         services.AddScoped<ImportadorEntregas>();
         services.AddScoped<SincronizacionService>();
+        services.AddScoped<ImportadorRubricas>();
         services.AddScoped<CambiosSincronizacionService>();
         services.AddScoped<ConfiguracionMoodleService>();
         return services;

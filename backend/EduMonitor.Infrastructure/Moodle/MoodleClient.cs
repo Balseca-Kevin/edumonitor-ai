@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 namespace EduMonitor.Infrastructure.Moodle;
 
 /// <summary>
-/// TA-02.2 · Cliente REST del Moodle de laboratorio (<c>/webservice/rest/server.php</c>). Solo llama a las 8 funciones permitidas.
+/// TA-02.2 · Cliente REST del Moodle de laboratorio (<c>/webservice/rest/server.php</c>). Solo llama a las 11 funciones permitidas.
 /// El token va en el cuerpo del POST, nunca en la URL ni en los registros. Si Moodle no responde o devuelve un error,
 /// lanza <see cref="MoodleNoDisponibleException"/>; los fallos de red se reintentan antes de rendirse.
 /// </summary>
@@ -157,6 +157,117 @@ internal sealed partial class MoodleClient(HttpClient http, IConfiguracionMoodle
         return json.RootElement.GetProperty("statuses").EnumerateArray()
             .Select(s => new FinalizacionActividadMoodle(Entero(s, "cmid"), Entero(s, "state")))
             .ToList();
+    }
+
+    public async Task<IReadOnlyList<RubricaMoodle>> ObtenerRubricasAsync(IReadOnlyCollection<int> moduloCursoIds, CancellationToken ct = default)
+    {
+        if (moduloCursoIds.Count == 0)
+        {
+            return Array.Empty<RubricaMoodle>();
+        }
+
+        var parametros = moduloCursoIds
+            .Select((id, i) => (Clave: $"cmids[{i}]", Valor: Num(id)))
+            .ToDictionary(p => p.Clave, p => p.Valor);
+        parametros["areaname"] = "submissions";
+        // activeonly=1 falla con invalid_method_name en las tareas sin método avanzado: se piden todas y se filtra por el activo.
+        parametros["activeonly"] = "0";
+        using var json = await LlamarAsync("core_grading_get_definitions", parametros, ct);
+        var resultado = new List<RubricaMoodle>();
+        foreach (var area in json.RootElement.GetProperty("areas").EnumerateArray())
+        {
+            if (TextoOpcional(area, "activemethod") != "rubric" || !area.TryGetProperty("definitions", out var definiciones))
+            {
+                continue; // tarea calificada sin rúbrica (nota directa o guía de puntuación)
+            }
+
+            foreach (var definicion in definiciones.EnumerateArray())
+            {
+                if (TextoOpcional(definicion, "method") != "rubric"
+                    || !definicion.TryGetProperty("rubric", out var rubrica)
+                    || !rubrica.TryGetProperty("rubric_criteria", out var criterios))
+                {
+                    continue;
+                }
+
+                resultado.Add(new RubricaMoodle(
+                    Entero(area, "cmid"),
+                    Entero(definicion, "id"),
+                    criterios.EnumerateArray()
+                        .Select(c => new CriterioRubricaMoodle(
+                            Entero(c, "id"),
+                            Entero(c, "sortorder"),
+                            TextoPlano(Texto(c, "description")),
+                            c.GetProperty("levels").EnumerateArray()
+                                .Select(n => new NivelRubricaMoodle(Entero(n, "id"), DecimalOpcional(n, "score") ?? 0m, TextoPlano(Texto(n, "definition"))))
+                                .ToList()))
+                        .OrderBy(c => c.Orden)
+                        .ToList()));
+            }
+        }
+
+        return resultado;
+    }
+
+    public async Task<IReadOnlyList<InstanciaRubricaMoodle>> ObtenerCalificacionesRubricaAsync(int definicionId, CancellationToken ct = default)
+    {
+        using var json = await LlamarAsync(
+            "core_grading_get_gradingform_instances",
+            new() { ["definitionid"] = Num(definicionId), ["since"] = "0" },
+            ct);
+        return json.RootElement.GetProperty("instances").EnumerateArray()
+            .Select(i => new InstanciaRubricaMoodle(
+                Entero(i, "id"),
+                Entero(i, "itemid"),
+                Entero(i, "status"),
+                i.TryGetProperty("rubric", out var rubrica) && rubrica.TryGetProperty("criteria", out var criterios)
+                    ? criterios.EnumerateArray().Select(c => new NivelElegidoMoodle(Entero(c, "criterionid"), Entero(c, "levelid"))).ToList()
+                    : new List<NivelElegidoMoodle>()))
+            .ToList();
+    }
+
+    public async Task<EstadoEntregaMoodle> ObtenerEstadoEntregaAsync(int tareaId, int moodleUsuarioId, CancellationToken ct = default)
+    {
+        using var json = await LlamarAsync(
+            "mod_assign_get_submission_status",
+            new() { ["assignid"] = Num(tareaId), ["userid"] = Num(moodleUsuarioId) },
+            ct);
+        if (!json.RootElement.TryGetProperty("feedback", out var retro))
+        {
+            return new EstadoEntregaMoodle(null, null);
+        }
+
+        int? calificacionId = retro.TryGetProperty("grade", out var nota) && nota.ValueKind == JsonValueKind.Object ? Entero(nota, "id") : null;
+        string? comentario = null;
+        if (retro.TryGetProperty("plugins", out var plugins))
+        {
+            comentario = plugins.EnumerateArray()
+                .Where(p => TextoOpcional(p, "type") == "comments" && p.TryGetProperty("editorfields", out _))
+                .SelectMany(p => p.GetProperty("editorfields").EnumerateArray())
+                .Select(campo => TextoPlano(TextoOpcional(campo, "text") ?? string.Empty))
+                .FirstOrDefault(texto => texto.Length > 0);
+        }
+
+        return new EstadoEntregaMoodle(calificacionId, comentario);
+    }
+
+    /// <summary>
+    /// Texto sin HTML para guardar enunciados, criterios y comentarios del docente: cada elemento de lista empieza con «• » en su
+    /// propia línea y los párrafos se separan con un salto de línea.
+    /// </summary>
+    internal static string TextoPlano(string html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return string.Empty;
+        }
+
+        var texto = Regex.Replace(html, @"<\s*li[^>]*>", "\n• ", RegexOptions.IgnoreCase);
+        texto = Regex.Replace(texto, @"<\s*(br|/p|/li|/ul|/ol|/div)[^>]*>", "\n", RegexOptions.IgnoreCase);
+        texto = Regex.Replace(texto, "<[^>]+>", string.Empty);
+        texto = System.Net.WebUtility.HtmlDecode(texto);
+        var lineas = texto.Split('\n').Select(l => Regex.Replace(l, @"[ \t\r]+", " ").Trim()).Where(l => l.Length > 0);
+        return string.Join("\n", lineas);
     }
 
     /// <summary>

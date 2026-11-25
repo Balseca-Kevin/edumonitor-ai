@@ -57,7 +57,7 @@ public class SincronizacionMoodleRealTests(ITestOutputHelper salida)
 
         Assert.Equal(HttpStatusCode.OK, respuesta.StatusCode);
         var sync = await respuesta.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal("COMPLETADA", sync.GetProperty("estado").GetString());
+        Assert.True(sync.GetProperty("estado").GetString() == "COMPLETADA", $"Errores de la sincronización: {sync.GetProperty("errores")}");
         var registros = sync.GetProperty("registros");
         Assert.Equal(4, registros.GetProperty("unidades").GetInt32());
         Assert.Equal(19, registros.GetProperty("actividades").GetInt32()); // 16 de TA-01.3 y 3 futuras (TA-22.A3)
@@ -168,4 +168,33 @@ public class SincronizacionMoodleRealTests(ITestOutputHelper salida)
     private static (decimal?, EstadoCalificacion?) Par(Domain.Entities.Calificacion c) => (c.Nota, c.Estado);
 
     private static string Texto(decimal? nota) => nota?.ToString("0.00", CultureInfo.InvariantCulture) ?? "—";
+
+    /// <summary>HU-08 · Las 5 tareas con rúbrica de AGIL-4B llegan con sus 4 criterios, los niveles de cada nota y el comentario.</summary>
+    [FactMoodleReal]
+    public async Task Sincroniza_las_rubricas_de_AGIL_4B_con_sus_niveles_y_los_comentarios_del_docente()
+    {
+        await using var api = new ApiConMoodleReal();
+        var doc01 = await api.ClienteConSesionAsync("doc01");
+        var curso = api.IdCurso("AGIL-4B");
+        (await doc01.PostAsync($"/api/cursos/{curso}/sync", null)).EnsureSuccessStatusCode();
+
+        using var alcance = api.Services.CreateScope();
+        var db = alcance.ServiceProvider.GetRequiredService<EduMonitor.Infrastructure.Persistencia.EduMonitorDbContext>();
+        var porTarea = await db.CriteriosRubrica.GroupBy(c => c.Actividad.Nombre).Select(g => new { Tarea = g.Key, Criterios = g.Count() }).ToListAsync();
+        Assert.Equal(new[] { "Tarea 1", "Tarea 2", "Tarea 3", "Tarea 5", "Tarea 6" }, porTarea.Select(t => t.Tarea).OrderBy(t => t));
+        Assert.All(porTarea, t => Assert.Equal(4, t.Criterios));
+
+        // Cada nota con rúbrica es la suma de sus niveles (cargar_rubricas.php la deja así).
+        var sumas = (await db.CalificacionesCriterio.Select(c => new { c.CriterioRubrica.ActividadId, c.EstudianteId, c.Puntaje }).ToListAsync())
+            .GroupBy(c => new { c.ActividadId, c.EstudianteId })
+            .Select(g => new { g.Key.ActividadId, g.Key.EstudianteId, Suma = g.Sum(c => c.Puntaje) })
+            .ToList();
+        Assert.NotEmpty(sumas);
+        var notas = await db.Calificaciones.Where(c => c.Actividad.CursoId == curso).ToDictionaryAsync(c => (c.ActividadId, c.EstudianteId), c => c.Nota);
+        Assert.All(sumas, s => Assert.Equal(notas[(s.ActividadId, s.EstudianteId)], s.Suma));
+
+        var est05 = await db.Calificaciones.Include(c => c.Estudiante).SingleAsync(c => c.Actividad.CursoId == curso && c.Actividad.Nombre == "Tarea 3" && c.Estudiante.Nombre == "Elena");
+        Assert.StartsWith("Revisa", est05.Comentario);
+        salida.WriteLine($"{sumas.Count} notas con rúbrica; comentario de est05 en Tarea 3: {est05.Comentario}");
+    }
 }

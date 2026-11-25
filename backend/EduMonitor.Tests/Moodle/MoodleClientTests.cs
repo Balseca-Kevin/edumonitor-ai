@@ -249,4 +249,58 @@ public class MoodleClientTests
     [InlineData("4.4", "4.4")]
     [InlineData("", "")]
     public void Version_corta(string release, string esperado) => Assert.Equal(esperado, MoodleClient.VersionCorta(release));
+
+    // HU-08 · Formas tomadas del Moodle de laboratorio 4.5 (Tarea 3 de AGIL-4B), recortadas a un criterio.
+    [Fact]
+    public async Task Rubricas_trae_los_criterios_con_sus_niveles_en_texto_y_omite_las_tareas_sin_rubrica()
+    {
+        var (cliente, moodle) = Crear();
+        moodle.Json("""{"areas":[{"cmid":5,"contextid":55,"component":"mod_assign","areaname":"submissions","activemethod":"rubric","definitions":[{"id":3,"method":"rubric","name":"Rúbrica · Tarea 3","status":20,"rubric":{"rubric_criteria":[{"id":10,"sortorder":2,"description":"Comparación de enfoques &amp; criterios","descriptionformat":1,"levels":[{"id":37,"score":0,"definition":"Insuficiente","definitionformat":1},{"id":40,"score":2.5,"definition":"Destacado","definitionformat":1}]}]}}]},{"cmid":6,"contextid":56,"component":"mod_assign","areaname":"submissions","activemethod":null}],"warnings":[]}""");
+
+        var rubricas = await cliente.ObtenerRubricasAsync(new[] { 5, 6 });
+
+        var rubrica = Assert.Single(rubricas);
+        Assert.Equal((5, 3), (rubrica.ModuloCursoId, rubrica.DefinicionId));
+        var criterio = Assert.Single(rubrica.Criterios);
+        Assert.Equal((10, 2, "Comparación de enfoques & criterios"), (criterio.Id, criterio.Orden, criterio.Descripcion));
+        Assert.Equal(new[] { (37, 0m, "Insuficiente"), (40, 2.5m, "Destacado") }, criterio.Niveles.Select(n => (n.Id, n.Puntaje, n.Definicion)));
+        Assert.Equal(("5", "6", "submissions", "0"), (moodle.Peticiones[0]["cmids[0]"], moodle.Peticiones[0]["cmids[1]"], moodle.Peticiones[0]["areaname"], moodle.Peticiones[0]["activeonly"]));
+    }
+
+    [Fact]
+    public async Task Calificaciones_con_rubrica_traen_el_id_de_la_nota_su_estado_y_el_nivel_de_cada_criterio()
+    {
+        var (cliente, moodle) = Crear();
+        moodle.Json("""{"instances":[{"id":68,"raterid":4,"itemid":131,"rawgrade":null,"status":1,"feedback":"","feedbackformat":0,"timemodified":1794853730,"rubric":{"criteria":[{"id":269,"criterionid":9,"levelid":33,"remark":"","remarkformat":1},{"id":270,"criterionid":10,"levelid":37,"remark":"","remarkformat":1}]}}],"warnings":[]}""");
+
+        var instancia = Assert.Single(await cliente.ObtenerCalificacionesRubricaAsync(3));
+
+        Assert.Equal((68, 131, 1), (instancia.Id, instancia.ItemId, instancia.Estado));
+        Assert.Equal(new[] { (9, 33), (10, 37) }, instancia.Niveles.Select(n => (n.CriterioId, n.NivelId)));
+        Assert.Equal(("3", "0"), (moodle.Peticiones[0]["definitionid"], moodle.Peticiones[0]["since"]));
+    }
+
+    [Fact]
+    public async Task Estado_de_la_entrega_trae_el_id_de_la_nota_y_el_comentario_del_docente_sin_html()
+    {
+        var (cliente, moodle) = Crear();
+        moodle.Json("""{"gradingsummary":null,"lastattempt":{},"feedback":{"grade":{"id":131,"assignment":5,"userid":10,"attemptnumber":0,"grader":4,"grade":"0.00000"},"gradefordisplay":"0.00 / 10.00","plugins":[{"type":"comments","name":"Feedback comments","fileareas":[{"area":"feedback","files":[]}],"editorfields":[{"name":"comments","description":"Feedback comments","text":"<p>Revisa estos puntos antes de la siguiente entrega:</p><ul><li>Valores del Manifiesto Ágil: relaciona cada práctica.</li><li>Formato y entrega: sigue la plantilla.</li></ul>","format":1}]}]},"warnings":[]}""");
+
+        var estado = await cliente.ObtenerEstadoEntregaAsync(5, 10);
+
+        Assert.Equal(131, estado.CalificacionId);
+        Assert.Equal("Revisa estos puntos antes de la siguiente entrega:\n• Valores del Manifiesto Ágil: relaciona cada práctica.\n• Formato y entrega: sigue la plantilla.", estado.Comentario);
+        Assert.Equal(("5", "10"), (moodle.Peticiones[0]["assignid"], moodle.Peticiones[0]["userid"]));
+    }
+
+    [Fact]
+    public async Task Estado_de_la_entrega_sin_nota_ni_comentario_devuelve_nulos()
+    {
+        var (cliente, moodle) = Crear();
+        moodle.Json("""{"lastattempt":{},"warnings":[]}""");
+
+        var estado = await cliente.ObtenerEstadoEntregaAsync(5, 11);
+
+        Assert.Equal((null, null), (estado.CalificacionId, estado.Comentario));
+    }
 }

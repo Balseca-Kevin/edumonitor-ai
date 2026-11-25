@@ -179,6 +179,10 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Property<int>("ActividadId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
                     b.Property<string>("Estado")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -201,6 +205,39 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                         .IsUnique();
 
                     b.ToTable("Calificacion", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.CalificacionCriterio", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CriterioRubricaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nivel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Puntaje")
+                        .HasPrecision(9, 5)
+                        .HasColumnType("decimal(9,5)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.HasIndex("CriterioRubricaId", "EstudianteId")
+                        .IsUnique();
+
+                    b.ToTable("CalificacionCriterio", (string)null);
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.CambioSincronizacion", b =>
@@ -341,6 +378,45 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.HasIndex("UsuarioId");
 
                     b.ToTable("Conversacion", (string)null);
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.CriterioRubrica", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActividadId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("MoodleCriterioId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PuntajeMaximo")
+                        .HasPrecision(9, 5)
+                        .HasColumnType("decimal(9,5)");
+
+                    b.Property<int?>("TemaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TemaId");
+
+                    b.HasIndex("ActividadId", "MoodleCriterioId")
+                        .IsUnique();
+
+                    b.ToTable("CriterioRubrica", (string)null);
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.Curso", b =>
@@ -798,6 +874,25 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Estudiante");
                 });
 
+            modelBuilder.Entity("EduMonitor.Domain.Entities.CalificacionCriterio", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.CriterioRubrica", "CriterioRubrica")
+                        .WithMany()
+                        .HasForeignKey("CriterioRubricaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("CriterioRubrica");
+
+                    b.Navigation("Estudiante");
+                });
+
             modelBuilder.Entity("EduMonitor.Domain.Entities.CambioSincronizacion", b =>
                 {
                     b.HasOne("EduMonitor.Domain.Entities.Actividad", "Actividad")
@@ -853,6 +948,24 @@ namespace EduMonitor.Infrastructure.Persistencia.Migraciones
                     b.Navigation("Curso");
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("EduMonitor.Domain.Entities.CriterioRubrica", b =>
+                {
+                    b.HasOne("EduMonitor.Domain.Entities.Actividad", "Actividad")
+                        .WithMany()
+                        .HasForeignKey("ActividadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("EduMonitor.Domain.Entities.Tema", "Tema")
+                        .WithMany()
+                        .HasForeignKey("TemaId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("Actividad");
+
+                    b.Navigation("Tema");
                 });
 
             modelBuilder.Entity("EduMonitor.Domain.Entities.CursoDocente", b =>

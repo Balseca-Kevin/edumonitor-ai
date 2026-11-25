@@ -17,6 +17,10 @@ public sealed class MoodleClientFalso : IMoodleClient
     public List<TareaMoodle> Tareas { get; } = new();
     public List<EntregaMoodle> Entregas { get; } = new();
     public Dictionary<int, List<FinalizacionActividadMoodle>> Finalizacion { get; } = new();
+    public List<RubricaMoodle> Rubricas { get; } = new();
+    public Dictionary<int, List<InstanciaRubricaMoodle>> InstanciasRubrica { get; } = new();
+    /// <summary>Por (tarea, usuario de Moodle): id de la nota de la tarea y comentario del docente.</summary>
+    public Dictionary<(int Tarea, int Usuario), EstadoEntregaMoodle> EstadosEntrega { get; } = new();
     public HashSet<string> Fallar { get; } = new();
     public List<string> FuncionesSitio { get; } = new();
     public List<string> Llamadas { get; } = new();
@@ -61,6 +65,17 @@ public sealed class MoodleClientFalso : IMoodleClient
         falso.Finalizacion[102] = new() { new FinalizacionActividadMoodle(70, 0) };
         return falso;
     }
+
+    public Task<IReadOnlyList<RubricaMoodle>> ObtenerRubricasAsync(IReadOnlyCollection<int> moduloCursoIds, CancellationToken ct = default) =>
+        Responder<IReadOnlyList<RubricaMoodle>>("core_grading_get_definitions", Rubricas.Where(r => moduloCursoIds.Contains(r.ModuloCursoId)).ToList());
+
+    public Task<IReadOnlyList<InstanciaRubricaMoodle>> ObtenerCalificacionesRubricaAsync(int definicionId, CancellationToken ct = default) =>
+        Responder<IReadOnlyList<InstanciaRubricaMoodle>>(
+            "core_grading_get_gradingform_instances",
+            InstanciasRubrica.TryGetValue(definicionId, out var lista) ? lista.ToList() : new List<InstanciaRubricaMoodle>());
+
+    public Task<EstadoEntregaMoodle> ObtenerEstadoEntregaAsync(int tareaId, int moodleUsuarioId, CancellationToken ct = default) =>
+        Responder("mod_assign_get_submission_status", EstadosEntrega.TryGetValue((tareaId, moodleUsuarioId), out var estado) ? estado : new EstadoEntregaMoodle(null, null));
 
     private Task<T> Responder<T>(string funcion, T valor)
     {

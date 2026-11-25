@@ -27,4 +27,10 @@ public class Calificacion
     /// Null si la actividad no tiene seguimiento o si Moodle no concedió el dato: se muestra como no disponible.
     /// </summary>
     public bool? Finalizada { get; set; }
+
+    /// <summary>
+    /// Comentario del docente en la entrega, en texto (mod_assign_get_submission_status). Lo leen la ficha y el plan de refuerzo
+    /// (HU-10, HU-15). Null si no hay comentario o la tarea no tiene rúbrica.
+    /// </summary>
+    public string? Comentario { get; set; }
 }

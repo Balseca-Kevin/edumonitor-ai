@@ -32,4 +32,13 @@ public interface IMoodleClient
 
     /// <summary><c>core_completion_get_activities_completion_status</c>: estado de finalización de las actividades para un estudiante.</summary>
     Task<IReadOnlyList<FinalizacionActividadMoodle>> ObtenerFinalizacionAsync(int moodleCursoId, int moodleUsuarioId, CancellationToken ct = default);
+
+    /// <summary>core_grading_get_definitions · rúbricas activas de las tareas (cmid) con sus criterios y niveles (HU-08).</summary>
+    Task<IReadOnlyList<RubricaMoodle>> ObtenerRubricasAsync(IReadOnlyCollection<int> moduloCursoIds, CancellationToken ct = default);
+
+    /// <summary>core_grading_get_gradingform_instances · niveles elegidos en cada calificación con la rúbrica (HU-08, HU-22).</summary>
+    Task<IReadOnlyList<InstanciaRubricaMoodle>> ObtenerCalificacionesRubricaAsync(int definicionId, CancellationToken ct = default);
+
+    /// <summary>mod_assign_get_submission_status · id de la nota de la tarea y comentario del docente de un estudiante (HU-10, HU-15).</summary>
+    Task<EstadoEntregaMoodle> ObtenerEstadoEntregaAsync(int tareaId, int moodleUsuarioId, CancellationToken ct = default);
 }
