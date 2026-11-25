@@ -50,6 +50,19 @@ def test_cifras_de_texto_ignora_codigos_siglas_y_numeracion():
     assert [c["texto"] for c in cifras] == ["6,4", "55%"]
 
 
+def test_numeros_de_un_nombre_no_son_cifras():
+    texto = "Entregó las unidades 1 a 3, no entregó las tareas 7, 8 y 9 ni el APE 4; el Examen Parcial 2 vence; sacó 5,5 en la Tarea 3."
+    assert [c["texto"] for c in cifras_de_texto(texto)] == ["5,5"]
+
+
+def test_ids_y_siglas_no_verifican_una_cifra():
+    datos = [{"herramienta": "obtener_calificaciones", "datos": {"curso": {"id": 1, "nombreCorto": "AGIL-4B"},
+              "estudiantes": [{"id": 11, "codigo": "E-011", "calificaciones": [{"actividadId": 3, "nota": 4.8}]}]}}]
+    cifras = verificar("Tiene 4 entregas y 1 cero, con 4,8 de nota.", datos)
+    assert [(c["valor"], c["verificada"]) for c in cifras] == [("4", False), ("1", False), ("4,8", True)]
+    assert cifras[2]["estudianteId"] == 11 and cifras[2]["actividadId"] == 3
+
+
 def test_cifra_redondeada_queda_verificada_con_su_fila():
     cifras = verificar("E-005 tiene promedio 6,4 y sacó 4 en la Tarea 3.", DATOS)
     promedio = next(c for c in cifras if c["valor"] == "6,4")

@@ -57,7 +57,7 @@ async def test_grafo_registra_cada_llamada_y_envia_el_token_fuera_del_modelo(mon
     {}, {"cursoId": 0}, {"cursoId": "1"}, {"cursoId": True},
     {"cursoId": 1, "estudianteId": -1}, {"cursoId": 1, "token": "secreto"},
     {"cursoId": 1, "nombre": "a"}, {"cursoId": 1, "nombre": 12},
-    {"cursoId": 1, "promedioMenorA": 11}, {"cursoId": 1, "promedioMenorA": -1}, {"cursoId": 1, "orden": "nota"},
+    {"cursoId": 1, "promedioMenorA": 11}, {"cursoId": 1, "promedioMenorA": -1},
 ])
 @pytest.mark.asyncio
 @respx.mock
@@ -253,3 +253,34 @@ def test_el_prompt_pide_leer_el_plan_cuando_hay_refuerzo_id():
     assert "obtener_plan_refuerzo" in graph.PROMPT_SISTEMA
     assert "refuerzoId" in graph.PROMPT_SISTEMA
 
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_sin_curso_en_la_llamada_usa_el_curso_de_la_pregunta(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    notas = respx.get("http://backend.test/api/tools/calificaciones?cursoId=1&promedioMenorA=7.0").respond(json={"estudiantes": []})
+
+    resultado = await graph.tool_node({**estado(llamada("obtener_calificaciones", {"promedioMenorA": 7})), "cursoId": 1})
+
+    assert notas.called
+    assert resultado["trazas"][0].estado == "OK"
+    assert resultado["trazas"][0].parametros == {"cursoId": 1, "promedioMenorA": 7.0}
+
+
+@pytest.mark.parametrize("estado_nota,frase", [
+    ("NO_ALCANZA", "Ya no alcanza 7,0: aun con 10 en sus 4 actividades pendientes llegaría a 6.86."),
+    ("NECESITA", "Necesita 7.67 en cada una de sus 4 actividades pendientes"),
+    ("YA_ALCANZA", "Ya llega a 7,0"),
+])
+def test_nota_necesaria_lleva_su_lectura_en_una_frase(estado_nota, frase):
+    resultado = {"herramienta": "calcular_nota_necesaria", "resultado": {
+        "estado": estado_nota, "pendientes": 4, "maximoPosible": 6.86, "notaNecesaria": 7.67 if estado_nota == "NECESITA" else None}}
+    lectura = graph.con_lectura_nota_necesaria(resultado)["lectura"]
+    assert frase in lectura and "no la nota final" in lectura
+
+
+@pytest.mark.parametrize("orden,esperado", [("nota", None), ("asc", None), ("sin_entrega", "sinEntrega"), ("Promedio", "promedio")])
+def test_orden_desconocido_usa_el_orden_por_defecto(orden, esperado):
+    from app.schemas.tools import ParametrosCalificaciones
+    assert ParametrosCalificaciones.model_validate({"cursoId": 1, "orden": orden}).orden == esperado

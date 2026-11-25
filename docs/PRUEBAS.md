@@ -321,9 +321,9 @@ Resultados al cierre del código del Sprint 3, en la rama de trabajo antes de lo
 
 | Parte | Comando, desde la raíz | Pruebas que pasan |
 |---|---|---|
-| Backend (xUnit) | `dotnet test backend/EduMonitor.sln` | 309 de 317 con el aula virtual apagada. Las 8 restantes (`MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests`) llaman al Moodle real y pasan con el aula virtual encendida |
+| Backend (xUnit) | `dotnet test backend/EduMonitor.sln` | 317 de 317 con el aula virtual encendida. Con el aula apagada fallan las 8 de `MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests`, que llaman al Moodle real |
 | Frontend (Vitest) | `cd frontend; npm test -- --run` | 186 de 186, en 23 archivos |
-| Agente (pytest) | `cd agent; python -m pytest` | 61 de 61 |
+| Agente (pytest) | `cd agent; python -m pytest` | 70 de 70 |
 
 Resultados del Sprint 2 (12 nov 2026): 172 de 172 en el backend, 71 de 71 en el frontend y 23 de 23 en el agente.
 

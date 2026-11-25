@@ -13,6 +13,18 @@ _CIFRA = re.compile(r"(?<![\w.,-])(\d+(?:[.,]\d+)?)(\s*%)?(?![\w])")
 _CODIGO = re.compile(r"\bE-\d{3}\b")
 _NUMERACION = re.compile(r"^\s*\d+[.)]\s", re.MULTILINE)
 _NUMERO_EN_TEXTO = re.compile(r"\d+(?:\.\d+)?")
+# Números que son parte de un nombre: «Tarea 3», «unidades 1 a 3», «tareas 7, 8 y 9», «Examen Parcial 2», «U4». No son cifras.
+_NOMBRE_NUMERADO = re.compile(
+    r"\b(?:tareas?|talleres|taller|apes?|unidad(?:es)?|parcial(?:es)?|examen(?:es)?(?:\s+parcial(?:es)?)?|actividad(?:es)?|"
+    r"sprints?|criterios?|preguntas?|u|p)\s*\d+(?:\s*(?:,|y|e|a|al|-|–)\s*\d+(?![.,]\d))*",
+    re.IGNORECASE,
+)
+# Campos que identifican, no miden: ids, códigos y nombres. Un número de la respuesta no se verifica con ellos.
+_CAMPOS_NO_CIFRA = {"id", "codigo", "moodleId", "nombreCorto", "nombre", "apellido", "sigla", "herramienta", "generado"}
+
+
+def _campo_no_cifra(clave: str) -> bool:
+    return clave in _CAMPOS_NO_CIFRA or clave.endswith("Id")
 
 # Constantes del dominio que el asistente puede nombrar sin consultarlas: escala 10, aprobación 7,0, grupo bajo 6,0,
 # ponderación 40/30/30 y las 3 notas de la tendencia.
@@ -27,6 +39,7 @@ def cifras_de_texto(texto: str) -> list[dict]:
     """Cifras de la respuesta en orden de aparición, sin repetir, con su número de decimales y si llevan %."""
     limpio = _CODIGO.sub(" ", texto or "")
     limpio = _NUMERACION.sub(" ", limpio)
+    limpio = _NOMBRE_NUMERADO.sub(" ", limpio)
     vistas = set()
     cifras = []
     for coincidencia in _CIFRA.finditer(limpio):
@@ -52,6 +65,8 @@ def _hojas(datos, ruta="", contexto=None):
         if isinstance(datos.get("actividadId"), int):
             contexto["actividadId"] = datos["actividadId"]
         for clave, valor in datos.items():
+            if _campo_no_cifra(clave):
+                continue
             yield from _hojas(valor, f"{ruta}.{clave}" if ruta else clave, contexto)
     elif isinstance(datos, list):
         for i, valor in enumerate(datos):
@@ -63,6 +78,19 @@ def _hojas(datos, ruta="", contexto=None):
     elif isinstance(datos, str):
         for numero in _NUMERO_EN_TEXTO.findall(_CODIGO.sub(" ", datos)):
             yield ruta, Decimal(numero), contexto
+
+
+def _hojas_de_texto(datos):
+    return ((ruta, numero, ctx) for ruta, numero, ctx in _hojas(datos) if isinstance(_valor_en(datos, ruta), str))
+
+
+def _valor_en(datos, ruta: str):
+    for parte in re.findall(r"[^.\[\]]+|\[\d+\]", ruta):
+        try:
+            datos = datos[int(parte[1:-1])] if parte.startswith("[") else datos[parte]
+        except (KeyError, IndexError, TypeError, ValueError):
+            return None
+    return datos
 
 
 def _coincide(cifra: dict, numero: Decimal) -> bool:
@@ -90,6 +118,9 @@ def verificar(respuesta: str, resultados: list[dict], permitidas: set[Decimal] |
     """
     permitidas = (permitidas or set()) | CONSTANTES
     hojas = [(r["herramienta"], ruta, numero, ctx) for r in resultados for ruta, numero, ctx in _hojas(r["datos"])]
+    # Primero los campos numéricos (notas, promedios, conteos); los números dentro de un texto quedan como último recurso.
+    textos = {(r["herramienta"], ruta) for r in resultados for ruta, _, _ in _hojas_de_texto(r["datos"])}
+    hojas.sort(key=lambda h: (h[0], h[1]) in textos)
     salida = []
     for cifra in cifras_de_texto(respuesta):
         fuente = next(((h, ruta, ctx) for h, ruta, numero, ctx in hojas if _coincide(cifra, numero)), None)

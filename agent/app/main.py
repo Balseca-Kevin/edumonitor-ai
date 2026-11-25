@@ -23,6 +23,7 @@ async def _correr(request: ChatPeticion, modo: str) -> dict:
     return await app_graph.ainvoke({
         "messages": [*historial, HumanMessage(content=request.mensaje)],
         "token": request.token,
+        "cursoId": request.cursoId,
         "iterations": 0,
         "trazas": [],
         "error": None,
