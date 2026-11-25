@@ -60,9 +60,9 @@ public class SincronizacionMoodleRealTests(ITestOutputHelper salida)
         Assert.Equal("COMPLETADA", sync.GetProperty("estado").GetString());
         var registros = sync.GetProperty("registros");
         Assert.Equal(4, registros.GetProperty("unidades").GetInt32());
-        Assert.Equal(16, registros.GetProperty("actividades").GetInt32());
+        Assert.Equal(19, registros.GetProperty("actividades").GetInt32()); // 16 de TA-01.3 y 3 futuras (TA-22.A3)
         Assert.Equal(32, registros.GetProperty("estudiantes").GetInt32());
-        Assert.Equal(16 * 32, registros.GetProperty("calificaciones").GetInt32());
+        Assert.Equal(19 * 32, registros.GetProperty("calificaciones").GetInt32());
 
         // Lo que tiene Moodle, leído aparte con el cliente.
         var moodle = MoodleReal.Cliente();
@@ -100,6 +100,15 @@ public class SincronizacionMoodleRealTests(ITestOutputHelper salida)
         Assert.Equal((3, 2), (tarea5.Unidad!.Numero, tarea5.Unidad.Parcial));
         Assert.NotNull(tarea5.FechaLimite);
         Assert.True(notasEduMonitor[(matriculados["Ana Acosta"], "Tarea 1")].Finalizada);
+
+        // TA-22.A3 · Las 3 actividades que vencen después de la Review: unidad 4, su categoría, su fecha límite y ninguna nota.
+        var futuras = await db.Actividades.Include(a => a.Unidad)
+            .Where(a => a.CursoId == curso && new[] { "Tarea 9", "APE 5", "Proyecto integrador" }.Contains(a.Nombre)).ToListAsync();
+        Assert.Equal(3, futuras.Count);
+        Assert.All(futuras, a => Assert.Equal(4, a.Unidad!.Numero));
+        Assert.Equal("APE", futuras.Single(a => a.Nombre == "APE 5").Categoria);
+        Assert.Equal(new DateTimeOffset(2026, 12, 11, 23, 59, 0, TimeSpan.FromHours(-5)), futuras.Single(a => a.Nombre == "Proyecto integrador").FechaLimite);
+        Assert.DoesNotContain(notasEduMonitor.Values, c => futuras.Any(a => a.Id == c.ActividadId) && c.Nota is not null);
 
         // El token no aparece en los registros de la API.
         Assert.DoesNotContain(api.Logs.Mensajes, m => m.Contains(MoodleReal.Configuracion.Token, StringComparison.Ordinal));
@@ -152,7 +161,7 @@ public class SincronizacionMoodleRealTests(ITestOutputHelper salida)
         var db = alcance.ServiceProvider.GetRequiredService<EduMonitorDbContext>();
         Assert.Equal(4, await db.Unidades.CountAsync(u => u.CursoId == curso));
         Assert.Equal(32, await db.Matriculas.CountAsync(m => m.CursoId == curso));
-        Assert.Equal(16 * 32, await db.Calificaciones.CountAsync(c => c.Actividad.CursoId == curso));
+        Assert.Equal(19 * 32, await db.Calificaciones.CountAsync(c => c.Actividad.CursoId == curso));
         Assert.Equal(2, await db.Sincronizaciones.CountAsync(s => s.CursoId == curso));
     }
 

@@ -1,4 +1,4 @@
-/* Base global de EduMonitor AI · diseño D (docs/sprint-2/diseno.md). Los valores salen de styles/tokens.css. */
+/* Base global de EduMonitor AI · Sprint 3 (docs/sprint-3/diseno.md). Los valores salen de styles/tokens.css. */
 @import './styles/tokens.css';
 @import './styles/app.css';
 
@@ -8,7 +8,7 @@
   font-weight: 400;
   line-height: var(--interlineado);
   color: var(--tinta);
-  background: var(--fondo);
+  background: var(--papel);
   font-variant-numeric: tabular-nums;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -26,7 +26,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--fondo);
+  background: var(--papel);
 }
 
 button,
@@ -38,7 +38,11 @@ textarea {
 }
 
 a {
-  color: var(--acento-texto);
+  color: var(--ia);
+}
+
+a:hover {
+  color: var(--ia-hover);
 }
 
 code {

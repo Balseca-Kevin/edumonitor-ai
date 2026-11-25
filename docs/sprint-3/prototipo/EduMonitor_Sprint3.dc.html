@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>EduMonitor AI · prototipo del rediseño</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F2ED}
+a{color:#0E6E60}a:hover{color:#0A5248}
+.em{font-family:Archivo,system-ui,sans-serif;color:#1A1C22;-webkit-font-smoothing:antialiased}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.big{font-weight:900;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.btn{font:inherit;cursor:pointer;border-radius:6px;transition:background .15s,border-color .15s,color .15s}
+.b-ink{background:#1A1C22;border:1px solid #1A1C22;color:#F4F2ED}.b-ink:hover{background:#33363F}
+.b-line{background:#FFFFFF;border:1px solid #D9D4C7;color:#1A1C22}.b-line:hover{background:#F4F2ED}
+.b-ia{background:#0E6E60;border:1px solid #0E6E60;color:#FFFFFF}.b-ia:hover{background:#0A5248}
+.rail{font:inherit;cursor:pointer;text-align:left;border:0;border-radius:6px;transition:background .15s,color .15s}
+.rail:hover{background:#262931;color:#F4F2ED}
+.seg{font:inherit;cursor:pointer;border:0;transition:background .15s,color .15s}
+.row{cursor:pointer;transition:background .12s}.row:hover{background:#FAF8F3}
+.sheet{background:#FFFFFF;border:1px solid #E4E0D6;border-radius:8px}
+.lift{transition:border-color .2s,transform .2s}.lift:hover{border-color:#B9B2A1;transform:translateY(-1px)}
+.bar{border:0;padding:0;cursor:pointer;transition:background .15s}
+.drawer{transition:transform .28s ease}
+.chk{display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:10px 12px;border-radius:6px;border:1px solid #E4E0D6;background:#FFFFFF;font:inherit;text-align:left;width:100%;box-sizing:border-box;color:#1A1C22}
+.chk:hover{border-color:#B9B2A1}
+input.fld{font:inherit;width:100%;box-sizing:border-box;border:1px solid #CFC8B8;border-radius:6px;padding:10px 12px;color:#1A1C22;background:#FFFFFF}
+input.fld:focus{outline:2px solid #7B8BD6;outline-offset:1px}
+input.dk{background:#1E2027;border-color:#3A3D46;color:#E6E7EA}
+input.dk:focus{outline-color:#AEB6C6}
+@keyframes sube{from{opacity:0;transform:translateY(var(--d))}to{opacity:1;transform:translateY(0)}}
+@keyframes flota{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes traza{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes entra{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rota{0%{opacity:0;transform:translateY(8px)}6%,30%{opacity:1;transform:none}36%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes vivo{0%,100%{opacity:1}50%{opacity:.35}}
+.punto-pos{position:absolute;animation:sube .9s cubic-bezier(.2,.8,.2,1) both}
+.punto{width:7px;height:7px;border-radius:999px;margin-left:-3px;animation:flota var(--t) ease-in-out infinite}
+.curva{stroke-dasharray:1;animation:traza 1.6s ease-out .3s both}
+.entra{animation:entra .7s ease-out both}
+.rota{position:absolute;left:0;top:0;opacity:0;animation:rota 9s infinite}
+.vivo{display:inline-block;width:7px;height:7px;border-radius:999px;background:#8FD0A0;animation:vivo 2s infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@keyframes pop{0%{opacity:0;transform:scale(.94) translateY(12px)}100%{opacity:1;transform:none}}
+@keyframes baja{0%{opacity:0;transform:translate(-50%,-24px) scale(.96)}60%{opacity:1;transform:translate(-50%,4px) scale(1.01)}100%{opacity:1;transform:translate(-50%,0)}}
+@keyframes barre{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.pop{animation:pop .5s cubic-bezier(.2,.8,.2,1) both}
+.spin{width:30px;height:30px;border-radius:999px;border:3px solid #3A3D46;border-top-color:#C9A877;box-sizing:border-box;animation:gira .8s linear infinite;flex:none}
+.toast{transform:translateX(-50%);animation:baja .6s cubic-bezier(.2,.8,.2,1) both}
+.brillo{height:3px;background:#2A2D35;overflow:hidden;position:relative}
+.brillo::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,#8FD0A0,#C9A877,transparent);animation:barre 1.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.punto-pos,.punto,.curva,.entra,.vivo{animation:none}.rota{animation:none}.rota.r0{opacity:1}.pop,.spin,.toast,.brillo::after{animation:none}}
+</style>
+</helmet>
+<div class="em" style="min-height: 100vh">
+
+<sc-if value="{{isLogin}}" hint-placeholder-val="{{true}}">
+<main style="min-height: 100vh; background: #16181D; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 40px 24px 320px; box-sizing: border-box">
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 300px">
+<div style="{{raya7}}"></div>
+<span class="mono" style="{{raya7txt}}">7,0 aprueba</span>
+<svg viewBox="0 0 1000 280" preserveAspectRatio="none" style="position: absolute; left: 0; bottom: 0; width: 100%; height: 280px"><path class="curva" d="{{curve}}" pathLength="1" fill="none" stroke="rgba(174,182,198,.42)" stroke-width="1.5"></path></svg>
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="32"><div class="punto-pos" style="{{d.pos}}"><div class="punto" style="{{d.dot}}"></div></div></sc-for>
+</div>
+<div style="position: relative; width: 100%; max-width: 1040px; display: flex; flex-wrap: wrap; gap: 48px; align-items: center">
+<section aria-label="Presentación de EduMonitor" style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 22px">
+<div class="mono entra" style="animation-delay: .1s; display: inline-flex; align-items: center; gap: 8px; color: #9AA0AB; font-size: 12px; letter-spacing: .06em; text-transform: uppercase"><span class="vivo" aria-hidden="true"></span>Aula virtual · UTA · FISEI · Software</div>
+<h1 class="entra" style="animation-delay: .25s; margin: 0; color: #E6E7EA; font-size: 92px; line-height: .95; letter-spacing: -.04em"><span style="font-weight: 300">Edu</span><span style="font-weight: 800">Monitor</span></h1>
+<div class="entra" style="animation-delay: .4s; display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; color: #E6E7EA; font-size: 24px; line-height: 1.3">Seguimiento académico y <b style="font-weight: 700; color: #C9A877">apoyo a tiempo</b>.</p>
+<p style="margin: 0; color: #9AA0AB; font-size: 16px; line-height: 1.5; max-width: 460px">Encuentra a quién apoyar en tu curso y por qué, con las notas reales del aula virtual y un asistente que sabe en qué punto del período estás.</p>
+</div>
+<div class="entra" style="animation-delay: .7s; display: flex; flex-direction: column; gap: 8px">
+<span class="mono" style="color: #8A8F9C; font-size: 12px; text-transform: uppercase; letter-spacing: .06em">Pregúntale a tu curso</span>
+<div style="position: relative; height: 30px; color: #E6E7EA; font-size: 20px; font-weight: 500">
+<span class="rota r0" style="animation-delay: 0s">¿Quién no entregó el Taller 2?</span>
+<span class="rota" style="animation-delay: 3s">¿En qué temas falló el curso en la Unidad 3?</span>
+<span class="rota" style="animation-delay: 6s">¿Qué refuerzo sirve antes del Examen P2?</span>
+</div>
+</div>
+</section>
+<div role="form" aria-label="Ingresar" class="entra" style="animation-delay: .5s; flex: 0 1 380px; background: rgba(30,32,39,.82); border: 1px solid #2E313A; border-radius: 10px; padding: 28px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+<div><h2 style="margin: 0; color: #E6E7EA; font-size: 20px; font-weight: 700">Ingresar</h2><p style="margin: 4px 0 0; color: #9AA0AB; font-size: 13px">Con tu usuario docente de EduMonitor.</p></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="usr" style="color: #C2C6CE; font-size: 13px">Usuario</label><input id="usr" class="fld dk" value="doc01" readonly></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="pwd" style="color: #C2C6CE; font-size: 13px">Contraseña</label><input id="pwd" class="fld dk" type="password" value="contrasena" readonly></div>
+<button type="button" class="btn" onClick="{{doLogin}}" style="background: #E6E7EA; border: 1px solid #E6E7EA; color: #16181D; padding: 12px; font-size: 15px; font-weight: 700; min-height: 46px">Ingresar</button>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: #9AA0AB">
+<span style="border: 1px solid #3A3D46; border-radius: 999px; padding: 4px 10px">Notas tal como en Moodle</span>
+<span style="border: 1px solid #3A3D46; border-radius: 999px; padding: 4px 10px">Alertas con evidencia</span>
+<span style="border: 1px solid #3A3D46; border-radius: 999px; padding: 4px 10px">Asistente con respaldo local</span>
+</div>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{isApp}}" hint-placeholder-val="{{false}}">
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap">
+<nav aria-label="Secciones" style="flex: 1 1 200px; max-width: 236px; background: #16181D; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box">
+<div style="padding: 0 10px 18px; color: #E6E7EA; font-size: 22px; letter-spacing: -.03em"><span style="font-weight: 300">Edu</span><span style="font-weight: 800">Monitor</span><div class="mono" style="font-size: 11px; color: #8A8F9C; letter-spacing: 0; margin-top: 4px">{{railCode}}</div></div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<button class="rail" style="{{n.style}}" onClick="{{n.go}}"><span>{{n.label}}</span><sc-if value="{{n.hasBadge}}" hint-placeholder-val="{{false}}"><span class="num" style="margin-left: auto; background: #C9A877; color: #16181D; border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 700">{{n.badge}}</span></sc-if></button>
+</sc-for>
+<div style="margin-top: auto; padding: 16px 10px 0; border-top: 1px solid #2A2D35; display: flex; flex-direction: column; gap: 8px">
+<span style="color: #C2C6CE; font-size: 13px">doc01 · Docente</span>
+<button class="rail" style="padding: 8px 0; background: none; color: #AEB3BD; font-size: 13px" onClick="{{goLogin}}">Cerrar sesión</button>
+</div>
+</nav>
+
+<main style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column">
+
+<sc-if value="{{isCourse}}" hint-placeholder-val="{{false}}">
+<header style="background: #16181D; color: #E6E7EA; padding: 26px 32px 22px; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap">
+<div style="flex: 1; min-width: 260px">
+<div class="mono" style="font-size: 12px; color: #9AA0AB">AGIL-4B · Período 2026-2 · 12 estudiantes</div>
+<h1 style="margin: 6px 0 0; font-size: 46px; font-weight: 900; letter-spacing: -.035em; line-height: 1">Metodologías Ágiles</h1>
+</div>
+<div style="text-align: right">
+<div class="mono" style="font-size: 11px; color: #8A8F9C; letter-spacing: .08em">SEMANA DEL PERÍODO</div>
+<div class="big" style="font-size: 64px; line-height: .9"><span>{{today}}</span><span style="font-size: 30px; color: #5B6170"> / {{weeks}}</span></div>
+<div style="font-size: 13px; color: #C9A877; font-weight: 600; margin-top: 4px">{{unitNow}}</div>
+</div>
+</div>
+<div style="position: relative; height: 108px">
+<span class="mono" style="position: absolute; top: 0; left: 0; font-size: 11px; color: #8A8F9C; letter-spacing: .08em">PARCIAL 1</span>
+<span class="mono" style="position: absolute; top: 0; left: calc(50% + 10px); font-size: 11px; color: #8A8F9C; letter-spacing: .08em">PARCIAL 2</span>
+<div aria-hidden="true" style="position: absolute; left: 50%; top: 0; height: 66px; border-left: 1px dashed #4A4E59"></div>
+<sc-for list="{{unitLabels}}" as="ul" hint-placeholder-count="4"><span style="{{ul.style}}">{{ul.txt}}</span></sc-for>
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 44px; height: 8px; border-radius: 999px; background: #2A2D35"></div>
+<div aria-hidden="true" style="{{fillStyle}}"></div>
+<sc-for list="{{unitCuts}}" as="uc" hint-placeholder-count="3"><div aria-hidden="true" style="{{uc}}"></div></sc-for>
+<div aria-hidden="true" style="{{todayStyle}}"></div>
+<sc-for list="{{ticks}}" as="t" hint-placeholder-count="12"><div title="{{t.tip}}" style="{{t.style}}"></div></sc-for>
+<sc-for list="{{weekNums}}" as="wn" hint-placeholder-count="16"><span class="mono num" style="{{wn.style}}">{{wn.txt}}</span></sc-for>
+<sc-for list="{{tickLabels}}" as="tl" hint-placeholder-count="12"><span class="mono" style="{{tl.style}}">{{tl.txt}}</span></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); border-top: 1px solid #2A2D35">
+<sc-for list="{{periodBlocks}}" as="pb" hint-placeholder-count="3">
+<div style="{{pb.style}}">
+<div class="mono" style="font-size: 11px; letter-spacing: .08em; color: #8A8F9C">{{pb.k}}</div>
+<div style="font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin-top: 4px">{{pb.big}}</div>
+<div class="num" style="font-size: 13px; color: #C2C6CE; margin-top: 2px; line-height: 1.4">{{pb.sub}}</div>
+<sc-if value="{{pb.hasBar}}" hint-placeholder-val="{{false}}"><div style="height: 5px; background: #2A2D35; border-radius: 999px; margin-top: 8px"><div style="{{pb.bar}}"></div></div></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: #9AA0AB">
+<span style="display: inline-flex; gap: 6px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #E6E7EA"></span>Vencida, todos entregaron</span>
+<span style="display: inline-flex; gap: 6px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #C9A877"></span>Vencida, faltan entregas</span>
+<span style="display: inline-flex; gap: 6px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 999px; background: #8FD0A0"></span>Vence esta semana</span>
+<span style="display: inline-flex; gap: 6px; align-items: center"><span style="width: 10px; height: 10px; border-radius: 999px; border: 2px solid #8A8F9C; box-sizing: border-box"></span>Próxima</span>
+<span style="display: inline-flex; gap: 6px; align-items: center"><span style="width: 9px; height: 9px; background: #AEB6C6; transform: rotate(45deg)"></span>Examen</span>
+</div>
+</header>
+<div style="padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #E4E0D6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+<div role="group" aria-label="Filtrar por parcial o unidad" style="display: inline-flex; flex-wrap: wrap; border: 1px solid #D9D4C7; border-radius: 6px; overflow: hidden">
+<sc-for list="{{segs}}" as="s" hint-placeholder-count="7"><button class="seg" style="{{s.style}}" onClick="{{s.pick}}">{{s.label}}</button></sc-for>
+</div>
+<span class="num" style="margin-left: auto; font-size: 12px; color: #6B7080">{{syncAgo}}</span>
+<button class="btn b-line" style="padding: 10px 14px; font-size: 14px; min-height: 44px" onClick="{{syncHere}}">Sincronizar</button>
+<button class="btn b-ia" style="padding: 10px 14px; font-size: 14px; font-weight: 600; min-height: 44px" onClick="{{goAsistente}}">Preguntar al asistente</button>
+</div>
+</sc-if>
+
+<div style="padding: 28px 32px; display: flex; flex-direction: column; gap: 24px">
+
+<sc-if value="{{isCursos}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 22px">
+<div style="border-bottom: 2px solid #1A1C22; padding-bottom: 12px"><h1 style="margin: 0; font-size: 34px; font-weight: 900; letter-spacing: -.03em">Mis cursos</h1><p style="margin: 4px 0 0; color: #6B7080; font-size: 14px">Solo aparecen los cursos asignados a tu usuario.</p></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px">
+<sc-for list="{{courses}}" as="c" hint-placeholder-count="2">
+<article class="sheet lift" style="padding: 22px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<div style="flex: 1"><div class="mono" style="font-size: 12px; color: #6B7080">{{c.code}}</div><h2 style="margin: 4px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -.02em">{{c.name}}</h2></div>
+<sc-if value="{{c.hasAttention}}" hint-placeholder-val="{{true}}"><span class="num" style="background: #F3E7D3; color: #7A4E14; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700">{{c.attention}} requieren atención</span></sc-if>
+</div>
+<div style="display: flex; gap: 28px; flex-wrap: wrap">
+<div><div class="big" style="font-size: 34px">{{c.avg}}</div><div style="font-size: 12px; color: #6B7080">promedio del curso</div></div>
+<div><div class="big" style="font-size: 34px">{{c.graded}}</div><div style="font-size: 12px; color: #6B7080">entregas calificadas</div></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; font-size: 12px; color: #6B7080"><span>{{c.where}}</span><span class="num" style="margin-left: auto">{{c.progressTxt}}</span></div>
+<div style="height: 6px; background: #EEEAE1; border-radius: 999px; overflow: hidden"><div style="{{c.progressStyle}}"></div></div>
+<div style="font-size: 13px; color: #1A1C22">{{c.next}}</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6B7080"><span style="{{c.syncDot}}"></span><span>{{c.syncTxt}}</span></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button class="btn b-ink" style="padding: 10px 14px; font-size: 14px; font-weight: 600; min-height: 44px; flex: 1" onClick="{{c.open}}">Abrir curso</button>
+<button class="btn b-line" style="padding: 10px 14px; font-size: 14px; min-height: 44px" onClick="{{c.sync}}">{{c.syncBtn}}</button>
+</div>
+</article>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLibro}}" hint-placeholder-val="{{false}}">
+<section style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid #1A1C22; padding-bottom: 12px">
+<div style="flex: 1; min-width: 260px"><h2 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -.03em">Libro de calificaciones</h2><p style="margin: 4px 0 0; font-size: 14px; color: #6B7080">Cada nota es la misma que está en Moodle. Haz clic en un estudiante para abrir su ficha.</p></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px">
+<span style="background: #F3E7D3; color: #7A4E14; border-radius: 4px; padding: 3px 8px">Bajo 7,0</span>
+<span style="background: #F6DDD9; color: #8E2F28; border-radius: 4px; padding: 3px 8px">Sin entrega (vencida)</span>
+<span style="background: #EEEAE1; color: #4A4E59; border-radius: 4px; padding: 3px 8px">Por calificar</span>
+<span style="border: 1px dashed #B9B2A1; color: #6B7080; border-radius: 4px; padding: 2px 8px">Aún no vence</span>
+<span style="background: #E3F1EE; color: #0A5248; box-shadow: 0 0 0 2px #0E6E60; border-radius: 4px; padding: 3px 8px">Nuevo en la última sincronización</span>
+</div>
+</div>
+<div class="sheet" style="overflow-x: auto">
+<table class="num" style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead>
+<tr>
+<th rowSpan="2" style="text-align: left; padding: 12px 16px; position: sticky; left: 0; background: #FAF8F3; border-bottom: 1px solid #E4E0D6; font-weight: 700; min-width: 180px">Estudiante</th>
+<sc-for list="{{unitHeads}}" as="u" hint-placeholder-count="4"><th colSpan="{{u.span}}" style="padding: 8px; background: #FAF8F3; border-bottom: 1px solid #E4E0D6; border-left: 1px solid #E4E0D6; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #4A4E59">{{u.label}}</th></sc-for>
+<th rowSpan="2" style="padding: 12px 16px; background: #FAF8F3; border-bottom: 1px solid #E4E0D6; border-left: 1px solid #E4E0D6; font-weight: 700">Promedio 40/30/30</th>
+</tr>
+<tr><sc-for list="{{actHeads}}" as="a" hint-placeholder-count="12"><th style="padding: 8px; background: #FAF8F3; border-bottom: 1px solid #E4E0D6; font-weight: 600; white-space: nowrap; min-width: 88px">{{a.name}}<div class="mono" style="font-size: 10px; color: #6B7080; font-weight: 400">{{a.sub}}</div></th></sc-for></tr>
+</thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+<tr class="row" onClick="{{r.open}}">
+<td style="padding: 10px 16px; border-bottom: 1px solid #EEEAE1; position: sticky; left: 0; background: #FFFFFF; font-weight: 600">{{r.name}}</td>
+<sc-for list="{{r.cells}}" as="cell" hint-placeholder-count="12"><td style="padding: 6px; border-bottom: 1px solid #EEEAE1; text-align: center"><span style="{{cell.style}}">{{cell.txt}}</span></td></sc-for>
+<td style="padding: 10px 16px; border-bottom: 1px solid #EEEAE1; border-left: 1px solid #E4E0D6; text-align: center"><span style="{{r.avgStyle}}">{{r.avgTxt}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isPanel}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); border-top: 2px solid #1A1C22; border-bottom: 1px solid #E4E0D6">
+<div style="padding: 18px 20px 18px 0"><div style="font-size: 13px; color: #6B7080">Promedio del curso</div><div class="big" style="font-size: 60px; line-height: 1.05">{{kpi.avg}}</div><div style="font-size: 12px; color: #6B7080">de 10 · aprueba con 7,0</div></div>
+<div style="padding: 18px 20px; border-left: 1px solid #E4E0D6"><div style="font-size: 13px; color: #6B7080">La mitad del curso tiene más de</div><div class="big" style="font-size: 60px; line-height: 1.05">{{kpi.median}}</div><div style="font-size: 12px; color: #6B7080">en {{segLabel}}</div></div>
+<div style="padding: 18px 20px; border-left: 1px solid #E4E0D6"><div style="font-size: 13px; color: #6B7080">Entregas calificadas</div><div class="big" style="font-size: 60px; line-height: 1.05">{{kpi.done}}</div><div style="font-size: 12px; color: #6B7080">{{kpi.doneSub}}</div></div>
+<button class="btn" style="padding: 18px 20px; border: 0; border-left: 1px solid #E4E0D6; border-radius: 0; background: #F3E7D3; text-align: left" onClick="{{goAlertas}}"><div style="font-size: 13px; color: #7A4E14; font-weight: 600">Requieren atención</div><div class="big" style="font-size: 60px; line-height: 1.05; color: #7A4E14">{{kpi.attention}}</div><div style="font-size: 12px; color: #7A4E14">Ver alertas con su evidencia →</div></button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 24px">
+<section class="sheet" style="flex: 1 1 320px; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<div><h2 style="margin: 0; font-size: 17px; font-weight: 800">Cómo se reparte el curso</h2><p style="margin: 4px 0 0; font-size: 13px; color: #6B7080">Haz clic en una barra para filtrar la tabla. {{histNote}}</p></div>
+<div style="position: relative; height: 180px; display: flex; align-items: flex-end; gap: 6px; border-bottom: 1px solid #1A1C22">
+<sc-for list="{{hist}}" as="h" hint-placeholder-count="10"><div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px"><span class="num" style="font-size: 11px; color: #4A4E59">{{h.countTxt}}</span><button class="bar" style="{{h.style}}" aria-label="{{h.aria}}" onClick="{{h.pick}}"></button></div></sc-for>
+<div aria-hidden="true" style="position: absolute; left: 70%; top: 0; bottom: 0; border-left: 2px dashed #3F51B5"></div>
+<span class="mono" style="position: absolute; left: 70%; top: 0; margin-left: 6px; font-size: 11px; color: #3F51B5; background: #FFFFFF; padding: 0 4px">7,0 aprueba</span>
+</div>
+<div class="num mono" style="display: flex; justify-content: space-between; font-size: 11px; color: #6B7080"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div>
+</section>
+<section class="sheet" style="flex: 2 1 520px; min-width: 0; display: flex; flex-direction: column">
+<div style="padding: 16px 20px; border-bottom: 1px solid #E4E0D6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 17px; font-weight: 800">Estudiantes</h2><span style="font-size: 13px; color: #6B7080">{{tableNote}}</span><sc-if value="{{hasBinFilter}}" hint-placeholder-val="{{false}}"><button class="btn b-line" style="margin-left: auto; padding: 6px 10px; font-size: 12px" onClick="{{clearBin}}">Quitar filtro</button></sc-if></div>
+<div style="overflow-x: auto">
+<table class="num" style="border-collapse: collapse; width: 100%; font-size: 13px">
+<thead><tr style="color: #6B7080; font-size: 12px"><th style="text-align: left; padding: 10px 20px; font-weight: 600">Estudiante</th><th style="text-align: left; padding: 10px; font-weight: 600">Promedio</th><th style="text-align: center; padding: 10px; font-weight: 600">Sin entregar</th><th style="text-align: left; padding: 10px; font-weight: 600">Últimas notas</th><th style="text-align: left; padding: 10px 20px; font-weight: 600">Estado</th></tr></thead>
+<tbody>
+<sc-for list="{{panelRows}}" as="r" hint-placeholder-count="8">
+<tr class="row" onClick="{{r.open}}"><td style="padding: 11px 20px; border-top: 1px solid #EEEAE1; font-weight: 600">{{r.name}}</td><td style="padding: 11px 10px; border-top: 1px solid #EEEAE1"><div style="display: flex; align-items: center; gap: 10px"><span style="{{r.avgStyle}}">{{r.avgTxt}}</span><div style="width: 70px; height: 5px; background: #EEEAE1; border-radius: 999px"><div style="{{r.barStyle}}"></div></div></div></td><td style="padding: 11px 10px; border-top: 1px solid #EEEAE1; text-align: center">{{r.se}}</td><td style="padding: 11px 10px; border-top: 1px solid #EEEAE1; color: #4A4E59">{{r.last}}</td><td style="padding: 11px 20px; border-top: 1px solid #EEEAE1"><span style="{{r.chipStyle}}">{{r.chip}}</span></td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isAlertas}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid #1A1C22; padding-bottom: 12px">
+<h2 style="margin: 0 12px 0 0; font-size: 28px; font-weight: 900; letter-spacing: -.03em">Alertas</h2>
+<div role="group" aria-label="Filtrar alertas" style="display: flex; gap: 6px; flex-wrap: wrap"><sc-for list="{{alertChips}}" as="f" hint-placeholder-count="4"><button class="btn" style="{{f.style}}" onClick="{{f.pick}}">{{f.label}}</button></sc-for></div>
+<button class="btn b-line" style="margin-left: auto; padding: 10px 14px; font-size: 14px; min-height: 44px" onClick="{{openModal}}">Umbrales de alerta</button>
+</div>
+<sc-if value="{{noAlerts}}" hint-placeholder-val="{{false}}"><div class="sheet" style="padding: 24px; color: #6B7080; font-size: 14px">No hay alertas con este filtro.</div></sc-if>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px">
+<sc-for list="{{alertCards}}" as="a" hint-placeholder-count="4">
+<article class="sheet lift" style="padding: 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span style="{{a.tagStyle}}">{{a.rule}}</span><span style="font-size: 12px; color: #6B7080">Requiere atención</span><sc-if value="{{a.reviewed}}" hint-placeholder-val="{{false}}"><span style="margin-left: auto; font-size: 12px; color: #2F6B3A; font-weight: 700">Revisada</span></sc-if></div>
+<button class="btn" style="background: none; border: 0; padding: 0; text-align: left; font-size: 18px; font-weight: 800; color: #1A1C22" onClick="{{a.open}}">{{a.name}}</button>
+<p class="num" style="margin: 0; font-size: 14px; color: #33363F; line-height: 1.5">{{a.evidence}}</p>
+<sc-if value="{{a.hasDebts}}" hint-placeholder-val="{{false}}"><div style="display: flex; gap: 6px; flex-wrap: wrap"><sc-for list="{{a.debts}}" as="d" hint-placeholder-count="2"><span style="background: #F6DDD9; color: #8E2F28; border-radius: 4px; padding: 3px 8px; font-size: 12px">Debe: {{d}}</span></sc-for></div></sc-if>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto"><button class="btn b-ia" style="padding: 10px 12px; font-size: 13px; font-weight: 600; min-height: 44px; flex: 1" onClick="{{a.plan}}">Armar plan de refuerzo</button><button class="btn b-line" style="padding: 10px 12px; font-size: 13px; min-height: 44px" onClick="{{a.review}}">{{a.reviewTxt}}</button></div>
+</article>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isPlan}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 20px">
+<div style="border-bottom: 2px solid #1A1C22; padding-bottom: 12px"><h2 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -.03em">Plan de refuerzo</h2><p style="margin: 4px 0 0; font-size: 14px; color: #6B7080">Elige la actividad, marca las temáticas donde falló y a qué estudiantes va. El asistente arma las tareas con las notas reales y el calendario del período.</p></div>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 20px">
+<section class="sheet" style="padding: 18px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">1 · Actividad evaluada</h3>
+<sc-for list="{{planActs}}" as="pa" hint-placeholder-count="4"><button class="chk" style="{{pa.style}}" onClick="{{pa.pick}}"><span style="flex: 1"><span style="display: block; font-weight: 700; font-size: 14px">{{pa.name}}</span><span class="num" style="display: block; font-size: 12px; color: #6B7080; margin-top: 2px">{{pa.sub}}</span></span></button></sc-for>
+</section>
+<section class="sheet" style="padding: 18px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap"><h3 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">2 · Temáticas donde falló</h3><span style="font-size: 12px; color: #6B7080">el porcentaje es cuántos dominan el tema</span></div>
+<sc-for list="{{planTemas}}" as="tm" hint-placeholder-count="3"><button class="chk" style="{{tm.style}}" onClick="{{tm.toggle}}" aria-pressed="{{tm.on}}"><span style="{{tm.box}}">{{tm.mark}}</span><span style="flex: 1"><span style="display: block; font-weight: 700; font-size: 14px">{{tm.name}}</span><span class="num" style="display: block; font-size: 12px; color: #4A4E59; margin-top: 2px">{{tm.sub}}</span></span><span class="big" style="{{tm.pctStyle}}">{{tm.pct}}</span></button></sc-for>
+</section>
+<section class="sheet" style="padding: 18px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">3 · Estudiantes</h3>
+<sc-for list="{{planStuds}}" as="ps" hint-placeholder-count="4"><button class="chk" style="{{ps.style}}" onClick="{{ps.toggle}}" aria-pressed="{{ps.on}}"><span style="{{ps.box}}">{{ps.mark}}</span><span style="flex: 1"><span style="display: block; font-weight: 700; font-size: 14px">{{ps.name}}</span><span class="num" style="display: block; font-size: 12px; color: #4A4E59; margin-top: 2px">{{ps.sub}}</span></span></button></sc-for>
+</section>
+</div>
+<section class="sheet" style="flex: 1.4 1 460px; padding: 22px; display: flex; flex-direction: column; gap: 18px; border-top: 3px solid #0E6E60">
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap"><span style="background: #E3F1EE; color: #0A5248; border-radius: 4px; padding: 3px 8px; font-size: 12px; font-weight: 700">Asistente</span><h3 style="margin: 0; font-size: 18px; font-weight: 800">{{planTitle}}</h3></div>
+<sc-if value="{{planEmpty}}" hint-placeholder-val="{{false}}"><p style="margin: 0; color: #6B7080; font-size: 14px">Marca al menos una temática y un estudiante.</p></sc-if>
+<sc-if value="{{planReady}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px"><h4 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">Dónde se vuelven a evaluar estos temas</h4>
+<sc-for list="{{planWhere}}" as="w" hint-placeholder-count="2"><div class="num" style="display: flex; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid #EEEAE1; font-size: 14px; flex-wrap: wrap"><span style="font-weight: 700; min-width: 110px">{{w.name}}</span><span style="color: #33363F; flex: 1; min-width: 200px">{{w.txt}}</span><span class="mono" style="{{w.whenStyle}}">{{w.when}}</span></div></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h4 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">Tareas de refuerzo</h4>
+<sc-for list="{{planTasks}}" as="tk" hint-placeholder-count="3"><div style="display: flex; gap: 12px; padding: 12px; background: #FAF8F3; border-radius: 6px"><span class="big" style="font-size: 22px; color: #0E6E60; min-width: 24px">{{tk.n}}</span><div style="flex: 1"><div style="font-size: 12px; color: #0A5248; font-weight: 700">{{tk.tema}}</div><div style="font-size: 14px; line-height: 1.5; margin-top: 2px">{{tk.txt}}</div></div></div></sc-for>
+<div style="font-size: 13px; color: #4A4E59; line-height: 1.5">{{planDue}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px"><h4 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">Qué está en juego para cada estudiante</h4>
+<sc-for list="{{planStakes}}" as="sk" hint-placeholder-count="3"><div class="num" style="padding: 10px 0; border-bottom: 1px solid #EEEAE1; font-size: 14px; line-height: 1.5"><b>{{sk.name}}.</b> {{sk.txt}}</div></sc-for>
+<p style="margin: 0; font-size: 12px; color: #6B7080">Cálculo con las notas actuales y los pesos 40/30/30. No es una predicción de la nota.</p>
+</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; border-top: 1px solid #EEEAE1; padding-top: 16px">
+<button class="btn b-ia" style="padding: 12px 18px; font-size: 15px; font-weight: 700; min-height: 46px" onClick="{{sendPlan}}">Enviar el plan al asistente</button>
+<span style="font-size: 13px; color: #6B7080; flex: 1; min-width: 200px">El asistente lee el plan y prepara el borrador de cada estudiante en una conversación nueva.</span>
+</div>
+</div>
+</sc-if>
+</section>
+</div>
+<section class="sheet" style="padding: 20px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding-bottom: 8px"><h3 style="margin: 0; font-size: 18px; font-weight: 800">Historial de refuerzos</h3><span style="font-size: 13px; color: #6B7080">Después de cada sincronización se compara el promedio del tema antes y después del refuerzo.</span></div>
+<sc-for list="{{refRows}}" as="rr" hint-placeholder-count="2"><div class="row" style="display: flex; gap: 14px; align-items: baseline; padding: 12px 8px; border-top: 1px solid #EEEAE1; flex-wrap: wrap" onClick="{{rr.open}}"><span style="font-weight: 700; min-width: 110px">{{rr.act}}</span><span style="flex: 1; min-width: 220px; font-size: 13px; color: #33363F">{{rr.temas}} · {{rr.n}}</span><span style="{{rr.stStyle}}">{{rr.status}}</span><span class="num" style="font-size: 13px; color: #4A4E59; flex-basis: 100%">{{rr.result}}</span></div></sc-for>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{isAsistente}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; min-height: 560px">
+<aside style="flex: 1 1 220px; max-width: 290px; display: flex; flex-direction: column; gap: 18px">
+<button class="btn b-ia" style="padding: 11px; font-size: 14px; font-weight: 700; min-height: 44px" onClick="{{newChat}}">Nueva conversación</button>
+<sc-for list="{{history}}" as="g" hint-placeholder-count="2"><div style="display: flex; flex-direction: column; gap: 2px"><div class="mono" style="font-size: 11px; color: #6B7080; text-transform: uppercase; padding: 0 8px 4px">{{g.label}}</div><sc-for list="{{g.items}}" as="it" hint-placeholder-count="2"><button class="btn" style="{{it.style}}" onClick="{{it.open}}"><span style="display: block; font-size: 13px">{{it.label}}</span><sc-if value="{{it.hasSub}}" hint-placeholder-val="{{false}}"><span style="display: block; font-size: 11px; color: #6B7080; margin-top: 2px">{{it.sub}}</span></sc-if></button></sc-for></div></sc-for>
+</aside>
+<section class="sheet" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column">
+<div style="padding: 14px 20px; border-bottom: 1px solid #E4E0D6; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px"><span style="font-weight: 800">{{chatTitle}}</span><span style="margin-left: auto; background: #E3F1EE; color: #0A5248; border-radius: 999px; padding: 3px 10px">Sabe: semana 12 de 16 · Unidad 3 · {{segLabel}}</span></div>
+<div style="flex: 1; padding: 22px; display: flex; flex-direction: column; gap: 18px">
+<sc-for list="{{messages}}" as="m" hint-placeholder-count="2">
+<div style="{{m.wrapStyle}}"><div style="{{m.bubbleStyle}}">
+<sc-if value="{{m.hasText}}" hint-placeholder-val="{{true}}"><div style="white-space: pre-line; line-height: 1.55">{{m.text}}</div></sc-if>
+<sc-if value="{{m.isPlan}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 260px">
+<div class="mono" style="font-size: 11px; letter-spacing: .08em; color: #C9A877">PLAN DE REFUERZO</div>
+<div style="font-size: 17px; font-weight: 800">{{m.pAct}}</div>
+<div style="font-size: 13px; line-height: 1.5"><span style="color: #9AA0AB">Temas:</span> {{m.pTemas}}</div>
+<div style="font-size: 13px; line-height: 1.5"><span style="color: #9AA0AB">Estudiantes:</span> {{m.pStuds}}</div>
+</div>
+</sc-if>
+<sc-if value="{{m.isRich}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 14px; margin-top: 14px">
+<div class="num" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px">
+<div style="background: #FFFFFF; border: 1px solid #E4E0D6; border-radius: 6px; padding: 12px"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59; font-weight: 700">Hechos</div><div style="font-size: 13px; margin-top: 4px; line-height: 1.5">{{m.hechos}}</div></div>
+<div style="background: #FFFFFF; border: 1px solid #E4E0D6; border-radius: 6px; padding: 12px"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59; font-weight: 700">Inferencia</div><div style="font-size: 13px; margin-top: 4px; line-height: 1.5">{{m.inferencia}}</div></div>
+<div style="background: #E3F1EE; border: 1px solid #B5D8D0; border-radius: 6px; padding: 12px"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #0A5248; font-weight: 700">Recomendación</div><div style="font-size: 13px; margin-top: 4px; line-height: 1.5">{{m.reco}}</div></div>
+</div>
+<div style="border: 1px solid #E4E0D6; border-radius: 6px; overflow: hidden; background: #FFFFFF">
+<div style="padding: 10px 14px; background: #FAF8F3; font-size: 12px; font-weight: 700; color: #4A4E59">Estudiantes que requieren atención</div>
+<sc-for list="{{m.students}}" as="st" hint-placeholder-count="3"><div class="num" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid #EEEAE1; font-size: 13px; flex-wrap: wrap"><span style="font-weight: 700; min-width: 150px">{{st.name}}</span><span style="{{st.avgStyle}}">{{st.avg}}</span><span style="color: #6B7080">{{st.why}}</span><button class="btn b-line" style="margin-left: auto; padding: 6px 10px; font-size: 12px" onClick="{{st.open}}">Abrir ficha</button></div></sc-for>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn b-ia" style="padding: 10px 14px; font-size: 13px; font-weight: 700; min-height: 44px" onClick="{{goPlan}}">Armar plan de refuerzo con estos temas</button></div>
+</div>
+</sc-if>
+<sc-if value="{{m.isDraft}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; gap: 16px; margin-top: 14px">
+<div style="background: #FFFFFF; border: 1px solid #E4E0D6; border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59; font-weight: 700">Qué falló cada estudiante en {{m.pAct}}</div>
+<sc-for list="{{m.dLines}}" as="dl" hint-placeholder-count="2"><div class="num" style="font-size: 13px; line-height: 1.5"><b>{{dl.name}}.</b> {{dl.sub}}</div></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59; font-weight: 700">Tareas de refuerzo</div>
+<sc-for list="{{m.dTasks}}" as="tk" hint-placeholder-count="2"><div style="display: flex; gap: 12px; padding: 12px; background: #FFFFFF; border: 1px solid #E4E0D6; border-radius: 6px"><span class="big" style="font-size: 20px; color: #0E6E60; min-width: 20px">{{tk.n}}</span><div style="flex: 1"><div style="font-size: 12px; color: #0A5248; font-weight: 700">{{tk.tema}}</div><div style="font-size: 13px; line-height: 1.5; margin-top: 2px">{{tk.txt}}</div></div></div></sc-for>
+<sc-if value="{{m.hasDue}}" hint-placeholder-val="{{false}}"><div style="font-size: 13px; color: #33363F; line-height: 1.5">{{m.dDue}}</div></sc-if>
+</div>
+<sc-if value="{{m.hasWhere}}" hint-placeholder-val="{{false}}"><div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59; font-weight: 700">Dónde se vuelven a evaluar estos temas</div>
+<sc-for list="{{m.dWhere}}" as="w" hint-placeholder-count="2"><div class="num" style="display: flex; gap: 10px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #E4E0D6; flex-wrap: wrap"><b style="min-width: 90px">{{w.name}}</b><span style="flex: 1">{{w.txt}}</span><span class="mono" style="font-size: 11px; color: #6B7080">{{w.when}}</span></div></sc-for>
+</div></sc-if>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59; font-weight: 700">Qué está en juego</div>
+<sc-for list="{{m.dStakes}}" as="sk" hint-placeholder-count="2"><div class="num" style="font-size: 13px; line-height: 1.5"><b>{{sk.name}}.</b> {{sk.txt}}</div></sc-for>
+<div style="font-size: 12px; color: #6B7080">Cálculo con las notas actuales y los pesos 40/30/30. No es una predicción de la nota.</div>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-top: 1px solid #E4E0D6; padding-top: 12px">
+<span style="{{m.stStyle}}">{{m.status}}</span>
+<sc-if value="{{m.notApproved}}" hint-placeholder-val="{{true}}"><button class="btn b-ia" style="padding: 10px 14px; font-size: 13px; font-weight: 700; min-height: 44px" onClick="{{m.approve}}">Aprobar borrador</button></sc-if>
+<sc-if value="{{m.approved}}" hint-placeholder-val="{{false}}"><button class="btn b-line" style="padding: 10px 14px; font-size: 13px; min-height: 44px">Descargar PDF</button><button class="btn b-line" style="padding: 10px 14px; font-size: 13px; min-height: 44px">Descargar DOCX</button></sc-if>
+</div>
+<sc-if value="{{m.hasResult}}" hint-placeholder-val="{{false}}"><div class="num" style="font-size: 13px; background: #E3F1EE; color: #0A5248; border-radius: 6px; padding: 10px 12px">{{m.result}}</div></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{m.hasHow}}" hint-placeholder-val="{{false}}"><details style="margin-top: 12px; font-size: 12px; color: #6B7080"><summary style="cursor: pointer">Cómo llegó a esta respuesta</summary><div style="margin-top: 6px; display: flex; flex-direction: column; gap: 3px"><sc-for list="{{m.how}}" as="h" hint-placeholder-count="3"><span class="mono">{{h}}</span></sc-for></div></details></sc-if>
+</div></div>
+</sc-for>
+</div>
+<div style="padding: 14px 20px; border-top: 1px solid #E4E0D6; display: flex; gap: 8px">
+<label for="ask" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Pregunta al asistente</label>
+<input id="ask" class="fld" placeholder="Pregunta sobre el curso, una unidad, una actividad o un estudiante" value="{{draftText}}" onChange="{{onDraft}}">
+<button class="btn b-ia" style="padding: 10px 16px; font-size: 14px; font-weight: 700; min-height: 44px" onClick="{{send}}">Enviar</button>
+</div>
+</section>
+</div>
+</sc-if>
+
+</div>
+</main>
+</div>
+
+<sc-if value="{{hasOverlay}}" hint-placeholder-val="{{false}}">
+<div role="status" aria-live="polite" style="position: fixed; inset: 0; z-index: 60; background: #16181D; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 300px; opacity: .55">
+<svg viewBox="0 0 1000 280" preserveAspectRatio="none" style="position: absolute; left: 0; bottom: 0; width: 100%; height: 280px"><path class="curva" d="{{curve}}" pathLength="1" fill="none" stroke="rgba(174,182,198,.42)" stroke-width="1.5"></path></svg>
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="32"><div class="punto-pos" style="{{d.pos}}"><div class="punto" style="{{d.dot}}"></div></div></sc-for>
+</div>
+<div class="pop" style="position: relative; width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 22px">
+<div class="mono" style="font-size: 12px; letter-spacing: .08em; color: #9AA0AB">{{ovCode}}</div>
+<div style="display: flex; align-items: center; gap: 16px"><span class="spin" aria-hidden="true"></span><h2 style="margin: 0; color: #E6E7EA; font-size: 40px; font-weight: 900; letter-spacing: -.03em">{{ovTitle}}</h2></div>
+<p style="margin: 0; color: #9AA0AB; font-size: 15px">{{ovSub}}</p>
+<div style="height: 6px; background: #2A2D35; border-radius: 999px; overflow: hidden"><div style="{{ovBar}}"></div></div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{ovSteps}}" as="os" hint-placeholder-count="5"><div style="display: flex; align-items: center; gap: 12px; font-size: 15px"><span style="{{os.icon}}">{{os.mark}}</span><span style="{{os.txtStyle}}">{{os.label}}</span></div></sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}">
+<div class="toast" role="status" aria-live="polite" style="position: fixed; top: 28px; left: 50%; z-index: 50; width: calc(100% - 48px); max-width: 600px; background: #16181D; color: #E6E7EA; border-radius: 12px; overflow: hidden; box-shadow: 0 24px 60px rgba(22,24,29,.35)">
+<div class="brillo" aria-hidden="true"></div>
+<div style="padding: 24px 26px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; align-items: center; gap: 12px"><span style="width: 36px; height: 36px; border-radius: 999px; background: #8FD0A0; color: #16181D; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px">✓</span><div style="flex: 1"><div class="mono" style="font-size: 11px; letter-spacing: .08em; color: #8FD0A0">SINCRONIZACIÓN COMPLETADA</div><div style="font-size: 22px; font-weight: 800; letter-spacing: -.02em; margin-top: 2px">AGIL-4B tiene datos nuevos del aula virtual</div></div></div>
+<div class="num" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px">
+<div style="background: #1E2027; border-radius: 8px; padding: 12px"><div class="big" style="font-size: 30px; color: #E6E7EA">3</div><div style="font-size: 12px; color: #9AA0AB">notas nuevas</div></div>
+<div style="background: #1E2027; border-radius: 8px; padding: 12px"><div class="big" style="font-size: 30px; color: #E6E7EA">1</div><div style="font-size: 12px; color: #9AA0AB">entrega por calificar</div></div>
+<div style="background: #1E2027; border-radius: 8px; padding: 12px"><div class="big" style="font-size: 30px; color: #C9A877">{{attentionNow}}</div><div style="font-size: 12px; color: #9AA0AB">requieren atención</div></div>
+<div style="background: #1E2027; border-radius: 8px; padding: 12px"><div class="big" style="font-size: 30px; color: #E6E7EA">0</div><div style="font-size: 12px; color: #9AA0AB">errores</div></div>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button class="btn" style="background: #E6E7EA; border: 1px solid #E6E7EA; color: #16181D; padding: 10px 16px; font-size: 14px; font-weight: 700; min-height: 44px" onClick="{{seeChanges}}">Ver cambios en el libro</button><button class="btn" style="background: transparent; border: 1px solid #3A3D46; color: #E6E7EA; padding: 10px 16px; font-size: 14px; min-height: 44px" onClick="{{closeToast}}">Cerrar</button></div>
+</div>
+</div>
+</sc-if>
+<div style="{{drawerShade}}" onClick="{{closeDrawer}}"></div>
+<aside class="drawer" aria-label="Ficha del estudiante" style="{{drawerStyle}}">
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{false}}">
+<div style="padding: 22px; background: #16181D; color: #E6E7EA; display: flex; align-items: flex-start; gap: 12px">
+<div style="flex: 1"><div class="mono" style="font-size: 11px; color: #9AA0AB">FICHA DEL ESTUDIANTE</div><h2 style="margin: 6px 0 8px; font-size: 24px; font-weight: 800; letter-spacing: -.02em">{{sel.name}}</h2><span style="{{sel.chipStyle}}">{{sel.chip}}</span></div>
+<button class="btn" style="width: 40px; height: 40px; background: #262931; border: 1px solid #3A3D46; color: #E6E7EA" aria-label="Cerrar ficha" onClick="{{closeDrawer}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+<div style="padding: 22px; display: flex; flex-direction: column; gap: 22px; overflow-y: auto">
+<div style="display: flex; align-items: baseline; gap: 10px"><span class="big" style="font-size: 60px; line-height: 1">{{sel.avg}}</span><span style="font-size: 13px; color: #6B7080">promedio ponderado en {{segLabel}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h3 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">Por ponderación</h3>
+<sc-for list="{{sel.cats}}" as="k" hint-placeholder-count="3"><div style="display: flex; flex-direction: column; gap: 4px"><div class="num" style="display: flex; font-size: 13px"><span>{{k.label}}</span><span style="margin-left: auto; font-weight: 700">{{k.val}}</span></div><div style="height: 5px; background: #EEEAE1; border-radius: 999px"><div style="{{k.bar}}"></div></div></div></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h3 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">Evolución</h3>
+<div style="display: flex; align-items: flex-end; gap: 4px; height: 92px; border-bottom: 1px solid #1A1C22; position: relative"><div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 63px; border-top: 1px dashed #3F51B5"></div><sc-for list="{{sel.evo}}" as="e" hint-placeholder-count="10"><div title="{{e.tip}}" style="{{e.style}}"></div></sc-for></div>
+<div style="font-size: 12px; color: #6B7080">Línea punteada: 7,0. Rojo: sin entrega. Gris: por calificar o aún no vence.</div>
+</div>
+<div class="num" style="background: #FAF8F3; border-radius: 6px; padding: 14px; font-size: 14px; line-height: 1.5"><div style="font-size: 12px; font-weight: 700; color: #4A4E59; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px">Para llegar a 7,0 en el Parcial 2</div>{{sel.need}}</div>
+<sc-if value="{{sel.hasDebts}}" hint-placeholder-val="{{false}}"><div style="display: flex; flex-direction: column; gap: 6px"><h3 style="margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #4A4E59">Sin entregar</h3><div style="display: flex; gap: 6px; flex-wrap: wrap"><sc-for list="{{sel.debts}}" as="d" hint-placeholder-count="2"><span style="background: #F6DDD9; color: #8E2F28; border-radius: 4px; padding: 4px 8px; font-size: 12px">{{d}}</span></sc-for></div></div></sc-if>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button class="btn b-ia" style="padding: 12px; font-size: 14px; font-weight: 700; min-height: 44px" onClick="{{planForSel}}">Armar plan de refuerzo</button>
+<button class="btn b-line" style="padding: 11px; font-size: 14px; min-height: 44px" onClick="{{askAbout}}">Preguntar al asistente por este estudiante</button>
+</div>
+</div>
+</sc-if>
+</aside>
+
+<sc-if value="{{modal}}" hint-placeholder-val="{{false}}">
+<div style="position: fixed; inset: 0; background: rgba(22,24,29,.45); display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 40">
+<div role="dialog" aria-modal="true" aria-labelledby="umb" class="sheet" style="width: 100%; max-width: 440px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<div><h2 id="umb" style="margin: 0; font-size: 20px; font-weight: 800">Umbrales de alerta</h2><p style="margin: 4px 0 0; font-size: 13px; color: #6B7080">Las alertas del curso cambian al instante.</p></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t4" style="font-size: 13px; font-weight: 600">Promedio bajo: menor a</label><input id="t4" class="fld num" type="number" step="0.5" value="{{th.r4}}" onChange="{{setR4}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t1" style="font-size: 13px; font-weight: 600">Descenso reciente: baja de al menos (puntos)</label><input id="t1" class="fld num" type="number" step="0.5" value="{{th.r1}}" onChange="{{setR1}}"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="t2" style="font-size: 13px; font-weight: 600">Atrasos: actividades vencidas sin entregar desde</label><input id="t2" class="fld num" type="number" step="1" value="{{th.r2}}" onChange="{{setR2}}"></div>
+<button class="btn b-ink" style="padding: 12px; font-size: 14px; font-weight: 700; min-height: 44px" onClick="{{closeModal}}">Listo</button>
+</div>
+</div>
+</sc-if>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { screen: 'login', seg: 'all', selId: null, bin: null, alertFilter: 'all', reviewed: {}, modal: false, th: { r1: 1.5, r2: 2, r4: 7 }, draftText: '', extra: [], planAct: 6, temaOff: {}, temaOn: {}, studOff: {}, studOn: {}, planFocus: null,
+      overlay: null, ovStep: 0, ovCode: '', toast: false, fresh: false, conv: null,
+      refs: [
+        { id: 'r2', act: 'Tarea 2', temas: ['Criterios de aceptación'], studs: ['Haro, Nicolás', 'Mora, Gabriel'], status: 'Aprobado', result: 'Sin notas nuevas del tema desde el refuerzo.',
+          draft: { lines: [{ name: 'Haro, Nicolás', sub: 'Nota 5,8 en Tarea 2 · Criterios de aceptación 5,2' }, { name: 'Mora, Gabriel', sub: 'Nota 7,0 en Tarea 2 · Criterios de aceptación 5,6' }], tasks: [{ n: '1', tema: 'Criterios de aceptación', txt: 'Escribir criterios DADO / CUANDO / ENTONCES para 3 historias.' }], where: [], due: '', stakes: [{ name: 'Haro, Nicolás', txt: 'Necesita un promedio de 8,9 en lo que falta del Parcial 2.' }, { name: 'Mora, Gabriel', txt: 'Necesita un promedio de 7,3 en lo que falta del Parcial 2.' }] } },
+        { id: 'r1', act: 'Examen P1', temas: ['Historias de usuario', 'Criterios de aceptación'], studs: ['Cárdenas, Lucía', 'Delgado, Tomás', 'Haro, Nicolás'], status: 'Aprobado', result: 'Cárdenas, Lucía: subió de 5,5 a 6,6 en Historias de usuario después del refuerzo.',
+          draft: { lines: [{ name: 'Cárdenas, Lucía', sub: 'Nota 6,2 en Examen P1 · Historias de usuario 5,5' }, { name: 'Delgado, Tomás', sub: 'Nota 5,8 en Examen P1 · Historias de usuario 5,2 · Criterios de aceptación 5,3' }, { name: 'Haro, Nicolás', sub: 'Nota 5,2 en Examen P1 · Historias de usuario 4,8' }], tasks: [{ n: '1', tema: 'Historias de usuario', txt: 'Reescribir 4 historias mal formuladas con el formato «Como…, se requiere… para…».' }, { n: '2', tema: 'Criterios de aceptación', txt: 'Escribir criterios DADO / CUANDO / ENTONCES para 3 historias.' }], where: [], due: '', stakes: [] } }
+      ] };
+  }
+  data() {
+    const acts = [
+      { n: 'Tarea 1', s: 'T1', c: 'Tareas', u: 1, w: 2, t: ['Manifiesto ágil', 'Valores y principios'] },
+      { n: 'APE 1', s: 'APE1', c: 'APE', u: 1, w: 3, t: ['Valores y principios'] },
+      { n: 'Taller 1', s: 'TL1', c: 'Tareas', u: 1, w: 4, t: ['Roles de Scrum'] },
+      { n: 'Tarea 2', s: 'T2', c: 'Tareas', u: 2, w: 5, t: ['Historias de usuario', 'Criterios de aceptación'] },
+      { n: 'APE 2', s: 'APE2', c: 'APE', u: 2, w: 6, t: ['Historias de usuario'] },
+      { n: 'Examen P1', s: 'EX P1', c: 'Exámenes', u: 2, w: 8, t: ['Roles de Scrum', 'Historias de usuario', 'Criterios de aceptación'] },
+      { n: 'Tarea 3', s: 'T3', c: 'Tareas', u: 3, w: 10, t: ['Estimación relativa', 'Descomposición en tareas', 'Sprint Backlog'] },
+      { n: 'APE 3', s: 'APE3', c: 'APE', u: 3, w: 11, t: ['Velocidad del equipo', 'Burndown'] },
+      { n: 'Taller 2', s: 'TL2', c: 'Tareas', u: 3, w: 12, t: ['Estimación relativa', 'Sprint Backlog'] },
+      { n: 'Tarea 4', s: 'T4', c: 'Tareas', u: 4, w: 13, t: ['Revisión del sprint', 'Retrospectiva'] },
+      { n: 'APE 4', s: 'APE4', c: 'APE', u: 4, w: 14, t: ['Velocidad del equipo', 'Retrospectiva'] },
+      { n: 'Examen P2', s: 'EX P2', c: 'Exámenes', u: 4, w: 16, t: ['Estimación relativa', 'Velocidad del equipo', 'Sprint Backlog', 'Burndown', 'Retrospectiva'] }
+    ];
+    const S = 'SE', P = 'P', F = 'F';
+    const studs = [
+      ['Andrade, Camila', [9, 8.5, 9.5, 8, 9, 8.8, 9.2, 8.7, 9, F, F, F]],
+      ['Bravo, Mateo', [7.5, 8, 7, 7.2, 6.8, 7.4, 7, 7.5, P, F, F, F]],
+      ['Cárdenas, Lucía', [8, 7.5, 8.5, 6, 5.5, 6.2, 4.5, 5, F, F, F, F]],
+      ['Delgado, Tomás', [6.5, S, 6, 5.5, S, 5.8, 0, S, F, F, F, F]],
+      ['Espín, Valeria', [9.5, 9, 9, 9.5, 9.2, 9, 9.8, 9.5, 9.5, F, F, F]],
+      ['Fuentes, Diego', [7, 7.5, 7, 7.5, 7, 6.9, 7.2, 7, P, F, F, F]],
+      ['Guerrero, Ana', [8.5, 8, 8, 8.5, 8.2, 7.9, 8, 8.5, 8, F, F, F]],
+      ['Haro, Nicolás', [5.5, 6, 5, 5.8, 6, 5.2, 6.2, 5.5, F, F, F, F]],
+      ['Ibarra, Sofía', [8.8, 9, 8.5, 8, 8.5, 8.2, 7.8, 8, 8.5, F, F, F]],
+      ['Jaramillo, Andrés', [7.8, 7, 7.5, 8, 7.5, 7, 5.2, 5.5, F, F, F, F]],
+      ['León, Paula', [9, 8.5, 9, 8.8, 9, 8.5, 8.7, 9, P, F, F, F]],
+      ['Mora, Gabriel', [6.8, 7, 6.5, 7, 6.5, 6, 7, S, F, F, F, F]]
+    ];
+    const crit = {
+      6: { 2: [3, 5.5, 5], 3: [0, 0, 0], 7: [4.5, 7.2, 6.9], 9: [3.5, 6.5, 5.6], 11: [6, 7.8, 7.2] },
+      7: { 2: [4.5, 5.5], 7: [5, 6], 9: [5, 6] },
+      5: { 2: [6.5, 5.5, 6.6], 3: [6, 5.2, 6.2], 7: [5.5, 4.8, 5.3] }
+    };
+    const freshCells = { '4:8': 1, '6:8': 1, '8:8': 1, '10:8': 1 };
+    const unitNames = ['Fundamentos ágiles', 'Requisitos ágiles', 'Planificación del sprint', 'Seguimiento y mejora'];
+    return { acts, studs, crit, freshCells, unitNames, today: 12, weeks: 16 };
+  }
+  runLoader(sync, code, target) {
+    const n = sync ? 5 : 3;
+    const ms = sync ? 650 : 380;
+    this.setState({ overlay: sync ? 'sync' : 'open', ovStep: 0, ovCode: code, toast: false });
+    const tick = (i) => {
+      setTimeout(() => {
+        if (i < n) { this.setState({ ovStep: i + 1 }); tick(i + 1); return; }
+        this.setState({ overlay: null, screen: target, selId: null, toast: sync, fresh: sync ? true : this.state.fresh });
+        if (sync) setTimeout(() => this.setState({ toast: false }), 8000);
+      }, ms);
+    };
+    tick(0);
+  }
+  renderVals() {
+    const st = this.state;
+    const { acts, studs, crit, freshCells, unitNames, today, weeks } = this.data();
+    const f1 = (x) => x == null ? '—' : (Math.round(x * 10) / 10).toFixed(1).replace('.', ',');
+    const segDefs = [['all', 'Todo el ciclo'], ['p1', 'Parcial 1'], ['p2', 'Parcial 2'], ['u1', 'U1'], ['u2', 'U2'], ['u3', 'U3'], ['u4', 'U4']];
+    const inSeg = (a) => st.seg === 'all' || (st.seg === 'p1' && a.u <= 2) || (st.seg === 'p2' && a.u >= 3) || st.seg === 'u' + a.u;
+    const idx = acts.map((a, i) => i).filter((i) => inSeg(acts[i]));
+    const segLabel = segDefs.find((s) => s[0] === st.seg)[1];
+    const W = { 'Exámenes': 0.4, 'Tareas': 0.3, 'APE': 0.3 };
+    const wavg = (g, ids, fill) => {
+      const byCat = {};
+      ids.forEach((i) => { let v = g[i]; if (typeof v !== 'number' && fill != null && (v === 'F' || v === 'P')) v = fill; if (typeof v === 'number') (byCat[acts[i].c] = byCat[acts[i].c] || []).push(v); });
+      let sw = 0, sum = 0; const cats = {};
+      Object.keys(W).forEach((c) => { if (byCat[c]) { const m = byCat[c].reduce((a, b) => a + b, 0) / byCat[c].length; cats[c] = m; sum += m * W[c]; sw += W[c]; } });
+      return { avg: sw ? sum / sw : null, cats };
+    };
+    const p2 = [6, 7, 8, 9, 10, 11];
+    const needFor = (g) => {
+      const rem = p2.filter((i) => g[i] === 'F' || g[i] === 'P');
+      if (!rem.length) return null;
+      const a0 = wavg(g, p2, 0).avg, a10 = wavg(g, p2, 10).avg;
+      return { x: (7 - a0) / ((a10 - a0) / 10), rem: rem.map((i) => acts[i].n) };
+    };
+    const needTxt = (g) => {
+      const n = needFor(g); if (!n) return 'El Parcial 2 ya está completo.';
+      if (n.x > 10) return 'Aun con 10 en lo que falta (' + n.rem.join(', ') + ') no llega a 7,0. El refuerzo apunta a subir lo más posible en el Examen P2.';
+      if (n.x <= 0) return 'Ya llega a 7,0 con las notas que tiene.';
+      return 'Necesita un promedio de ' + f1(n.x) + ' en lo que falta: ' + n.rem.join(', ') + '.';
+    };
+    const people = studs.map((s, k) => {
+      const g = s[1];
+      const c = wavg(g, idx);
+      const nums = idx.map((i) => g[i]).filter((v) => typeof v === 'number');
+      const se = idx.filter((i) => g[i] === 'SE').map((i) => acts[i].n);
+      let trend = null;
+      if (nums.length >= 4) { const l = nums.slice(-3), p = nums.slice(0, -3); trend = l.reduce((a, b) => a + b, 0) / 3 - p.reduce((a, b) => a + b, 0) / p.length; }
+      const alerts = [];
+      if (c.avg != null && nums.length >= 4 && c.avg < st.th.r4) alerts.push('r4');
+      if (se.length >= st.th.r2) alerts.push('r2');
+      if (trend != null && trend <= -st.th.r1) alerts.push('r1');
+      return { id: k, name: s[0], g, avg: c.avg, cats: c.cats, nums, se, trend, alerts };
+    });
+    const go = (screen) => () => this.setState({ screen, selId: null });
+    const openSel = (id) => () => this.setState({ selId: id });
+    const avgStyle = (v) => 'font-weight: 800; color: ' + (v == null ? '#6B7080' : v < 7 ? '#7A4E14' : '#1A1C22');
+    const chipOf = (p) => p.alerts.length ? ['Requiere atención', 'background: #F3E7D3; color: #7A4E14; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700'] : ['Al día', 'background: #DDEBDD; color: #2F6B3A; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 700'];
+    const attention = people.filter((p) => p.alerts.length).length;
+    const inCourse = ['libro', 'panel', 'alertas', 'plan', 'asistente'].indexOf(st.screen) >= 0;
+
+    const navDefs = [['cursos', 'Mis cursos'], ['libro', 'Libro de calificaciones'], ['panel', 'Panel del curso'], ['alertas', 'Alertas'], ['plan', 'Plan de refuerzo'], ['asistente', 'Asistente']];
+    const nav = navDefs.map(([k, label]) => ({ label, go: go(k), hasBadge: k === 'alertas' && attention > 0, badge: attention, style: 'display: flex; align-items: center; gap: 8px; padding: 10px 12px; font-size: 14px; min-height: 44px; ' + (st.screen === k ? 'background: #2A2D35; color: #FFFFFF; font-weight: 700; box-shadow: inset 3px 0 0 #C9A877' : 'background: transparent; color: #AEB3BD') }));
+    const segs = segDefs.map(([k, label], i) => ({ label, pick: () => this.setState({ seg: k, bin: null }), style: 'padding: 9px 14px; font-size: 13px; min-height: 40px; ' + (i ? 'border-left: 1px solid #D9D4C7; ' : '') + (st.seg === k ? 'background: #1A1C22; color: #F4F2ED; font-weight: 700' : 'background: #FFFFFF; color: #33363F') }));
+
+    // Línea de tiempo del período
+    const pct = (w) => ((w - 0.5) / weeks * 100).toFixed(3) + '%';
+    const curUnit = acts.find((a) => a.w >= today) ? Math.ceil(today / 4) : 4;
+    const unitNow = 'Unidad ' + curUnit + ' · ' + unitNames[curUnit - 1];
+    const unitLabels = unitNames.map((nm, k) => ({ txt: 'U' + (k + 1) + ' · ' + nm, style: 'position: absolute; top: 20px; left: calc(' + (k * 25) + '% + ' + (k ? 8 : 0) + 'px); font-size: 12px; white-space: nowrap; font-weight: ' + (k + 1 === curUnit ? '700; color: #E6E7EA' : k + 1 < curUnit ? '500; color: #8A8F9C' : '500; color: #5B6170') }));
+    const unitCuts = [25, 50, 75].map((p) => 'position: absolute; top: 40px; height: 16px; width: 4px; margin-left: -2px; left: ' + p + '%; background: #16181D');
+    const fillStyle = 'position: absolute; left: 0; top: 44px; height: 8px; border-radius: 999px; width: ' + pct(today) + '; background: linear-gradient(90deg, #4A4E59, #C2C6CE)';
+    const todayStyle = 'position: absolute; top: 34px; height: 30px; width: 2px; margin-left: -1px; left: ' + pct(today) + '; background: #E6E7EA';
+    const statusOf = (a, i) => { if (a.w === today) return 'now'; if (a.w > today) return 'next'; return studs.some((s) => s[1][i] === 'SE') ? 'miss' : 'ok'; };
+    const col = { ok: '#E6E7EA', miss: '#C9A877', now: '#8FD0A0', next: '#16181D' };
+    const ticks = acts.map((a, i) => {
+      const s = statusOf(a, i); const ex = a.c === 'Exámenes';
+      const size = ex ? 16 : 18;
+      return { tip: a.n + ' · semana ' + a.w + (s === 'now' ? ' · vence esta semana' : s === 'next' ? ' · próxima' : ' · vencida'),
+        style: 'position: absolute; top: ' + (48 - size / 2) + 'px; left: ' + pct(a.w) + '; width: ' + size + 'px; height: ' + size + 'px; margin-left: -' + size / 2 + 'px; box-sizing: border-box; background: ' + col[s] + '; border: ' + (s === 'next' ? '2px solid #8A8F9C' : '2px solid ' + col[s]) + '; box-shadow: 0 0 0 3px #16181D' + (s === 'now' ? ', 0 0 0 7px rgba(143,208,160,.25)' : '') + '; border-radius: ' + (ex ? '2px; transform: rotate(45deg)' : '999px') };
+    });
+    const weekNums = Array.from({ length: weeks }, (_, k) => k + 1).map((w) => ({ txt: w === today ? 'HOY ' + w : String(w), style: 'position: absolute; top: 64px; left: ' + pct(w) + '; transform: translateX(-50%); font-size: 10px; white-space: nowrap; ' + (w === today ? 'background: #E6E7EA; color: #16181D; border-radius: 999px; padding: 1px 7px; font-weight: 700' : 'color: ' + (w < today ? '#8A8F9C' : '#4A4E59')) }));
+    const tickLabels = acts.map((a, i) => { const s = statusOf(a, i); return { txt: a.s, style: 'position: absolute; top: 86px; left: ' + pct(a.w) + '; transform: translateX(-50%); font-size: 11px; white-space: nowrap; font-weight: 500; color: ' + (s === 'next' ? '#6F7582' : s === 'now' ? '#8FD0A0' : s === 'miss' ? '#C9A877' : '#C2C6CE') }; });
+    const past = acts.map((a, i) => ({ a, i })).filter((x) => x.a.w < today);
+    const missActs = past.filter((x) => studs.some((s) => s[1][x.i] === 'SE'));
+    const missTotal = past.reduce((n, x) => n + studs.filter((s) => s[1][x.i] === 'SE').length, 0);
+    const nowI = acts.findIndex((a) => a.w === today);
+    const nowDeliv = nowI >= 0 ? studs.filter((s) => s[1][nowI] !== 'SE' && s[1][nowI] !== 'F').length : 0;
+    const nextA = acts.find((a) => a.w > today);
+    const pbBase = 'padding: 14px 18px 0 0; ';
+    const periodBlocks = [
+      { k: 'VENCIDAS', big: past.length + ' de ' + acts.length + ' actividades', sub: missTotal + ' entregas faltan en ' + missActs.map((x) => x.a.n).join(', '), hasBar: false, style: pbBase },
+      { k: 'VENCE ESTA SEMANA', big: nowI >= 0 ? acts[nowI].n : 'Nada', sub: nowDeliv + ' de ' + studs.length + ' entregaron', hasBar: true, bar: 'height: 5px; border-radius: 999px; background: #8FD0A0; width: ' + (nowDeliv / studs.length * 100) + '%', style: pbBase + 'padding-left: 18px; border-left: 1px solid #2A2D35' },
+      { k: 'SIGUIENTE', big: nextA ? nextA.n + ' · semana ' + nextA.w : '—', sub: nextA ? 'Evalúa ' + nextA.t.join(' y ') : '', hasBar: false, style: pbBase + 'padding-left: 18px; border-left: 1px solid #2A2D35' }
+    ];
+
+    const units = [1, 2, 3, 4].map((u) => ({ u, span: idx.filter((i) => acts[i].u === u).length })).filter((x) => x.span > 0);
+    const unitHeads = units.map((x) => ({ label: 'Unidad ' + x.u + ' · Parcial ' + (x.u <= 2 ? 1 : 2), span: x.span }));
+    const actHeads = idx.map((i) => ({ name: acts[i].n, sub: acts[i].c + ' · S' + acts[i].w }));
+    const freshRing = '; box-shadow: 0 0 0 2px #0E6E60; background: #E3F1EE; color: #0A5248; font-weight: 700';
+    const cellOf = (v, isFresh) => {
+      if (v === 'SE') return { txt: 'Sin entrega', style: 'display: inline-block; background: #F6DDD9; color: #8E2F28; border-radius: 4px; padding: 3px 6px; font-size: 12px' };
+      if (v === 'P') return { txt: 'Por calificar', style: 'display: inline-block; background: #EEEAE1; color: #4A4E59; border-radius: 4px; padding: 3px 6px; font-size: 12px' + (isFresh ? freshRing : '') };
+      if (v === 'F') return { txt: 'Aún no vence', style: 'display: inline-block; border: 1px dashed #CFC8B8; color: #6B7080; border-radius: 4px; padding: 2px 6px; font-size: 11px' };
+      return { txt: f1(v), style: 'display: inline-block; min-width: 40px; border-radius: 4px; padding: 3px 6px; ' + (v < 7 ? 'background: #F3E7D3; color: #7A4E14; font-weight: 700' : 'color: #1A1C22') + (isFresh ? freshRing : '') };
+    };
+    const rows = people.map((p) => ({ name: p.name, open: openSel(p.id), cells: idx.map((i) => cellOf(p.g[i], st.fresh && freshCells[p.id + ':' + i])), avgTxt: f1(p.avg), avgStyle: avgStyle(p.avg) }));
+
+    const avgs = people.map((p) => p.avg).filter((v) => v != null).sort((a, b) => a - b);
+    const mean = avgs.reduce((a, b) => a + b, 0) / (avgs.length || 1);
+    const median = avgs.length % 2 ? avgs[(avgs.length - 1) / 2] : (avgs[avgs.length / 2 - 1] + avgs[avgs.length / 2]) / 2;
+    let graded = 0, due = 0;
+    people.forEach((p) => idx.forEach((i) => { if (acts[i].w < today || typeof p.g[i] === 'number' || p.g[i] === 'P') { due++; if (typeof p.g[i] === 'number') graded++; } }));
+    const kpi = { avg: f1(mean), median: f1(median), done: due ? Math.round(graded / due * 100) + '%' : '—', doneSub: graded + ' de ' + due + ' entregas vencidas o ya entregadas', attention };
+    const counts = Array.from({ length: 10 }, () => 0);
+    people.forEach((p) => { if (p.avg != null) counts[Math.min(9, Math.floor(p.avg))]++; });
+    const maxC = Math.max(1, ...counts);
+    const hist = counts.map((n, b) => ({ countTxt: n ? String(n) : '', aria: 'Promedios entre ' + b + ' y ' + (b + 1) + ': ' + n + ' estudiantes', pick: () => this.setState({ bin: st.bin === b ? null : b }), style: 'width: 100%; border-radius: 2px 2px 0 0; height: ' + Math.max(2, n / maxC * 140) + 'px; background: ' + (st.bin === b ? '#0E6E60' : b < 7 ? '#D2B48A' : '#5B6170') }));
+    const shown = people.filter((p) => st.bin == null || (p.avg != null && Math.min(9, Math.floor(p.avg)) === st.bin)).sort((a, b) => (a.avg ?? 99) - (b.avg ?? 99));
+    const panelRows = shown.map((p) => { const [chip, chipStyle] = chipOf(p); return { name: p.name, open: openSel(p.id), avgTxt: f1(p.avg), avgStyle: avgStyle(p.avg), barStyle: 'height: 5px; border-radius: 999px; width: ' + ((p.avg || 0) * 10) + '%; background: ' + (p.avg != null && p.avg < 7 ? '#D2B48A' : '#5B6170'), se: p.se.length, last: p.nums.slice(-3).map(f1).join(' · ') || '—', chip, chipStyle }; });
+
+    const ruleName = { r4: 'Promedio bajo', r2: 'Atrasos', r1: 'Descenso reciente' };
+    const ruleTag = { r4: 'background: #F3E7D3; color: #7A4E14', r2: 'background: #F6DDD9; color: #8E2F28', r1: 'background: #E5E7F3; color: #2E3A8C' };
+    const alertChips = [['all', 'Todas'], ['r4', 'Promedio bajo'], ['r1', 'Descenso reciente'], ['r2', 'Atrasos']].map(([k, label]) => ({ label, pick: () => this.setState({ alertFilter: k }), style: 'padding: 8px 14px; font-size: 13px; min-height: 40px; border: 1px solid ' + (st.alertFilter === k ? '#1A1C22; background: #1A1C22; color: #F4F2ED; font-weight: 700' : '#D9D4C7; background: #FFFFFF; color: #33363F') }));
+    const alertCards = [];
+    people.forEach((p) => p.alerts.forEach((r) => {
+      if (st.alertFilter !== 'all' && st.alertFilter !== r) return;
+      const key = p.id + r;
+      const ev = r === 'r4' ? 'Promedio ponderado ' + f1(p.avg) + ' con ' + p.nums.length + ' notas; el umbral es ' + f1(st.th.r4) + '.' : r === 'r2' ? p.se.length + ' actividades vencidas sin entregar; el umbral es ' + st.th.r2 + '.' : 'Las últimas 3 notas bajaron ' + f1(-p.trend) + ' puntos frente a las anteriores (' + p.nums.slice(-3).map(f1).join(', ') + ').';
+      alertCards.push({ name: p.name, rule: ruleName[r], tagStyle: ruleTag[r] + '; border-radius: 4px; padding: 3px 8px; font-size: 12px; font-weight: 700', evidence: ev, debts: p.se, hasDebts: p.se.length > 0, open: openSel(p.id), reviewed: !!st.reviewed[key], reviewTxt: st.reviewed[key] ? 'Revisada' : 'Marcar revisada', review: () => this.setState({ reviewed: { ...st.reviewed, [key]: !st.reviewed[key] } }), plan: () => this.setState({ screen: 'plan', selId: null, planFocus: p.id, studOn: { [p.id]: true }, studOff: {} }) });
+    }));
+
+    // Plan de refuerzo
+    const pa = st.planAct;
+    const act = acts[pa];
+    const cr = crit[pa] || {};
+    const critOf = (sid, ti) => { if (cr[sid]) return cr[sid][ti]; const v = studs[sid][1][pa]; return typeof v === 'number' ? Math.max(0, Math.min(10, v + (ti === 0 ? -0.6 : 0.4))) : null; };
+    const temaRows = act.t.map((name, ti) => {
+      const vals = studs.map((s, sid) => ({ sid, v: critOf(sid, ti) })).filter((x) => x.v != null);
+      const ok = vals.filter((x) => x.v >= 7).length;
+      const fails = vals.filter((x) => x.v < 6).map((x) => x.sid);
+      const dom = vals.length ? ok / vals.length : 0;
+      const key = pa + ':' + ti;
+      const on = st.temaOn[key] ? true : st.temaOff[key] ? false : dom < 0.75;
+      return { ti, name, dom, fails, on, key };
+    });
+    const marked = temaRows.filter((t) => t.on);
+    const boxOf = (on) => 'width: 20px; height: 20px; border-radius: 4px; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; ' + (on ? 'background: #0E6E60; color: #FFFFFF; border: 1px solid #0E6E60' : 'background: #FFFFFF; border: 1px solid #B9B2A1; color: transparent');
+    const planTemas = temaRows.map((t) => ({
+      name: t.name, on: t.on, mark: t.on ? '✓' : '', box: boxOf(t.on),
+      sub: 'Bajo 6,0: ' + (t.fails.length ? t.fails.map((s) => studs[s][0].split(',')[1].trim() + ' ' + studs[s][0].split(',')[0]).join(', ') : 'nadie'),
+      pct: Math.round(t.dom * 100) + '%', pctStyle: 'font-size: 22px; color: ' + (t.dom < 0.6 ? '#7A4E14' : '#4A4E59'),
+      style: t.on ? 'border-color: #0E6E60; background: #F3FAF8' : '',
+      toggle: () => { const k = t.key; if (t.on) this.setState({ temaOff: { ...this.state.temaOff, [k]: true }, temaOn: { ...this.state.temaOn, [k]: false } }); else this.setState({ temaOn: { ...this.state.temaOn, [k]: true }, temaOff: { ...this.state.temaOff, [k]: false } }); }
+    }));
+    const candidates = studs.map((s, sid) => sid).filter((sid) => marked.some((t) => { const v = critOf(sid, t.ti); return v != null && v < 6; }) || studs[sid][1][pa] === 'SE' || st.studOn[sid]);
+    const studIsOn = (sid) => st.studOn[sid] ? true : st.studOff[sid] ? false : st.planFocus == null || st.planFocus === sid;
+    const studSub = (sid) => { const g = studs[sid][1][pa]; const weak = marked.map((t) => ({ n: t.name, v: critOf(sid, t.ti) })).filter((x) => x.v != null && x.v < 6); return (g === 'SE' ? 'No entregó ' + act.n : 'Nota ' + f1(g) + ' en ' + act.n) + (weak.length ? ' · ' + weak.map((w) => w.n + ' ' + f1(w.v)).join(' · ') : ''); };
+    const planStuds = candidates.map((sid) => {
+      const on = studIsOn(sid);
+      return { name: studs[sid][0], on, mark: on ? '✓' : '', box: boxOf(on), style: on ? 'border-color: #0E6E60; background: #F3FAF8' : '', sub: studSub(sid),
+        toggle: () => { if (on) this.setState({ studOff: { ...this.state.studOff, [sid]: true }, studOn: { ...this.state.studOn, [sid]: false } }); else this.setState({ studOn: { ...this.state.studOn, [sid]: true }, studOff: { ...this.state.studOff, [sid]: false } }); } };
+    });
+    const chosen = candidates.filter(studIsOn);
+    const planActs = [6, 7, 5, 3].map((i) => { const a = acts[i]; const deliv = studs.filter((s) => s[1][i] !== 'SE' && s[1][i] !== 'F').length; return { name: a.n + ' · Unidad ' + a.u, sub: 'Vencida en la semana ' + a.w + ' · ' + deliv + ' de 12 entregaron · ' + a.t.length + ' temáticas', pick: () => this.setState({ planAct: i, planFocus: null, studOn: {}, studOff: {} }), style: pa === i ? 'border-color: #1A1C22; background: #FAF8F3' : '' }; });
+    const taskBank = {
+      'Estimación relativa': 'Estimar 8 historias del backlog del proyecto con la serie 1, 2, 3, 5, 8 y justificar por escrito las 3 más grandes.',
+      'Descomposición en tareas': 'Dividir 2 historias en tareas de 4 horas o menos, cada una con su criterio de terminado.',
+      'Sprint Backlog': 'Armar un Sprint Backlog de 5 historias con una capacidad dada de 40 horas y explicar qué queda fuera.',
+      'Velocidad del equipo': 'Calcular la velocidad con 3 sprints de ejemplo y decir cuántos puntos entran en el siguiente.',
+      'Burndown': 'Dibujar el burndown de un sprint de 10 días con datos dados y explicar 2 desvíos.',
+      'Historias de usuario': 'Reescribir 4 historias mal formuladas con el formato «Como…, se requiere… para…».',
+      'Criterios de aceptación': 'Escribir criterios DADO / CUANDO / ENTONCES para 3 historias.',
+      'Roles de Scrum': 'Resolver 5 casos cortos indicando qué rol decide en cada uno.'
+    };
+    const planTasks = marked.map((t, k) => ({ n: String(k + 1), tema: t.name, txt: taskBank[t.name] || 'Ejercicio de práctica del tema con un caso del proyecto.' }));
+    const future = acts.map((a, i) => ({ a, i })).filter((x) => x.a.w >= today);
+    const planWhere = future.map((x) => ({ x, hits: x.a.t.filter((n) => marked.some((m) => m.name === n)) })).filter((y) => y.hits.length).map((y) => ({ name: y.x.a.n, txt: 'Evalúa ' + y.hits.join(' y ') + (y.x.a.c === 'Exámenes' ? '. Pesa 40% del parcial.' : '. Entra en el 30% de ' + (y.x.a.c === 'APE' ? 'APE' : 'tareas') + '.'), when: y.x.a.w === today ? 'VENCE ESTA SEMANA' : 'SEMANA ' + y.x.a.w, whenStyle: 'font-size: 11px; font-weight: 500; white-space: nowrap; color: ' + (y.x.a.w === today ? '#0A5248' : '#6B7080') }));
+    const firstNext = future.find((x) => x.a.t.some((n) => marked.some((m) => m.name === n)));
+    const planDue = firstNext ? 'Entrega sugerida del refuerzo: antes de ' + firstNext.a.n + ' (' + (firstNext.a.w === today ? 'vence esta semana' : 'semana ' + firstNext.a.w) + '). Si lo completan, llegan con estos temas trabajados a ' + planWhere.map((w) => w.name).join(' y ') + '.' : 'Ninguna evaluación que falta vuelve a tomar estos temas.';
+    const planStakes = chosen.map((sid) => ({ name: studs[sid][0], txt: needTxt(studs[sid][1]) }));
+    const planReady = marked.length > 0 && chosen.length > 0;
+    const sendPlan = () => {
+      if (!planReady) return;
+      const r = { id: 'r' + Date.now(), act: act.n, temas: marked.map((m) => m.name), studs: chosen.map((s) => studs[s][0]), status: 'Por aprobar', result: '',
+        draft: { lines: chosen.map((sid) => ({ name: studs[sid][0], sub: studSub(sid) })), tasks: planTasks.map((t) => ({ n: t.n, tema: t.tema, txt: t.txt })), where: planWhere.map((w) => ({ name: w.name, txt: w.txt, when: w.when })), due: planDue, stakes: planStakes } };
+      this.setState({ refs: [r].concat(this.state.refs), conv: r.id, screen: 'asistente', selId: null });
+    };
+    const stStyleOf = (s) => 'font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 10px; ' + (s === 'Aprobado' ? 'background: #DDEBDD; color: #2F6B3A' : 'background: #F3E7D3; color: #7A4E14');
+    const refRows = st.refs.map((r) => ({ act: r.act, temas: r.temas.join(', '), n: r.studs.length + (r.studs.length === 1 ? ' estudiante' : ' estudiantes'), status: r.status, stStyle: stStyleOf(r.status), result: r.result || 'Se compara después de que el docente apruebe el borrador y llegue la siguiente sincronización.', open: () => this.setState({ conv: r.id, screen: 'asistente', selId: null }) }));
+
+    const sel = st.selId == null ? null : people[st.selId];
+    let selVals = { name: '', chip: '', chipStyle: '', avg: '', cats: [], evo: [], debts: [], hasDebts: false, need: '' };
+    if (sel) {
+      const [chip, chipStyle] = chipOf(sel);
+      selVals = { name: sel.name, chip, chipStyle, avg: f1(sel.avg), need: needTxt(sel.g), debts: sel.se, hasDebts: sel.se.length > 0,
+        cats: [['Exámenes', 40, 'Exámenes'], ['APE', 30, 'APE'], ['Tareas y talleres', 30, 'Tareas']].map(([label, w, key]) => { const v = sel.cats[key]; return { label: label + ' · ' + w + '%', val: v == null ? 'sin notas' : f1(v), bar: 'height: 5px; border-radius: 999px; width: ' + ((v || 0) * 10) + '%; background: ' + (v != null && v < 7 ? '#D2B48A' : '#5B6170') }; }),
+        evo: idx.map((i) => { const v = sel.g[i]; const n = acts[i].n; if (v === 'SE') return { tip: n + ': sin entrega', style: 'flex: 1; height: 8px; background: #B3463F; border-radius: 2px' }; if (v === 'P' || v === 'F') return { tip: n + (v === 'P' ? ': por calificar' : ': aún no vence'), style: 'flex: 1; height: 8px; background: #D9D4C7; border-radius: 2px' }; return { tip: n + ': ' + f1(v), style: 'flex: 1; border-radius: 2px 2px 0 0; height: ' + Math.max(3, v * 9) + 'px; background: ' + (v < 7 ? '#D2B48A' : '#5B6170') }; }) };
+    }
+
+    const courses = [
+      { code: 'AGIL-4B', name: 'Metodologías Ágiles', avg: f1(mean), graded: kpi.done, attention, hasAttention: attention > 0, progress: 72, where: 'Semana 12 de 16 · Unidad 3', next: 'Esta semana vence el Taller 2: ' + nowDeliv + ' de 12 entregaron.', key: 'agil' },
+      { code: 'MCS-4B', name: 'Manejo y Configuración del Software', avg: '7,6', graded: '88%', attention: 2, hasAttention: true, progress: 72, where: 'Semana 12 de 16 · Unidad 3', next: 'Próxima evaluación: APE 3 en la semana 13.', key: 'mcs' }
+    ].map((c) => ({ ...c, progressTxt: c.progress + '% del período', progressStyle: 'height: 6px; border-radius: 999px; width: ' + c.progress + '%; background: #1A1C22',
+      syncTxt: st.fresh && c.key === 'agil' ? 'Sincronizado hace un momento · COMPLETADA' : 'Última sincronización hace 2 h · COMPLETADA', syncDot: 'width: 8px; height: 8px; border-radius: 999px; background: #2F6B3A', syncBtn: 'Sincronizar y abrir',
+      sync: () => this.runLoader(true, c.code, 'libro'), open: () => this.runLoader(false, c.code, 'libro') }));
+
+    // Asistente
+    const focus = people.filter((p) => p.alerts.length).slice(0, 4);
+    const baseMsgs = [
+      { role: 'u', text: '¿Cómo va la Unidad 3 y a quién apoyo antes del Examen P2?' },
+      { role: 'a', rich: true, text: 'Estamos en la semana 12 de 16. Revisé las notas de la Unidad 3 y el calendario del parcial.', hechos: 'Tarea 3: 3 estudiantes bajo 6,0 en Estimación relativa. APE 3: 2 sin entrega. Taller 2 vence esta semana: ' + nowDeliv + ' de 12 entregaron.', inferencia: 'La estimación es el tema que más falla, y vuelve en el Taller 2 y en el Examen P2.', reco: 'Un refuerzo de estimación antes del Taller 2 para quienes fallaron, y recordar en clase las entregas que faltan.',
+        how: ['obtener_desempeno_tematico(cursoId=1, unidad=3) · OK · 112 ms', 'obtener_calificaciones(cursoId=1, orden=sinEntrega) · OK · 95 ms', 'estado_del_periodo(cursoId=1) · OK · 41 ms', 'Cifras verificadas: 9 de 9', 'Respondió: modelo externo · 6,8 s'] }
+    ];
+    const ref = st.conv ? st.refs.find((r) => r.id === st.conv) : null;
+    const msgs = ref ? [{ role: 'u', kind: 'plan', ref }, { role: 'a', kind: 'draft', ref }] : baseMsgs.concat(st.extra);
+    const bubbleU = 'max-width: 70%; background: #1A1C22; color: #F4F2ED; border-radius: 10px 10px 2px 10px; padding: 12px 16px; font-size: 14px';
+    const bubbleA = 'max-width: 94%; width: 100%; background: #FAF8F3; border: 1px solid #E4E0D6; border-radius: 10px 10px 10px 2px; padding: 16px; font-size: 14px; box-sizing: border-box';
+    const messages = msgs.map((m) => {
+      const r = m.ref; const d = r ? r.draft : null;
+      const isDraft = m.kind === 'draft';
+      const text = m.kind === 'plan' ? '' : isDraft ? 'Leí el plan de refuerzo de ' + r.act + '. Este es el borrador para ' + r.studs.length + (r.studs.length === 1 ? ' estudiante' : ' estudiantes') + '; revísalo antes de aprobarlo.' : m.text;
+      const how = isDraft ? ['obtener_desempeno_tematico(cursoId=1, actividad=' + r.act + ') · OK · 118 ms', 'calcular_nota_necesaria(cursoId=1) · OK · 36 ms', 'estado_del_periodo(cursoId=1) · OK · 41 ms', 'Cifras verificadas con el libro de calificaciones', 'Respondió: modelo externo · 8,2 s'] : (m.how || []);
+      return { text, hasText: !!text, isRich: !!m.rich, isPlan: m.kind === 'plan', isDraft, hechos: m.hechos, inferencia: m.inferencia, reco: m.reco,
+        students: focus.map((p) => ({ name: p.name, avg: f1(p.avg), avgStyle: avgStyle(p.avg), why: p.alerts.map((x) => ruleName[x]).join(', '), open: openSel(p.id) })),
+        pAct: r ? r.act : '', pTemas: r ? r.temas.join(', ') : '', pStuds: r ? r.studs.join('; ') : '',
+        dLines: d ? d.lines : [], dTasks: d ? d.tasks : [], dWhere: d ? d.where : [], hasWhere: !!(d && d.where.length), dDue: d ? d.due : '', hasDue: !!(d && d.due), dStakes: d ? d.stakes : [],
+        status: r ? r.status : '', stStyle: r ? stStyleOf(r.status) : '', approved: !!(r && r.status === 'Aprobado'), notApproved: !!(r && r.status !== 'Aprobado'),
+        approve: () => { if (!r) return; this.setState({ refs: this.state.refs.map((x) => x.id === r.id ? { ...x, status: 'Aprobado', result: 'Aprobado. Después de la siguiente sincronización se compara el promedio de ' + x.temas.join(' y ') + ' antes y después.' } : x) }); },
+        result: r ? r.result : '', hasResult: !!(r && r.result),
+        how, hasHow: how.length > 0,
+        wrapStyle: 'display: flex; ' + (m.role === 'u' ? 'justify-content: flex-end' : 'justify-content: flex-start'),
+        bubbleStyle: m.role === 'u' ? bubbleU : bubbleA };
+    });
+    const itemStyle = (on) => 'padding: 8px 10px; text-align: left; border: 0; border-radius: 6px; color: #1A1C22; ' + (on ? 'background: #E3F1EE; box-shadow: inset 3px 0 0 #0E6E60' : 'background: none');
+    const history = [
+      { label: 'Planes de refuerzo', items: st.refs.map((r) => ({ label: r.act + ' · ' + r.temas.join(', '), sub: r.studs.length + ' estudiantes · ' + r.status, hasSub: true, style: itemStyle(st.conv === r.id), open: () => this.setState({ conv: r.id }) })) },
+      { label: 'Conversaciones', items: [{ label: 'Unidad 3 antes del Examen P2', sub: '', hasSub: false, style: itemStyle(!st.conv), open: () => this.setState({ conv: null }) }, { label: 'Entregas del Taller 2', sub: '', hasSub: false, style: itemStyle(false), open: () => this.setState({ conv: null }) }, { label: 'Notas del Examen P1', sub: '', hasSub: false, style: itemStyle(false), open: () => this.setState({ conv: null }) }] }
+    ];
+    const chatTitle = ref ? 'Plan de refuerzo · ' + ref.act : 'Asistente · AGIL-4B';
+
+    // Pantalla de carga
+    const ovLabels = st.overlay === 'sync' ? ['Cursos y unidades', 'Matriculados', 'Ítems y notas por categoría', 'Entregas y fechas límite', 'Finalización de actividades'] : ['Libro de calificaciones', 'Indicadores y alertas', 'Estado del período'];
+    const ovSteps = ovLabels.map((label, i) => { const done = i < st.ovStep, cur = i === st.ovStep; return { label, mark: done ? '✓' : '', icon: 'width: 22px; height: 22px; border-radius: 999px; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; box-sizing: border-box; ' + (done ? 'background: #8FD0A0; color: #16181D' : cur ? 'border: 2px solid #C9A877; border-top-color: transparent; animation: gira .8s linear infinite' : 'border: 2px solid #3A3D46'), txtStyle: done ? 'color: #E6E7EA' : cur ? 'color: #E6E7EA; font-weight: 700' : 'color: #6F7582' }; });
+
+    const drawerOpen = sel != null;
+    const dots0 = [7.4, 5.92, 8.62, 6.4, 9.1, 7.05, 4.2, 7.85, 6.95, 8.3, 7.6, 2.4, 8.9, 6.1, 7.2, 9.7, 5.4, 7.7, 6.6, 8.1, 3.5, 7.3, 8.5, 6.8, 7.9, 5.1, 9.4, 7.5, 4.8, 8.4, 6.3, 5.7].sort((a, b) => a - b);
+    const xs = (i) => i / (dots0.length - 1) * 100;
+    const dots = dots0.map((n, i) => ({ pos: 'left: ' + xs(i).toFixed(2) + '%; bottom: ' + (n * 26) + 'px; --d: ' + (n * 26) + 'px; animation-delay: ' + (i * 28) + 'ms', dot: 'background: ' + (n < 7 ? '#C9A877' : '#AEB6C6') + '; --t: ' + (3 + (i % 5) * 0.6).toFixed(1) + 's' }));
+    const curve = dots0.map((n, i) => (i ? 'L' : 'M') + (xs(i) * 10).toFixed(1) + ' ' + (280 - n * 26).toFixed(1)).join(' ');
+
+    return {
+      isLogin: st.screen === 'login', isApp: st.screen !== 'login', dots, curve,
+      raya7: 'position: absolute; left: 0; right: 0; bottom: 182px; border-top: 1px dashed rgba(201,168,119,.55)',
+      raya7txt: 'position: absolute; right: 24px; bottom: 188px; font-size: 11px; color: #C9A877',
+      doLogin: () => this.setState({ screen: 'cursos' }),
+      isCursos: st.screen === 'cursos', isCourse: inCourse, isLibro: st.screen === 'libro', isPanel: st.screen === 'panel', isAlertas: st.screen === 'alertas', isPlan: st.screen === 'plan', isAsistente: st.screen === 'asistente',
+      railCode: inCourse ? 'AGIL-4B · 2026-2' : 'Período 2026-2',
+      goLogin: go('login'), goAlertas: go('alertas'), goAsistente: () => this.setState({ screen: 'asistente', selId: null, conv: null }), goPlan: () => this.setState({ screen: 'plan', planFocus: null, studOn: {}, studOff: {} }),
+      nav, segs, segLabel, today, weeks, unitNow, unitLabels, unitCuts, fillStyle, todayStyle, ticks, weekNums, tickLabels, periodBlocks,
+      syncAgo: st.fresh ? 'Sincronizado hace un momento' : 'Datos de la última sincronización · hace 2 h',
+      syncHere: () => this.runLoader(true, 'AGIL-4B', st.screen),
+      courses, unitHeads, actHeads, rows, kpi, hist,
+      histNote: st.bin == null ? '' : 'Mostrando promedios entre ' + st.bin + ' y ' + (st.bin + 1) + '.', hasBinFilter: st.bin != null, clearBin: () => this.setState({ bin: null }),
+      tableNote: shown.length + ' de 12 · de menor a mayor promedio', panelRows,
+      alertChips, alertCards, noAlerts: alertCards.length === 0,
+      planActs, planTemas, planStuds, planTasks, planWhere, planDue, planStakes, planReady, planEmpty: !planReady, sendPlan, refRows,
+      planTitle: 'Refuerzo de ' + act.n + (marked.length ? ': ' + marked.map((m) => m.name).join(', ') : ''),
+      modal: st.modal, openModal: () => this.setState({ modal: true }), closeModal: () => this.setState({ modal: false }), th: st.th,
+      setR4: (e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) this.setState({ th: { ...this.state.th, r4: v } }); },
+      setR1: (e) => { const v = parseFloat(e.target.value); if (!isNaN(v)) this.setState({ th: { ...this.state.th, r1: v } }); },
+      setR2: (e) => { const v = parseInt(e.target.value, 10); if (!isNaN(v)) this.setState({ th: { ...this.state.th, r2: v } }); },
+      hasSel: drawerOpen, sel: selVals,
+      drawerStyle: 'position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 440px; background: #FFFFFF; box-shadow: -12px 0 32px rgba(22,24,29,.18); display: flex; flex-direction: column; z-index: 30; transform: translateX(' + (drawerOpen ? '0' : '105%') + ')',
+      drawerShade: drawerOpen ? 'position: fixed; inset: 0; background: rgba(22,24,29,.3); z-index: 20' : 'display: none',
+      closeDrawer: () => this.setState({ selId: null }),
+      planForSel: () => { const id = st.selId; this.setState({ screen: 'plan', selId: null, planFocus: id, studOn: { [id]: true }, studOff: {} }); },
+      askAbout: () => { const n = sel ? sel.name : ''; this.setState({ screen: 'asistente', selId: null, conv: null, extra: this.state.extra.concat([{ role: 'u', text: '¿Qué necesita ' + n + '?' }, { role: 'a', text: 'En la aplicación el asistente recibe el foco de la ficha (curso y estudiante) y el estado del período, y responde con sus notas, entregas vencidas, temas débiles y lo que necesita en lo que falta del parcial.' }]) }); },
+      history, chatTitle, messages,
+      newChat: () => this.setState({ extra: [], conv: null }),
+      draftText: st.draftText, onDraft: (e) => this.setState({ draftText: e.target.value }),
+      send: () => { const t = (this.state.draftText || '').trim(); if (!t) return; this.setState({ draftText: '', conv: null, extra: this.state.extra.concat([{ role: 'u', text: t }, { role: 'a', text: 'Respuesta de ejemplo del prototipo. En la aplicación el asistente consulta las herramientas del backend con el contexto de esta pantalla y del período.' }]) }); },
+      hasOverlay: !!st.overlay, ovCode: st.ovCode + (st.overlay === 'sync' ? ' · MOODLE DE LABORATORIO' : ''),
+      ovTitle: st.overlay === 'sync' ? 'Sincronizando curso…' : 'Abriendo curso…',
+      ovSub: st.overlay === 'sync' ? 'Leyendo matriculados, notas y entregas del aula virtual. Se guarda sin duplicar registros.' : 'Con los datos de la última sincronización.',
+      ovBar: 'height: 6px; border-radius: 999px; background: linear-gradient(90deg, #C9A877, #8FD0A0); transition: width .5s ease; width: ' + (st.ovStep / ovLabels.length * 100) + '%', ovSteps,
+      toast: st.toast, attentionNow: attention,
+      seeChanges: () => this.setState({ toast: false, screen: 'libro', selId: null, seg: 'all' }), closeToast: () => this.setState({ toast: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

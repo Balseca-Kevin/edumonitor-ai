@@ -24,6 +24,11 @@
 //   docker exec aula-virtual-moodle-1 php /tmp/cargar_datos_laboratorio.php
 // Con --categorias solo crea UTA › FISEI › Software (si faltan) e imprime el id de Software.
 // Con --curso-mcs solo carga MCS-4B (en un Moodle que ya tiene AGIL-4B y BDD-4B, no los toca).
+// Con --actividades-futuras solo agrega a AGIL-4B las actividades que vencen después de la Review (TA-22.A3), sin tocar nada más.
+//
+// TA-22.A3 (Sprint 3): AGIL-4B suma 3 actividades de la unidad 4 que vencen después de la Review (ACTIVIDADES_FUTURAS_AGIL), para
+// que la línea de tiempo y el plan de refuerzo tengan evaluaciones futuras. Nombres, categorías y fechas límite los dio Kevin.
+// Nadie las entregó todavía: no llevan entregas ni notas, así que no cambian ningún promedio.
 
 define('CLI_SCRIPT', true);
 require('/var/www/html/config.php');
@@ -61,6 +66,13 @@ const ACTIVIDADES = [
     4 => [['Tarea 7', 'Tareas', '2026-11-10'], ['Tarea 8', 'Tareas', '2026-11-17'], ['APE 4', 'APE', '2026-11-20'], ['Examen Parcial 2', 'Exámenes', '2026-11-25']],
 ];
 
+// TA-22.A3 · AGIL-4B, unidad 4: [nombre, categoría del libro, fecha límite, temas del sílabo que evalúa (van en el enunciado)].
+const ACTIVIDADES_FUTURAS_AGIL = [
+    ['Tarea 9', 'Tareas', '2026-11-28', '4.1 Herramientas para Scrum y 4.3 Herramientas para Kanban'],
+    ['APE 5', 'APE', '2026-12-04', '4.2 Herramientas para XP y 4.4 Herramientas para otras metodologías'],
+    ['Proyecto integrador', 'Tareas', '2026-12-11', 'los temas del curso, del 1.3 Manifiesto Ágil a las herramientas de la unidad 4'],
+];
+
 const NOMBRES = ['Ana', 'Bruno', 'Carla', 'Diego', 'Elena', 'Fabián', 'Gabriela', 'Hugo', 'Isabel', 'Javier', 'Karina', 'Luis',
     'María', 'Nicolás', 'Olga', 'Pablo', 'Quilla', 'Raúl', 'Sofía', 'Tomás', 'Úrsula', 'Víctor', 'Wendy', 'Ximena',
     'Yolanda', 'Zacarías', 'Andrea', 'Bernardo', 'Camila', 'Daniel', 'Estefanía', 'Francisco'];
@@ -93,7 +105,8 @@ for ($n = 1; $n <= ESTUDIANTES; $n++) {
 }
 
 // AGIL-4B y BDD-4B primero, sin cambios; MCS-4B al final. Con --curso-mcs, solo MCS-4B.
-$cursos = in_array('--curso-mcs', $argv, true) ? [2 => CURSO_MCS] : CURSOS + [2 => CURSO_MCS];
+$cursos = in_array('--curso-mcs', $argv, true) ? [2 => CURSO_MCS]
+    : (in_array('--actividades-futuras', $argv, true) ? [0 => CURSOS[0]] : CURSOS + [2 => CURSO_MCS]);
 foreach ($cursos as $indice => [$corto, $nombre, $docente]) {
     // MCS-4B lleva est01 a est12; AGIL-4B y BDD-4B, los 32 en el mismo orden de siempre.
     $matriculados = $indice === 2 ? array_slice($estudiantes, 0, ESTUDIANTES_MCS, true) : $estudiantes;
@@ -116,6 +129,9 @@ foreach ($cursos as $indice => [$corto, $nombre, $docente]) {
 
     if ($DB->record_exists('assign', ['course' => $curso->id])) {
         nombrar_categorias($curso->id);
+        if ($indice === 0) {
+            agregar_actividades_futuras($generador, $curso);
+        }
         echo "$corto · id {$curso->id} · ya tiene actividades; no se vuelve a cargar." . PHP_EOL;
         continue;
     }
@@ -222,6 +238,9 @@ foreach ($cursos as $indice => [$corto, $nombre, $docente]) {
             }
         }
     }
+    if ($indice === 0) {
+        agregar_actividades_futuras($generador, $curso);
+    }
     grade_regrade_final_grades($curso->id);
 
     echo sprintf('%s · id %d · %d actividades · %d estudiantes · calificadas %d (nota 0: %d) · pendientes %d · sin entrega %d',
@@ -269,6 +288,51 @@ function asegurar_usuario(testing_data_generator $generador, string $usuario, st
         'email' => "$usuario@edumonitor.test",
         'password' => bin2hex(random_bytes(16)) . 'Aa1!',
     ]);
+}
+
+/**
+ * TA-22.A3 · Agrega a AGIL-4B las actividades de ACTIVIDADES_FUTURAS_AGIL que falten, en la unidad 4 y en su categoría del libro,
+ * con escala 0 a 10, finalización manual y el enunciado con los temas que evalúa. Sin entregas ni notas: todavía no vencen.
+ */
+function agregar_actividades_futuras(testing_data_generator $generador, stdClass $curso): void {
+    global $DB;
+    $creadas = [];
+    foreach (ACTIVIDADES_FUTURAS_AGIL as [$actividad, $categoria, $fecha, $temas]) {
+        // 23:59 en Ecuador (la zona de la UTA), aunque el servidor de Moodle esté en otra zona.
+        $vence = (new DateTime("$fecha 23:59:00", new DateTimeZone('America/Guayaquil')))->getTimestamp();
+        $existente = $DB->get_record('assign', ['course' => $curso->id, 'name' => $actividad]);
+        if ($existente) {
+            if ((int) $existente->duedate !== $vence) {
+                $DB->set_field('assign', 'duedate', $vence, ['id' => $existente->id]);
+                $cm = get_coursemodule_from_instance('assign', $existente->id, $curso->id, false, MUST_EXIST);
+                (new assign(context_module::instance($cm->id), $cm, $curso))->update_calendar($cm->id);
+                $creadas[] = "$actividad (fecha límite corregida a $fecha 23:59 de Ecuador)";
+            }
+            continue;
+        }
+        $categoriaLibro = grade_category::fetch(['courseid' => $curso->id, 'fullname' => $categoria]);
+        if (!$categoriaLibro) {
+            echo "AVISO: AGIL-4B no tiene la categoría $categoria; $actividad no se crea." . PHP_EOL;
+            continue;
+        }
+        $generador->create_module('assign', [
+            'course' => $curso->id,
+            'section' => 4,
+            'name' => $actividad,
+            'intro' => "<p>$actividad · Unidad 4. Evalúa $temas.</p>",
+            'introformat' => FORMAT_HTML,
+            'grade' => 10,
+            'gradecat' => $categoriaLibro->id,
+            'duedate' => $vence,
+            'allowsubmissionsfromdate' => strtotime('2026-09-01 08:00:00'),
+            'cutoffdate' => 0,
+            'gradingduedate' => 0,
+            'assignsubmission_onlinetext_enabled' => 1,
+            'completion' => COMPLETION_TRACKING_MANUAL,
+        ]);
+        $creadas[] = "$actividad ($categoria, vence $fecha 23:59 de Ecuador)";
+    }
+    echo 'AGIL-4B · actividades futuras de la unidad 4: ' . ($creadas ? implode(', ', $creadas) : 'ya estaban') . PHP_EOL;
 }
 
 /**

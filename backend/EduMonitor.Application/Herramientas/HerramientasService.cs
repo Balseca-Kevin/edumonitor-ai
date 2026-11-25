@@ -71,7 +71,17 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
     /// Null si el curso no existe; <see cref="ResultadoCalificaciones.EstudianteNoMatriculado"/> si se pidió un estudiante que no está en el curso.
     /// Un curso sin sincronizar responde con la lista vacía y <c>ultimaSincronizacion</c> en null.
     /// </summary>
-    public async Task<ResultadoCalificaciones?> CalificacionesAsync(int cursoId, int? estudianteId, string? nombre = null, CancellationToken ct = default)
+    public async Task<ResultadoCalificaciones?> CalificacionesAsync(
+        int cursoId, int? estudianteId, string? nombre = null, CancellationToken ct = default) =>
+        await CalificacionesAsync(cursoId, estudianteId, nombre, new FiltroCalificaciones(), ct);
+
+    /// <summary>
+    /// HU-23 · Igual que la sobrecarga sin filtro, pero el resumen (sin <paramref name="estudianteId"/>) puede quedarse solo con los
+    /// promedios menores a <see cref="FiltroCalificaciones.PromedioMenorA"/> (los que no tienen promedio quedan fuera) y ordenarse por
+    /// actividades sin entrega, de mayor a menor con empate por apellido. Así el modelo no filtra ni ordena una lista de 32 filas.
+    /// </summary>
+    public async Task<ResultadoCalificaciones?> CalificacionesAsync(
+        int cursoId, int? estudianteId, string? nombre, FiltroCalificaciones filtro, CancellationToken ct = default)
     {
         var curso = await db.Cursos.AsNoTracking().SingleOrDefaultAsync(c => c.Id == cursoId, ct);
         if (curso is null)
@@ -105,12 +115,14 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
         // los que están bajo un umbral queden juntos al principio y el modelo no tenga que buscarlos entre todas las filas.
         if (estudianteId is null && (!buscaPorNombre || estudiantes.Count > 1))
         {
-            var resumen = estudiantes
+            var filtrados = estudiantes
                 .Where(e => calculados.ContainsKey(e.Id))
                 .Select(e => calculados[e.Id])
-                .OrderBy(e => e.PromedioPonderado is null)
-                .ThenBy(e => e.PromedioPonderado)
-                .ThenBy(e => e.Apellido)
+                .Where(e => filtro.PromedioMenorA is not decimal limite || e.PromedioPonderado < limite);
+            var ordenados = filtro.Orden == OrdenCalificaciones.SinEntrega
+                ? filtrados.OrderByDescending(e => e.Notas.SinEntrega).ThenBy(e => e.Apellido).ThenBy(e => e.Nombre)
+                : filtrados.OrderBy(e => e.PromedioPonderado is null).ThenBy(e => e.PromedioPonderado).ThenBy(e => e.Apellido);
+            var resumen = ordenados
                 .Select(e => (object)new EstudianteResumenCalificacionesDto(e.Id, e.Nombre, e.Apellido, e.PromedioPonderado, e.Parcial, e.Notas))
                 .ToList();
             return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, resumen), Coincidencias: estudiantes.Count);
@@ -152,6 +164,15 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
         return palabrasBuscadas.Length > 0
             && palabrasBuscadas.All(buscada => palabrasDelNombre.Any(palabra => palabra.StartsWith(buscada, StringComparison.Ordinal)));
     }
+}
+
+/// <summary>Filtros del resumen de <c>GET /api/tools/calificaciones</c> (HU-23): <c>promedioMenorA</c> y <c>orden</c>.</summary>
+public sealed record FiltroCalificaciones(decimal? PromedioMenorA = null, OrdenCalificaciones Orden = OrdenCalificaciones.Promedio);
+
+public enum OrdenCalificaciones
+{
+    Promedio,
+    SinEntrega,
 }
 
 /// <summary><see cref="Coincidencias"/>: estudiantes que entraron en la respuesta (1 cuando va el detalle de uno solo).</summary>

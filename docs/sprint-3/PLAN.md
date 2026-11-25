@@ -52,7 +52,7 @@ Lo que pide el prototipo y no estaba en el plan entra como tareas de HU que ya e
 | TA | HU | Tarea | Responsable | Hizo |
 |---|---|---|---|---|
 | TA-08.A1 | HU-08 | Sílabos en el Moodle de laboratorio (`docs/sprint-3/silabos.md`): nombre de cada sección y sus temas en los 3 cursos; sección 5 de BDD-4B; enunciados y criterios de rúbrica de AGIL-4B alineados con los temas de su unidad, sin cambiar las notas ni los casos de la demo (est04 falla el mismo tema en 3 actividades; casi todo el curso falla un criterio de Tarea 3). La sincronización importa el nombre de la sección y HU-08 toma los temas como temas iniciales de cada unidad | Kevin | Kevin |
-| TA-22.A3 | HU-22 | Actividades de AGIL-4B que vencen después de la Review, para que la línea de tiempo y el plan de refuerzo tengan evaluaciones futuras. Nombres, categorías y fechas límite los da Kevin antes de empezar; se crean con el script de carga y se mapean a temas | Kevin | |
+| TA-22.A3 | HU-22 | Actividades de AGIL-4B que vencen después de la Review, para que la línea de tiempo y el plan de refuerzo tengan evaluaciones futuras. Nombres, categorías y fechas límite los da Kevin antes de empezar; se crean con el script de carga y se mapean a temas | Kevin | Kevin (actividades en el aula virtual; el mapeo a temas queda para la pantalla de HU-08) |
 | TA-22.A4 | HU-22 | Estado del período: `GET /api/cursos/{id}/periodo` (semana actual y total, unidades con su nombre y fechas, actividades con fecha límite y estado, vencidas, entregas que faltan, vence esta semana, siguiente) y la herramienta del asistente `GET /api/tools/estado-periodo`, con pruebas | Kevin; Sebastián (cálculos) | |
 | TA-22.A5 | HU-22 | Cabecera del curso con la línea de tiempo, los tres bloques y la leyenda, según `diseno.md` | Kevin | |
 | TA-21.A1 | HU-21 | Diferencias entre sincronizaciones: la sincronización guarda qué calificaciones y entregas cambiaron frente a la anterior; `GET /api/cursos/{id}/sync/{sid}/cambios` con los conteos y las celdas | Kevin | |
@@ -80,13 +80,13 @@ TA-21.A1 es el agregado TA-23.B1 que la línea de corte había dejado fuera; Kev
 ### Bloque 0 · Integración (Kevin)
 
 - Fusionar en `develop`, en este orden: #48 (contexto), #49 (rúbricas en el aula virtual), #50 (endpoint del libro, TA-21.1) y #51 (filtros de calificaciones, HU-23).
-- Corregir `SincronizacionMoodleRealTests`: espera la nota 0 de est05 en Tarea 3, que se cambió a mano a 5,5 en Moodle. Se devuelve la nota en Moodle o se actualiza la prueba.
+- Corregir `SincronizacionMoodleRealTests`: espera la nota 0 de est05 en Tarea 3, que se cambió a mano a 5,5 en Moodle. Se devuelve la nota en Moodle o se actualiza la prueba. Hizo: Kevin. Se quitó la sobrescritura del libro con `moodle-lab/scripts/restaurar_casos_demo.php`: la tarea ya tenía 0, y el libro vuelve a mostrarlo.
 
 ### Bloque R · Rediseño de la interfaz (Kevin)
 
 Guía: `docs/sprint-3/diseno.md` y el prototipo `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html`, aprobados por Kevin. Reemplaza la propuesta anterior de índigo y slate. Este bloque va antes de las pantallas nuevas para no hacerlas dos veces. Se mantienen todas las animaciones del diseño D y las del prototipo.
 
-- R.1 Tokens del Sprint 3 en `tokens.css`: paleta oscura del diseño D para inicio, barra lateral, cabecera, carga y aviso; papel `#F4F2ED` para el contenido; verde petróleo `#0E6E60` para las acciones del asistente y del plan de refuerzo.
+- R.1 Tokens del Sprint 3 en `tokens.css`: paleta oscura del diseño D para inicio, barra lateral, cabecera, carga y aviso; papel `#F4F2ED` para el contenido; verde petróleo `#0E6E60` para las acciones del asistente y del plan de refuerzo. Hizo: Kevin.
 - R.2 Barra lateral oscura con la navegación del curso y el contador de alertas; barra blanca con el control segmentado que filtra de verdad, «Sincronizar» y «Preguntar al asistente».
 - R.3 Mis cursos en tarjetas con «Abrir curso» y «Sincronizar y abrir» (la pantalla de carga es TA-21.A2).
 - R.4 Panel: 4 indicadores, histograma con la línea de 7,0 que filtra la tabla, ficha lateral del estudiante con «Armar plan de refuerzo» y «Preguntar al asistente por este estudiante».

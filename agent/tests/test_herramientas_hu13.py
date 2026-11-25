@@ -57,6 +57,7 @@ async def test_grafo_registra_cada_llamada_y_envia_el_token_fuera_del_modelo(mon
     {}, {"cursoId": 0}, {"cursoId": "1"}, {"cursoId": True},
     {"cursoId": 1, "estudianteId": -1}, {"cursoId": 1, "token": "secreto"},
     {"cursoId": 1, "nombre": "a"}, {"cursoId": 1, "nombre": 12},
+    {"cursoId": 1, "promedioMenorA": 11}, {"cursoId": 1, "promedioMenorA": -1}, {"cursoId": 1, "orden": "nota"},
 ])
 @pytest.mark.asyncio
 @respx.mock
@@ -137,3 +138,31 @@ async def test_nombre_vacio_se_trata_como_consulta_de_todo_el_curso(monkeypatch)
     assert resultado["trazas"][0].parametros == {"cursoId": 1}
     assert resultado["trazas"][0].estado == "OK"
 
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_filtro_y_orden_del_resumen_van_al_backend_hu23(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get(
+        "http://backend.test/api/tools/calificaciones",
+        params={"cursoId": "1", "promedioMenorA": "7.0", "orden": "sinEntrega"},
+    ).respond(json={"estudiantes": [{"id": 5, "nombre": "Ana", "apellido": "Pérez", "promedioPonderado": 6.1}]})
+
+    resultado = await graph.tool_node(estado(llamada("obtener_calificaciones", {"cursoId": 1, "promedioMenorA": 7, "orden": "sinEntrega"})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].parametros == {"cursoId": 1, "promedioMenorA": 7.0, "orden": "sinEntrega"}
+    assert resultado["trazas"][0].estado == "OK"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_filtro_vacio_se_ignora_hu23(monkeypatch):
+    monkeypatch.setattr(backend_tools, "BACKEND_URL", "http://backend.test")
+    ruta = respx.get("http://backend.test/api/tools/calificaciones", params={"cursoId": "1"}).respond(json={"estudiantes": []})
+
+    resultado = await graph.tool_node(estado(llamada("obtener_calificaciones", {"cursoId": 1, "promedioMenorA": "", "orden": ""})))
+
+    assert ruta.called
+    assert resultado["trazas"][0].parametros == {"cursoId": 1}
