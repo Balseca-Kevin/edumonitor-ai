@@ -117,12 +117,20 @@ Evidencias: [docs/evidencias/sprint-2/](docs/evidencias/sprint-2/README.md). Gu�
 | HU-21 | Libro de calificaciones | Primera pantalla del curso |
 | HU-10 | Ficha del estudiante | Clic en un estudiante → «Abrir ficha completa» |
 | HU-08 | Mapeo temático | «Mapa del curso» |
-| HU-22 | Mapa del curso y panel de actividad | Cabecera del curso; clic en una actividad del libro; mapa de calor en «Mapa del curso» |
-| HU-15 | Retroalimentación y refuerzo | «Plan de refuerzo»; «Redactar retroalimentación» en el panel de actividad |
+| HU-22 | Mapa del curso y panel de actividad | Barra del curso → «Ver período»; clic en una actividad del libro; mapa de calor en «Mapa del curso» |
+| HU-15 | Retroalimentación y refuerzo | «Plan de refuerzo» (pestañas «Por actividad» y «Por tema»); «Redactar retroalimentación» en el panel de actividad |
 | HU-23 | Asistente con contexto, memoria y respaldo | «Asistente»; «Modelo del asistente» en «Estado del sistema» |
 | HU-16 | Informe del curso | Panel → «Informe del curso» |
 | HU-17 | Trazas y auditoría | «Cómo llegó a esta respuesta»; «Auditoría» (ADMIN) |
 | HU-18 | Pruebas y calidad del asistente | «Calidad del asistente» (ADMIN) |
+
+#### Temas de AGIL-4B
+
+El plan de refuerzo, el mapa de calor y los temas débiles de la ficha necesitan que las actividades y los criterios de rúbrica estén asociados a los temas del sílabo. La asociación de AGIL-4B, con el motivo de cada una, está en [docs/sprint-3/mapeo-agil-4b.md](docs/sprint-3/mapeo-agil-4b.md). Si la base se crea de nuevo, se repite en «Mapa del curso» siguiendo «Cómo repetir el mapeo» de ese archivo.
+
+#### Evaluación del asistente
+
+Como `admin`: «Calidad del asistente» → curso AGIL-4B → «Correr evaluación». Corre las 18 preguntas y la tabla se llena mientras avanza. En este sprint se evalúa con el modelo local; sin clave del modelo externo, su columna dice «No respondió».
 
 Quién hizo cada parte: [docs/sprint-3/contribuciones.md](docs/sprint-3/contribuciones.md). Requisitos y pruebas: [docs/sprint-3/matriz-rf-rnf.md](docs/sprint-3/matriz-rf-rnf.md). Recorrido de la Review: [docs/PRUEBAS.md](docs/PRUEBAS.md#sprint-3). Evidencias: [docs/evidencias/sprint-3/](docs/evidencias/sprint-3/README.md).
 
@@ -220,7 +228,7 @@ En la CPU las respuestas son lentas; `OLLAMA_MODEL=llama3.2:3b` en `.env` respon
 
 ### Modelo externo con respaldo local (HU-23)
 
-El asistente usa primero un modelo externo y, si falla, el modelo local de Ollama. Se configura en `.env`:
+En este sprint el asistente funciona completo con el modelo local (`qwen2.5:7b` en Ollama). El modelo externo con respaldo local está programado y probado, pero no se activó porque no hay clave del proveedor. Con la clave, el asistente usa primero el modelo externo y, si falla, el local. Se configura en `.env`:
 
 | Variable | Valor |
 |---|---|

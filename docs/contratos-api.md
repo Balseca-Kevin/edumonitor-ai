@@ -687,6 +687,24 @@ Evidencia corta del descenso reciente en `GET /api/tools/alertas` (reemplaza a �
 
 `ultimasNotas` va de la más reciente a la más antigua. `promedioAnterior` va en `null` si no hay notas anteriores, nunca 0. La pantalla «Alertas» lo dice igual: «Sus últimas 3 notas fueron 4,0; 4,5 y 5,0, frente a un promedio anterior de 7,8: bajó 3,3 puntos».
 
+### Preguntas sin datos del curso (C7)
+
+`POST /chat` del agente no cambia de forma. Antes de llamar al modelo, el agente clasifica la pregunta con reglas, sin modelo:
+
+| Ruta | Ejemplos | Cómo responde |
+|---|---|---|
+| Datos | «¿Quiénes tienen promedio bajo 7?», «¿Cómo va E-005?», el borrador de un plan | Con las herramientas, como hasta ahora |
+| Aplicación | «¿Ya puedes generar tareas de refuerzo?», «¿Qué puedes hacer?», «¿Cómo descargo el plan en PDF?» | Sin herramientas, con la guía de pantallas y botones de la aplicación |
+| General | «¿Qué es Scrum?», «Dame ideas de actividades para repasar Kanban», «Hola» | Sin herramientas |
+| Mixta | «Explícame qué es Scrum y dime quién tiene más atrasos» | Con las herramientas; la parte general se responde aparte |
+
+- Las preguntas fuera de alcance (TA-23.A3) se revisan antes y siguen respondiéndose sin modelo.
+- Sin herramientas, el modelo recibe solo el código del curso y la pregunta: sin tramo, período ni ids.
+- Si la respuesta de una pregunta general trae una cifra que parece del curso, se repite por la ruta de datos para que la cifra se pueda verificar.
+- La respuesta va con `herramientas` vacío, el `proveedor` que respondió y `cifras` vacío.
+- El texto final de todas las rutas lleva coma decimal y no lleva ids internos (`cursoId`…), nombres de herramientas, «en riesgo» (pasa a «requiere atención») ni la pregunta de cierre genérica.
+- Las 18 preguntas de «Calidad del asistente» que esperan herramientas siguen yendo por la ruta de datos.
+
 ## Cambios entre sincronizaciones (TA-21.A1)
 
 Cada sincronización compara las calificaciones y entregas del curso antes y después de importar, y guarda las celdas que cambiaron. La compara con lo que había en la base, que es lo que dejó la sincronización anterior.
@@ -1315,7 +1333,7 @@ Grupos de refuerzo por tema (TA-15.B1, la reincorpora Kevin en el cierre): los e
 
 ## Informe del curso (HU-16)
 
-Por la línea de corte, el informe exporta el resumen del asistente. Flujo:
+El informe exporta los indicadores del panel, los refuerzos aplicados y el resumen del asistente. Flujo:
 1. Desde el Panel, «Informe del curso» abre el asistente con la pregunta ya escrita: «Resume el estado del curso: promedio, quiénes requieren atención, temas donde falla y qué viene.».
 2. Cada respuesta del asistente tiene «Descargar como informe del curso (PDF)».
 

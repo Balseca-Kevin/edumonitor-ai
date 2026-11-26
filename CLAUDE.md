@@ -10,7 +10,7 @@ Fechas: no las escribas, no las calcules ni las propongas en planes, commits, PR
 
 ## Documentos fuente
 
-- `docs/sprint-3/PLAN.md`: Sprint Goal, HU del Sprint 3, bloques de trabajo con responsable, decisión de la línea de corte y Definition of Done. Léelo antes de empezar una tarea.
+- `docs/sprint-3/PLAN.md`: Sprint Goal, HU del Sprint 3, bloques de trabajo con responsable, alcance final y Definition of Done. Léelo antes de empezar una tarea.
 - `docs/sprint-3/diseno.md`: sistema de diseño del Sprint 3, obligatorio para cualquier cambio en `frontend/`. Reemplaza a `docs/sprint-2/diseno.md`, que sigue valiendo en lo que el nuevo no cambia.
 - `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html`: prototipo navegable aprobado por Kevin. Es referencia visual y de comportamiento; sus datos son ficticios y no se copian.
 - `docs/sprint-3/silabos.md`: unidades y temas de los sílabos de AGIL-4B, MCS-4B y BDD-4B.
