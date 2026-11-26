@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import Panel from './Panel'
 
 vi.mock('../../services/indicadores', () => ({ obtenerIndicadores: vi.fn() }))
@@ -84,15 +84,30 @@ function Ubicacion() {
   return <p data-testid="ruta">{`${pathname}${search}`}</p>
 }
 
-function renderPanel(ruta = '/cursos/1/panel') {
+function renderPanel(ruta = '/cursos/1/panel', contexto) {
   return render(
     <MemoryRouter initialEntries={[ruta]}>
       <Routes>
-        <Route path="/cursos/:id/panel" element={<Panel />} />
+        {contexto ? (
+          <Route path="/cursos/:id" element={<Outlet context={contexto} />}>
+            <Route path="panel" element={<Panel />} />
+          </Route>
+        ) : (
+          <Route path="/cursos/:id/panel" element={<Panel />} />
+        )}
         <Route path="*" element={<Ubicacion />} />
       </Routes>
     </MemoryRouter>,
   )
+}
+
+// Forma de GET /api/cursos/{id}/periodo (docs/contratos-api.md, «Estado del período»), la que el marco pasa al Panel.
+const periodoPanel = {
+  cursoId: 1, estado: 'EN_CURSO', semana: { actual: 3, total: 8 },
+  unidadActual: { numero: 1, nombre: 'Principios fundamentales de las metodologías ágiles', parcial: 1 },
+  unidades: [{ numero: 1, nombre: 'Principios fundamentales de las metodologías ágiles', parcial: 1, semanaDesde: 1, semanaHasta: 8 }],
+  actividades: [{ id: 101, nombre: 'Tarea 1', sigla: 'T1', categoria: 'Tareas', unidad: 1, fechaLimite: '2026-10-08T23:59:00-05:00', semana: 2, estado: 'VENCIDA', matriculados: 3, entregaron: 3, faltan: 0 }],
+  vencidas: { actividades: 1, entregasQueFaltan: 0, conFaltas: [] }, venceEstaSemana: [], siguiente: null, noDisponibles: [],
 }
 
 beforeEach(() => {
@@ -103,6 +118,22 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('R.4 · Panel del curso', () => {
+  it('C6 · tiene su propio título y es la única pantalla con la línea de tiempo en línea, compacta', async () => {
+    renderPanel('/cursos/1/panel', { version: 0, periodo: periodoPanel })
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Panel del curso' })).toBeInTheDocument()
+    const seccion = await screen.findByRole('region', { name: 'Período del curso' })
+    const linea = within(seccion).getByRole('group', { name: 'Línea de tiempo del período: semana 3 de 8' })
+    expect(linea).toHaveClass('lt2--compacta')
+    expect(within(linea).getByRole('button', { name: 'Tarea 1 · vence 08/10 · 3 de 3 entregaron' })).toBeInTheDocument()
+  })
+
+  it('C6 · sin período el Panel no dibuja la línea de tiempo', async () => {
+    renderPanel('/cursos/1/panel', { version: 0, periodo: null })
+    await screen.findByRole('region', { name: 'Cifras del curso' })
+    expect(screen.queryByRole('region', { name: 'Período del curso' })).not.toBeInTheDocument()
+  })
+
   it('muestra los 4 indicadores con las cifras de la API y «Requieren atención» cuenta estudiantes', async () => {
     renderPanel()
 

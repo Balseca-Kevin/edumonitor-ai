@@ -206,7 +206,7 @@ export default function CursoMarco() {
 
   // Lo que llegó de otro curso no se muestra mientras carga el nuevo.
   const { curso, error } = cargado.id === id ? cargado : { curso: null, error: null }
-  const { unidades, alertas, periodo, estudiantes } = contexto.id === id ? contexto : { unidades: [], alertas: null, periodo: null, estudiantes: null }
+  const { unidades, alertas, periodo } = contexto.id === id ? contexto : { unidades: [], alertas: null, periodo: null }
 
   if (error && ['sesion', 'acceso', 'no-existe'].includes(error.tipo)) {
     return <PaginaError error={error} />
@@ -217,7 +217,7 @@ export default function CursoMarco() {
       curso={curso ?? { id }}
       alertas={alertas}
       busqueda={busquedaTramo(tramo)}
-      cabecera={curso ? <CabeceraCurso curso={curso} periodo={periodo} estudiantes={estudiantes} /> : null}
+      cabecera={curso ? <CabeceraCurso curso={curso} periodo={periodo} /> : null}
       barra={
         curso ? (
           <BarraCurso curso={curso} unidades={unidades} sincronizando={sincronizando} resultado={resultado} onSincronizar={sincronizar} />

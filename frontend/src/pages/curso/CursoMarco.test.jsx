@@ -146,21 +146,24 @@ describe('R.2 · Barra lateral oscura y barra del curso', () => {
   })
 })
 
-describe('TA-22.A5 · Cabecera del curso en el marco', () => {
-  it('muestra la semana del período que da el backend y los estudiantes del curso', async () => {
+describe('C6 · Barra de contexto del curso en el marco', () => {
+  it.each([['/cursos/1/libro'], ['/cursos/1/panel'], ['/cursos/1/alertas']])('aparece en %s con la semana y la unidad que da el backend', async (ruta) => {
     obtenerIndicadores.mockResolvedValue({ unidades, curso: { estudiantes: 32 } })
-    renderCurso()
+    renderCurso(ruta)
 
-    expect(await screen.findByLabelText('Semana 12 de 15')).toBeInTheDocument()
+    const barra = await screen.findByLabelText('Curso AGIL-4B', { selector: '.contexto-curso' })
+    expect(await within(barra).findByLabelText('Semana 12 de 15')).toBeInTheDocument()
     expect(obtenerPeriodo).toHaveBeenCalledWith('1')
-    expect(screen.getByText('U4 · Herramientas ágiles del mercado', { selector: '.cabecera-unidad' })).toBeInTheDocument()
+    expect(within(barra).getByText('U4 · Herramientas ágiles del mercado', { selector: '.contexto-unidad' })).toBeInTheDocument()
+    expect(within(barra).getByRole('button', { name: 'Ver período' })).toBeInTheDocument()
   })
 
-  it('si el período no responde, la cabecera lo dice y el resto del curso sigue', async () => {
+  it('si el período no responde, la barra dice «Período no disponible» y el resto del curso sigue', async () => {
     obtenerPeriodo.mockRejectedValue({ response: { status: 409 } })
     renderCurso()
 
-    expect(await screen.findByText(/El estado del período aparece cuando el curso se sincroniza/)).toBeInTheDocument()
+    expect(await screen.findByText('Período no disponible')).toBeInTheDocument()
+    expect(screen.queryByText(/Semana \d/)).not.toBeInTheDocument()
     expect(screen.getByTestId('pantalla')).toBeInTheDocument()
   })
 })
