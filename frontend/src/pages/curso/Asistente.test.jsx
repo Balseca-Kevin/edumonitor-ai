@@ -136,7 +136,7 @@ describe('R.6 · Asistente dentro del curso', () => {
     await preguntar('¿Cómo le va a Karina Lara?')
 
     expect(await screen.findByText('Karina Lara tiene un promedio de 5,29 y requiere atención.')).toBeInTheDocument()
-    expect(preguntarAlAsistente).toHaveBeenCalledWith('1', '¿Cómo le va a Karina Lara?', { estudianteId: undefined, actividadId: null }, null)
+    expect(preguntarAlAsistente).toHaveBeenCalledWith('1', '¿Cómo le va a Karina Lara?', { estudianteId: undefined, actividadId: null, tramo: 'todo' }, null)
     const tarjetas = screen.getByLabelText('Estudiantes mencionados')
     expect(within(tarjetas).getByText('Lara, Karina')).toBeInTheDocument()
     expect(within(tarjetas).getByText('5,29')).toBeInTheDocument()
@@ -329,7 +329,7 @@ describe('HU-23 · Memoria, quién respondió y cifras enlazadas', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Enviar pregunta' }))
 
     await waitFor(() => expect(preguntarAlAsistente).toHaveBeenCalled())
-    expect(preguntarAlAsistente.mock.calls[0][2]).toEqual({ estudianteId: 5, actividadId: null })
+    expect(preguntarAlAsistente.mock.calls[0][2]).toEqual({ estudianteId: 5, actividadId: null, tramo: 'todo' })
   })
 
   it('dice si respondió el modelo externo o el local de respaldo', async () => {

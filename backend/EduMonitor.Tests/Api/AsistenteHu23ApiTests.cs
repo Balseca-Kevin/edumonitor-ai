@@ -224,6 +224,37 @@ public class AsistenteHu23ApiTests
         Assert.Equal(HttpStatusCode.BadRequest, mal.StatusCode);
     }
 
+    [Fact]
+    public async Task El_tramo_de_la_pantalla_llega_al_agente_y_uno_que_el_curso_no_tiene_responde_400()
+    {
+        var (api, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = api;
+
+        var bien = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = curso, mensaje = "¿Cómo va el curso?", foco = new { tramo = "u2" } });
+        var inexistente = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = curso, mensaje = "¿Cómo va?", foco = new { tramo = "u9" } });
+        var invalido = await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = curso, mensaje = "¿Cómo va?", foco = new { tramo = "semana" } });
+
+        Assert.Equal(HttpStatusCode.OK, bien.StatusCode);
+        var peticion = api.Agente.Peticiones.Single();
+        Assert.Equal("u2", peticion.Tramo);
+        Assert.Contains("Tramo de la pantalla: unidad 2", peticion.Mensaje);
+        Assert.Contains("dilo en la respuesta", peticion.Mensaje);
+        Assert.Equal(HttpStatusCode.BadRequest, inexistente.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, invalido.StatusCode);
+    }
+
+    [Fact]
+    public async Task Sin_tramo_el_agente_recibe_todo_el_ciclo()
+    {
+        var (api, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = api;
+
+        (await doc01.PostAsJsonAsync("/api/agente/chat", new { cursoId = curso, mensaje = "¿Cómo va el curso?" })).EnsureSuccessStatusCode();
+
+        Assert.Equal("todo", api.Agente.Peticiones.Single().Tramo);
+        Assert.Contains("Tramo de la pantalla: todo el ciclo.", api.Agente.Peticiones.Single().Mensaje);
+    }
+
     // --- Modelo e interruptor ---
 
     [Fact]

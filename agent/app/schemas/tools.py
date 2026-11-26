@@ -94,6 +94,8 @@ class ChatPeticion(BaseModel):
     historial: List[TurnoAnterior] = Field(default_factory=list, max_length=4)
     # HU-23 · auto: externo con respaldo local; local: «Usar solo el modelo local»; externo: solo para la evaluación (TA-18.A1).
     modo: Literal["auto", "local", "externo"] = "auto"
+    # C7 · Tramo de la barra del curso (todo, p1, p2, u1…): el agente lo pone en calificaciones y alertas, como las tarjetas.
+    tramo: str = Field(default="todo", pattern=r"^(todo|p[12]|u[1-9][0-9]?)$")
 
 
 class Cifra(BaseModel):

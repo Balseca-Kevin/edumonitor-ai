@@ -399,7 +399,7 @@ En los dos casos, un curso sin sincronizar responde con `estudiantes` vacío y `
   ]
 }
 ```
-Solo las ACTIVAS. Desde el 12 nov 2026 (TA-13.2) cada alerta es la de `GET /api/cursos/{id}/alertas` sin `titulo`, `estado`, `generada` ni `revisada`, que son iguales en todas, y con `nombreRegla`; la `evidencia` va corta: R2 solo con los nombres de las actividades (`{ "actividades": ["Tarea 5"], "umbral": 2 }`), R1 sin `anteriores` y R4 igual. Las 16 alertas de AGIL-4B en la forma completa llenaban el contexto de 4096 tokens del modelo y la respuesta se acercaba a los 60 s. La pantalla «Alertas» usa la forma completa de `GET /api/cursos/{id}/alertas`. 400 sin `cursoId`, 403 en curso ajeno, 404 si el curso no existe.
+Solo las ACTIVAS. Desde el 12 nov 2026 (TA-13.2) cada alerta es la de `GET /api/cursos/{id}/alertas` sin `titulo`, `estado`, `generada` ni `revisada`, que son iguales en todas, y con `nombreRegla`; la `evidencia` va corta: R2 solo con los nombres de las actividades (`{ "actividades": ["Tarea 5"], "umbral": 2 }`), R1 con la forma de «Tramo en el asistente (C7)» y R4 igual. Las 16 alertas de AGIL-4B en la forma completa llenaban el contexto de 4096 tokens del modelo y la respuesta se acercaba a los 60 s. La pantalla «Alertas» usa la forma completa de `GET /api/cursos/{id}/alertas`. 400 sin `cursoId`, 403 en curso ajeno, 404 si el curso no existe.
 
 ## Chat del asistente (HU-14)
 
@@ -669,6 +669,23 @@ Respuestas:
 Códigos:
 - 400 si `tramo` no es un código válido (`semana`, `x1`, `u0`) o si el curso no tiene ese parcial o esa unidad (`u9`).
 - 401, 403, 404 y 409 como en el resto del bloque.
+
+## Tramo en el asistente (C7)
+
+El asistente usa el mismo tramo que la pantalla, para que el texto y las tarjetas digan las mismas cifras.
+
+- `POST /api/agente/chat`: `foco` acepta `tramo` (`todo`, `p1`, `p2`, `u1` … `un`). Sin `tramo`, o con `todo`, es todo el ciclo. 400 si no es un código válido o el curso no tiene ese parcial o esa unidad.
+- La API suma al contexto del agente una línea: «Tramo de la pantalla: unidad 2 · … Las cifras son solo de la unidad 2; dilo en la respuesta.» (o «todo el ciclo»).
+- `POST /chat` del agente recibe `"tramo": "u2"` (por defecto `todo`). El agente lo agrega a `obtener_calificaciones` e `identificar_alertas`; el modelo no lo elige.
+- `GET /api/tools/calificaciones` y `GET /api/tools/alertas` aceptan el parámetro `tramo`, con el mismo cálculo de los indicadores y las alertas del tramo (R.2), y la respuesta suma `"tramo": "u2"`. 400 si el tramo no es válido o el curso no lo tiene.
+
+Evidencia corta del descenso reciente en `GET /api/tools/alertas` (reemplaza a «R1 sin `anteriores`»):
+
+```json
+{ "ultimasNotas": [4.0, 4.5, 5.0], "promedioUltimas": 4.5, "promedioAnterior": 7.75, "diferencia": -3.25, "umbral": 1.5 }
+```
+
+`ultimasNotas` va de la más reciente a la más antigua. `promedioAnterior` va en `null` si no hay notas anteriores, nunca 0. La pantalla «Alertas» lo dice igual: «Sus últimas 3 notas fueron 4,0; 4,5 y 5,0, frente a un promedio anterior de 7,8: bajó 3,3 puntos».
 
 ## Cambios entre sincronizaciones (TA-21.A1)
 

@@ -43,6 +43,7 @@ public sealed class AgenteClient(HttpClient http, ILogger<AgenteClient> logger) 
                 token = peticion.Token,
                 historial = peticion.Historial ?? Array.Empty<TurnoAgente>(),
                 modo = peticion.Modo,
+                tramo = peticion.Tramo,
             }, Json, ct);
         }
         catch (TaskCanceledException e) when (!ct.IsCancellationRequested)

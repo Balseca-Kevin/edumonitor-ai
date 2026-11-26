@@ -30,7 +30,7 @@ public sealed record TurnoAgente(string Pregunta, string Respuesta);
 /// Cuerpo de <c>POST /chat</c> del agente. El token es el de servicio (rol AGENTE); nunca se registra. HU-23: <c>Historial</c> lleva
 /// los últimos 4 turnos y <c>Modo</c> es <c>auto</c> (externo con respaldo), <c>local</c> o <c>externo</c> (solo la evaluación).
 /// </summary>
-public sealed record PeticionAgente(string Mensaje, int CursoId, string Token, IReadOnlyList<TurnoAgente>? Historial = null, string Modo = "auto")
+public sealed record PeticionAgente(string Mensaje, int CursoId, string Token, IReadOnlyList<TurnoAgente>? Historial = null, string Modo = "auto", string Tramo = "todo")
 {
     // Si alguien registra la petición completa, el token no sale.
     public override string ToString() => $"PeticionAgente {{ CursoId = {CursoId}, Mensaje = {Mensaje.Length} caracteres }}";

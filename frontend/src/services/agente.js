@@ -12,6 +12,8 @@ export async function preguntarAlAsistente(cursoId, mensaje, foco, conversacionI
   for (const clave of ['refuerzoId', 'estudianteId', 'actividadId']) {
     if (foco?.[clave]) elegido[clave] = Number(foco[clave])
   }
+  // C7 · El tramo de la barra del curso: el texto del asistente y las tarjetas calculan con las mismas actividades.
+  if (foco?.tramo && foco.tramo !== 'todo') elegido.tramo = foco.tramo
   if (Object.keys(elegido).length) cuerpo.foco = elegido
   if (conversacionId) cuerpo.conversacionId = Number(conversacionId)
   const { data } = await api.post('/api/agente/chat', cuerpo)

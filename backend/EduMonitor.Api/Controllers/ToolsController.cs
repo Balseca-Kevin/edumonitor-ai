@@ -2,6 +2,7 @@ using EduMonitor.Api.Autorizacion;
 using EduMonitor.Application.Abstractions;
 using EduMonitor.Application.Cursos;
 using EduMonitor.Application.Herramientas;
+using EduMonitor.Application.Indicadores;
 using EduMonitor.Application.Periodo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -67,7 +68,7 @@ public sealed class ToolsController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Calificaciones(
         [FromQuery] int? cursoId, [FromQuery] int? estudianteId, [FromQuery] string? nombre,
-        [FromQuery] decimal? promedioMenorA, [FromQuery] string? orden, CancellationToken ct)
+        [FromQuery] decimal? promedioMenorA, [FromQuery] string? orden, [FromQuery] string? tramo, CancellationToken ct)
     {
         var usuario = await User.ResolverUsuarioAsync(cursos, ct);
         if (usuario is null)
@@ -78,6 +79,11 @@ public sealed class ToolsController(
         if (cursoId is null)
         {
             return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
+        }
+
+        if (!Tramo.TryParse(tramo, out var tramoElegido))
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El tramo solo acepta todo, p1, p2 o u1 a un.");
         }
 
         // HU-23 · Filtro y orden del resumen hechos en el backend.
@@ -116,7 +122,7 @@ public sealed class ToolsController(
         try
         {
             var resultado = await herramientas.CalificacionesAsync(
-                cursoId.Value, estudianteId, nombre, new FiltroCalificaciones(promedioMenorA, ordenResumen), ct);
+                cursoId.Value, estudianteId, nombre, new FiltroCalificaciones(promedioMenorA, ordenResumen, tramoElegido), ct);
             if (resultado is null)
             {
                 Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
@@ -135,6 +141,11 @@ public sealed class ToolsController(
             Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "OK", resultado.Respuesta!.Estudiantes.Count);
             return Ok(resultado.Respuesta);
         }
+        catch (TramoInexistente e)
+        {
+            Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: e.Message);
+        }
         catch (Exception)
         {
             Registrar(HerramientasService.HerramientaCalificaciones, usuario.Id, cursoId, "ERROR", 0);
@@ -152,7 +163,7 @@ public sealed class ToolsController(
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Alertas([FromQuery] int? cursoId, CancellationToken ct)
+    public async Task<IActionResult> Alertas([FromQuery] int? cursoId, [FromQuery] string? tramo, CancellationToken ct)
     {
         var usuario = await User.ResolverUsuarioAsync(cursos, ct);
         if (usuario is null)
@@ -165,9 +176,14 @@ public sealed class ToolsController(
             return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "Falta el parámetro cursoId.");
         }
 
+        if (!Tramo.TryParse(tramo, out var tramoElegido))
+        {
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: "El tramo solo acepta todo, p1, p2 o u1 a un.");
+        }
+
         try
         {
-            var respuesta = await herramientas.AlertasAsync(cursoId.Value, ct);
+            var respuesta = await herramientas.AlertasAsync(cursoId.Value, tramoElegido, ct);
             if (respuesta is null)
             {
                 Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
@@ -176,6 +192,11 @@ public sealed class ToolsController(
 
             Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "OK", respuesta.Alertas.Count);
             return Ok(respuesta);
+        }
+        catch (TramoInexistente e)
+        {
+            Registrar(HerramientasService.HerramientaAlertas, usuario.Id, cursoId, "NO_ENCONTRADO", 0);
+            return Problem(statusCode: StatusCodes.Status400BadRequest, detail: e.Message);
         }
         catch (Exception)
         {
