@@ -200,7 +200,7 @@ Estado del Sprint 3. Detalle del Sprint 2 por tarea en `docs/sprint-2/PLAN.md`; 
 | HU-17 | Trazas visibles y auditoría | 3 | Kevin | Hecha |
 | HU-18 | Pruebas, documentación y demostración final | 3 | Todo el equipo | Evaluación, «Calidad del asistente», matriz y guía hechas; faltan capturas, informe, video y ensayo |
 
-Los agregados del Sprint 3 (refuerzo antes y después, diagnóstico por criterio, nota necesaria, cifras enlazadas, «Calidad del asistente», preguntas fuera de alcance) son tareas TA-xx.A dentro de esas HU. Se activó la línea de corte: salen TA-22.A1 y TA-22.A2 y no entra ningún agregado TA-xx.B. El rediseño suma TA-08.A1, TA-21.A1, TA-21.A2, TA-22.A3, TA-22.A4, TA-22.A5, TA-15.A3 y TA-15.A4. Detalle en `docs/sprint-3/PLAN.md`.
+Los agregados del Sprint 3 (refuerzo antes y después, diagnóstico por criterio, nota necesaria, cifras enlazadas, «Calidad del asistente», preguntas fuera de alcance) son tareas TA-xx.A dentro de esas HU. En el cierre Kevin reincorporó lo que la línea de corte había sacado (TA-22.A1, TA-22.A2, TA-15.B1, TA-15.B2, TA-15.B3 y TA-16.A1). C8 (velocidad y lógica del asistente) no se aplicó, por decisión de Kevin. El rediseño suma TA-08.A1, TA-21.A1, TA-21.A2, TA-22.A3, TA-22.A4, TA-22.A5, TA-15.A3 y TA-15.A4. Detalle en `docs/sprint-3/PLAN.md`.
 
 ## Convenciones
 

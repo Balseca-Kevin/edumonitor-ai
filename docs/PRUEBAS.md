@@ -250,8 +250,8 @@ Recorrido de la Review del Sprint 3. Cada historia se muestra en la aplicación,
 
 Antes de la Review:
 1. Con el aula virtual encendida, abre «Mis cursos» y usa «Sincronizar y abrir» en AGIL-4B. Así llegan los enunciados, las rúbricas y los comentarios.
-2. En «Mapa del curso», revisa que la Tarea 3 y sus criterios tengan temas. Sin temas no hay plan de refuerzo ni mapa de calor.
-3. Para el modelo externo, pon `MODELO_EXTERNO_API_KEY` en `.env` y reinicia el agente (`docker compose up -d agent`). Sin clave, responde solo el modelo local.
+2. En «Mapa del curso», revisa que las actividades y los criterios de AGIL-4B tengan temas. Si no los tienen, asócialos con la tabla de [sprint-3/mapeo-agil-4b.md](sprint-3/mapeo-agil-4b.md) («Cómo repetir el mapeo»). Sin temas no hay plan de refuerzo ni mapa de calor.
+3. En este sprint el asistente responde con el modelo local (`qwen2.5:7b`). El modelo externo está programado pero no se activó, porque no hay clave del proveedor. Para activarlo, pon `MODELO_EXTERNO_API_KEY` en `.env` y reinicia el agente (`docker compose up -d agent`).
 
 ### HU-21 · Libro de calificaciones
 
@@ -273,9 +273,12 @@ Antes de la Review:
 
 ### HU-22 · Mapa del curso y panel de actividad
 
-1. La cabecera del curso muestra la semana real del período, las actividades vencidas con las entregas que faltan y la siguiente evaluación.
-2. En el libro, clic en el encabezado «Tarea 3» para abrir el panel de actividad. Muestra el enunciado y los adjuntos de Moodle, las entregas, la distribución con la línea de 7,0, el dominio por criterio, los temas y quién requiere atención.
-3. «Mapa del curso» → «Nota de cada estudiante en cada tema»: mapa de calor. Cada fila abre la ficha.
+1. La barra del curso, en todas las pantallas del curso, muestra la semana real del período y los chips de lo vencido. «Ver período» o un chip abre el panel «Período» con la línea de tiempo, las actividades vencidas con las entregas que faltan, lo que vence esta semana, la siguiente evaluación y la leyenda. Se cierra con Esc o con un clic afuera.
+2. La línea de tiempo de 80 px aparece solo en «Panel del curso»; en las demás pantallas queda la barra compacta.
+3. En el libro, clic en el encabezado «Tarea 3» para abrir el panel de actividad. Muestra el enunciado y los adjuntos de Moodle, las entregas, la distribución con la línea de 7,0, el dominio por criterio, los temas y quién requiere atención.
+4. Cada criterio dice «X % del curso logra el 70 % del puntaje». Bajo el criterio que casi todo el curso falló aparece «Casi todo el curso falló este criterio: revisar cómo se enseñó»; bajo uno que no separa a quienes van bien del resto, «Este criterio no separa a quienes van bien del resto: revisar el enunciado».
+5. «Pedir enunciado corregido» abre el asistente con la actividad como foco y la pregunta escrita. Envíala; «Copiar respuesta» copia el texto.
+6. «Mapa del curso» → «Nota de cada estudiante en cada tema»: mapa de calor. Cada fila abre la ficha.
 
 ### HU-15 · Retroalimentación y refuerzo
 
@@ -284,6 +287,8 @@ Antes de la Review:
 3. Edita el borrador, «Aprobar borrador», y descarga el PDF y el DOCX.
 4. En el panel de la Tarea 3, marca estudiantes → «Redactar retroalimentación». Se redacta, aprueba y descarga igual, con el título «Retroalimentación».
 5. «Plan de refuerzo» → «Refuerzos aplicados»: cuántos subieron, quedaron igual, bajaron o no tienen notas nuevas. Cada cambio se dice sin atribuirlo al refuerzo.
+6. «Plan de refuerzo» → pestaña «Por tema»: grupos de estudiantes con nota del tema bajo 6,0, en temas con 2 estudiantes o más. «Armar plan grupal» lleva al mismo flujo: borrador del asistente, aprobación, PDF, DOCX e historial.
+7. Después de editar y aprobar 2 planes, el borrador siguiente lleva la marca «Con tu estilo»: el asistente imita cómo los corregiste.
 
 ### HU-23 · Asistente con contexto, memoria y respaldo
 
@@ -300,6 +305,7 @@ Antes de la Review:
 
 1. Panel → «Informe del curso». Se abre el asistente con la pregunta del resumen ya escrita. Envíala.
 2. Debajo de la respuesta, «Descargar como informe del curso (PDF)». El PDF lleva el curso, la semana, la sincronización, las cifras del panel y el resumen.
+3. Antes del resumen, la sección «Refuerzos aplicados» tiene una fila por estudiante y tema de cada plan aprobado, con la nota del tema antes y ahora y el cambio en palabras. Sin planes aprobados dice «Aún no hay refuerzos aplicados.».
 
 ### HU-17 · Trazas y auditoría
 
@@ -314,19 +320,19 @@ Antes de la Review:
 
 ### HU-18 · Calidad del asistente
 
-1. Como admin, «Calidad del asistente» → curso AGIL-4B → «Correr evaluación». La tabla se llena sola mientras avanza.
+1. Como admin, «Calidad del asistente» → curso AGIL-4B → «Correr evaluación». La tabla se llena sola mientras avanza. En este sprint la evaluación se corre con el modelo local.
 2. Al terminar se ve cuántas de las 18 preguntas aprobó cada modelo, con sus herramientas, sus cifras verificadas y su tiempo. Cada respuesta se puede desplegar.
 3. Sin clave del modelo externo, su columna dice «No respondió» y la evaluación sigue con el local.
 
 ## Pruebas automatizadas
 
-Resultados al cierre del código del Sprint 3, en la rama de trabajo antes de los Pull Request:
+Resultados al cierre del Sprint 3, con todo integrado en `develop` (bloques C1 a C7):
 
 | Parte | Comando, desde la raíz | Pruebas que pasan |
 |---|---|---|
-| Backend (xUnit) | `dotnet test backend/EduMonitor.sln` | 317 de 317 con el aula virtual encendida. Con el aula apagada fallan las 8 de `MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests`, que llaman al Moodle real |
-| Frontend (Vitest) | `cd frontend; npm test -- --run` | 186 de 186, en 23 archivos |
-| Agente (pytest) | `cd agent; python -m pytest` | 70 de 70 |
+| Backend (xUnit) | `dotnet test backend/EduMonitor.sln` | 351 de 351 con el aula virtual encendida. Con el aula apagada fallan las 8 de `MoodleClientIntegracionTests` y `SincronizacionMoodleRealTests`, que llaman al Moodle real |
+| Frontend (Vitest) | `cd frontend; npm test -- --run` | 209 de 209, en 24 archivos |
+| Agente (pytest) | `cd agent; python -m pytest` | 123 de 123 |
 
 Resultados del Sprint 2 (12 nov 2026): 172 de 172 en el backend, 71 de 71 en el frontend y 23 de 23 en el agente.
 
