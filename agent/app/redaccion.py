@@ -5,6 +5,7 @@
 - Sin identificadores internos (cursoId, estudianteId…) ni nombres de herramientas: el docente no los usa.
 - Sin la pregunta de cierre genérica («¿Hay algo más en lo que pueda ayudarte?») ni la frase cortada que la introduce.
 - «Requiere atención» en lugar de «en riesgo».
+- Sin saludo con un nombre inventado («Hola Edu,»), sin «¿Cómo estás?» y sin un «Sí» inicial cuando la pregunta no es de sí o no.
 """
 
 import re
@@ -40,6 +41,39 @@ _ESTA_EN_RIESGO = re.compile(r"\best[aá](n?)\s+(?:en|con)\s+riesgo(?:\s+acad[e�
 _EN_RIESGO = re.compile(r"\b(\w+)\s+(?:en|con)\s+riesgo(?:\s+acad[eé]mico)?\b", re.IGNORECASE)
 
 
+# Saludo inicial con un nombre («Hola Edu,», «¡Hola, EduMonitor!»): el asistente no sabe cómo se llama el docente.
+_SALUDO_CON_NOMBRE = re.compile(
+    r"^\s*¡?\s*(?i:hola|buen[oa]s(?:\s+(?:d[ií]as|tardes|noches))?)\s*,?\s+[A-ZÁÉÍÓÚÑ][\wáéíóúñ]*\s*(?:[,.!:]+|\n)\s*"
+)
+# Cualquier saludo inicial suelto («¡Hola!», «Hola,»), que solo se quita cuando el docente no saludó.
+_SALUDO = re.compile(r"^\s*¡?\s*(?:hola|buen[oa]s(?:\s+(?:d[ií]as|tardes|noches))?)\s*[,.!]+\s*", re.IGNORECASE)
+# Preguntas de cortesía que el docente no pidió.
+_CORTESIA = re.compile(r"\s*¿\s*(?:c[oó]mo\s+est[aá]s|c[oó]mo\s+te\s+va|qu[eé]\s+tal(?:\s+est[aá]s)?|c[oó]mo\s+va\s+tu\s+d[ií]a)[^?]*\?", re.IGNORECASE)
+# «Sí» o «Sí,» al inicio.
+_SI_INICIAL = re.compile(r"^\s*s[ií]\s*[,.!:]+\s*", re.IGNORECASE)
+# Una pregunta que empieza con un interrogativo no se responde con sí o no.
+_INTERROGATIVO = re.compile(r"^\s*¿?\s*(?:qu[eé]|c[oó]mo|cu[aá]l(?:es)?|qui[eé]n(?:es)?|d[oó]nde|cu[aá]ndo|cu[aá]nt[oa]s?|por\s*qu[eé]|para\s+qu[eé]|en\s+qu[eé])\b", re.IGNORECASE)
+_DOCENTE_SALUDA = re.compile(r"^\s*¡?\s*(?:hola|buen[oa]s)\b", re.IGNORECASE)
+
+
+def _mayuscula(texto: str) -> str:
+    return texto[:1].upper() + texto[1:] if texto else texto
+
+
+def pulir_conversacion(texto: str, pregunta: str = "") -> str:
+    """Quita el saludo con nombre, las preguntas de cortesía y el «Sí» que la pregunta no pide."""
+    salida = texto or ""
+    if _SALUDO_CON_NOMBRE.match(salida):
+        salida = _SALUDO_CON_NOMBRE.sub("", salida, count=1)
+    elif pregunta and not _DOCENTE_SALUDA.match(pregunta):
+        salida = _SALUDO.sub("", salida, count=1)
+    salida = _CORTESIA.sub("", salida)
+    if pregunta and _INTERROGATIVO.match(pregunta):
+        salida = _SI_INICIAL.sub("", salida, count=1)
+    salida = _mayuscula(salida.strip())
+    return salida or (texto or "").strip()
+
+
 def _requiere_atencion(m: re.Match) -> str:
     palabra = m.group(1)
     verbo = "requieren" if palabra.lower().endswith("s") else "requiere"
@@ -50,9 +84,10 @@ def con_coma(texto: str) -> str:
     return _DECIMAL_CON_PUNTO.sub(r"\1,\2", texto or "")
 
 
-def pulir(texto: str) -> str:
-    """Texto final para el docente."""
-    salida = _ID_ENTRE_PARENTESIS.sub("", texto or "")
+def pulir(texto: str, pregunta: str = "") -> str:
+    """Texto final para el docente. ``pregunta`` es la del docente, sin las líneas de contexto."""
+    salida = pulir_conversacion(texto or "", pregunta)
+    salida = _ID_ENTRE_PARENTESIS.sub("", salida)
     salida = _ID_SUELTO.sub("", salida)
     salida = _HERRAMIENTA.sub(lambda m: HERRAMIENTAS_EN_PALABRAS[m.group(1)], salida)
     salida = _ESTA_EN_RIESGO.sub(lambda m: "requieren atención" if m.group(1) else "requiere atención", salida)

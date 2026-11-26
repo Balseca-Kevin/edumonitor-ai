@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from app import graph, modelos
 from app.alcance import fuera_de_alcance
-from app.enrutador import DATOS, parece_dato_del_curso, ruta_de
+from app.enrutador import DATOS, parece_dato_del_curso, pregunta_del_docente, ruta_de
 from app.graph import FalloExterno, MODEL_NAME, OLLAMA_BASE_URL, app_graph, texto_de
 from app.redaccion import pulir, pulir_cifras
 from app.schemas.tools import ChatPeticion, ChatRespuesta
@@ -89,7 +89,7 @@ async def chat_endpoint(request: ChatPeticion):
 
     externo = resultado is not None and usar_externo and not respaldo
     return ChatRespuesta(
-        respuesta=pulir(texto_de(resultado["messages"][-1])),
+        respuesta=pulir(texto_de(resultado["messages"][-1]), pregunta_del_docente(request.mensaje)),
         herramientas=resultado.get("trazas", []),
         modelo=modelos.MODELO_EXTERNO if externo else MODEL_NAME,
         duracionMs=int((time.time() - inicio) * 1000),

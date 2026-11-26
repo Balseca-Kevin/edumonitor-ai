@@ -207,3 +207,75 @@ def test_fuera_de_alcance_sigue_antes_del_enrutador():
 def test_preguntas_de_la_evaluacion_van_por_datos(pregunta):
     """Las 18 preguntas de «Calidad del asistente» no cambian: las que esperan herramientas siguen yendo por datos."""
     assert ruta_de(con_contexto(pregunta)) == DATOS
+
+
+# --- Respuestas débiles de C7 ---
+
+@pytest.mark.parametrize("texto,pregunta,esperado", [
+    # «¿Qué puedes hacer?» no es una pregunta de sí o no.
+    ("Sí, puedo responder preguntas sobre tu curso.", "¿Qué puedes hacer?", "Puedo responder preguntas sobre tu curso."),
+    ("Sí. Puedo redactar planes de refuerzo.", "¿Qué puedes hacer?", "Puedo redactar planes de refuerzo."),
+    # «¿Ya puedes…?» sí se responde con «Sí».
+    ("Sí. En «Plan de refuerzo» eliges la actividad.", "¿Ya puedes generar tareas de refuerzo?", "Sí. En «Plan de refuerzo» eliges la actividad."),
+    # «Si» condicional no se toca.
+    ("Si el estudiante entrega, sube su promedio.", "¿Qué pasa si entrega?", "Si el estudiante entrega, sube su promedio."),
+])
+def test_si_inicial_solo_en_preguntas_de_si_o_no(texto, pregunta, esperado):
+    assert pulir(texto, pregunta) == esperado
+
+
+@pytest.mark.parametrize("texto,esperado", [
+    ("¡De nada! ¿Cómo estás?", "¡De nada!"),
+    ("¡De nada! ¿Cómo estás? Aquí sigo para lo que necesites con AGIL-4B.", "¡De nada! Aquí sigo para lo que necesites con AGIL-4B."),
+    ("De nada. ¿Qué tal tu día?", "De nada."),
+])
+def test_gracias_sin_preguntar_como_estas(texto, esperado):
+    assert pulir(texto, "Gracias") == esperado
+
+
+@pytest.mark.parametrize("texto,esperado", [
+    ("Hola Edu, la gestión de configuración abarca más que el control de versiones.",
+     "La gestión de configuración abarca más que el control de versiones."),
+    ("¡Hola, EduMonitor! Scrum es un marco de trabajo ágil.", "Scrum es un marco de trabajo ágil."),
+    ("Hola Docente:\nScrum es un marco de trabajo ágil.", "Scrum es un marco de trabajo ágil."),
+    # Sin nombre: «Hola,» seguido del concepto también se quita, sin perder la palabra que sigue.
+    ("Hola, Scrum es un marco de trabajo ágil.", "Scrum es un marco de trabajo ágil."),
+])
+def test_sin_saludo_con_nombre_inventado(texto, esperado):
+    pregunta = "¿Qué diferencia hay entre gestión de configuración y control de versiones?"
+    assert pulir(texto, pregunta) == esperado
+    assert not pulir(texto, pregunta).lower().startswith("hola")
+
+
+def test_si_el_docente_saluda_se_responde_el_saludo():
+    assert pulir("¡Hola! Aquí estoy para ayudarte con AGIL-4B.", "Hola") == "¡Hola! Aquí estoy para ayudarte con AGIL-4B."
+    # Pero sin nombre inventado.
+    assert pulir("Hola Edu, aquí estoy.", "Hola") == "Aquí estoy."
+
+
+def test_prompt_base_prohibe_saludo_con_nombre_y_cortesia():
+    assert "no lo saludes con un nombre" in graph.PROMPT_BASE
+    assert "¿Cómo estás?" in graph.PROMPT_BASE
+
+
+def test_guia_dice_donde_se_abre_el_plan_de_refuerzo():
+    # Nombres reales de frontend/src/components/Marco.jsx y de los botones «Armar plan de refuerzo».
+    assert "«Mis cursos»" in GUIA_APP and "«Abrir curso»" in GUIA_APP
+    assert "«Plan de refuerzo» en la barra lateral" in GUIA_APP
+    assert "«Armar plan de refuerzo» desde Alertas" in GUIA_APP
+    assert "no empieces con «Sí»" in GUIA_APP
+    assert "Los cursos no se abren desde la barra lateral" in GUIA_APP
+    # Los pasos usan los textos de PlanRefuerzo.jsx y PlanBorrador.jsx.
+    for texto in ("«Por actividad»", "«Actividad evaluada»", "«Enviar el plan al asistente»", "«Aprobar borrador»", "«Descargar DOCX»"):
+        assert texto in GUIA_APP
+
+
+def test_chat_pule_con_la_pregunta_del_docente(monkeypatch):
+    desnudo = Modelo(AIMessage(content="¡De nada! ¿Cómo estás?"))
+    monkeypatch.setattr(graph, "llm", Modelo(sin_herramientas=desnudo))
+    monkeypatch.setattr(graph, "llm_externo", None)
+
+    r = client.post("/chat", json={"mensaje": con_contexto("Gracias"), "token": "t"})
+
+    assert r.status_code == 200
+    assert r.json()["respuesta"] == "¡De nada!"
