@@ -62,7 +62,7 @@ Se mantienen todas las animaciones del diseño D y las del prototipo. Todo queda
 | Inicio de sesión | 32 puntos que suben y flotan, curva que se dibuja en 1,6 s, raya 7,0, entrada escalonada del texto y el formulario, 3 preguntas que rotan cada 3 s, punto «en línea» que late junto al sello |
 | Pantalla de carga | Fondo oscuro con los puntos y la curva del inicio, entrada con escala, círculo que gira, barra de avance de arena a verde, cada paso pasa de girando a terminado cuando llega su respuesta real |
 | Aviso de sincronización | Baja desde arriba con un pequeño rebote, línea de brillo que recorre el borde superior, se cierra solo a los 8 s |
-| Cabecera del curso | Punto «sincronizado» que late; la actividad que vence esta semana lleva un halo verde |
+| Barra del curso | Punto «sincronizado» que respira; el panel «Período» entra y sale con motion; el marcador de la actividad que vence esta semana lleva un anillo verde que late |
 | Libro | Celdas nuevas de la última sincronización con anillo `--ia` |
 | Tarjetas | Suben 1 px y oscurecen el borde al pasar el cursor |
 | Ficha del estudiante | Entra desde la derecha en 0,28 s sobre un velo |
@@ -71,23 +71,47 @@ Se mantienen todas las animaciones del diseño D y las del prototipo. Todo queda
 ## Estructura
 
 - Barra lateral oscura de 236 px: «Edu**Monitor**», código del curso y período, navegación (Mis cursos, Libro de calificaciones, Panel del curso, Mapa del curso, Alertas con su contador, Plan de refuerzo, Asistente), usuario y «Cerrar sesión». La pantalla activa lleva una raya de 3 px en `--oscuro-arena`.
-- Cabecera oscura del curso a todo el ancho (detalle abajo).
+- Barra de contexto oscura del curso, de 48 px, a todo el ancho (detalle abajo).
 - Barra blanca bajo la cabecera: control segmentado (Todo el ciclo, Parcial 1, Parcial 2, U1 … Un, con tantas unidades como tenga el curso), «Datos de la última sincronización · hace …», botón «Sincronizar» y botón «Preguntar al asistente».
 - El control segmentado filtra de verdad el libro, el panel, las alertas y la ficha.
 
 ## Cabecera del curso
 
-1. Código, período y cantidad de estudiantes en letra técnica. Nombre del curso en 46 px peso 900.
-2. A la derecha, «SEMANA DEL PERÍODO», la semana actual en 64 px y el total de semanas en 30 px gris; debajo, la unidad actual con su nombre del sílabo en `--oscuro-arena`.
-3. Línea de tiempo de 108 px de alto:
-   - «PARCIAL 1» y «PARCIAL 2» arriba, con una línea punteada entre los dos parciales.
-   - Nombre de cada unidad («U3 · Metodologías ágiles del mercado»): la actual en blanco 700, las pasadas en gris, las futuras más oscuras.
-   - Pista de 8 px con relleno degradado hasta hoy y cortes entre unidades.
-   - Un marcador por actividad en su semana de vencimiento, todos del mismo tamaño: círculo de 18 px para tareas, talleres y APE; rombo de 16 px para exámenes; anillo de 3 px del color del fondo. Color por estado: vencida y todos entregaron (`--oscuro-texto`), vencida con entregas que faltan (`--oscuro-arena`), vence esta semana (`--vivo` con halo), próxima (hueca con borde gris).
-   - Números de semana debajo; la semana actual dice «HOY n» en una píldora clara.
-   - Sigla de cada actividad debajo de su marcador (T1, APE1, EX P1), del color de su estado. El nombre completo y la fecha van en el `title`.
-4. Tres bloques: «VENCIDAS» (cuántas actividades vencieron y cuántas entregas faltan, con los nombres), «VENCE ESTA SEMANA» (actividad y cuántos entregaron, con barra) y «SIGUIENTE» (actividad, semana y temas que evalúa). Si no hay ninguna en un bloque, el bloque lo dice («Nada vence esta semana»).
-5. Leyenda de los colores y la forma de los marcadores.
+Cambio C6 de la guía de cierre: la cabecera grande ocupaba media pantalla en todos los módulos y las siglas de la línea de tiempo se pisaban. Los datos son los mismos de `GET /api/cursos/{id}/periodo`.
+
+### Barra de contexto (todos los módulos del curso)
+
+- Una sola línea de 48 px como máximo, en `--oscuro-fondo`: código del curso en JetBrains Mono, nombre del curso en 15 px peso 700 (recortado con puntos suspensivos y completo en un tooltip al pasar el cursor o enfocarlo), «Semana n de N» y la unidad actual recortada.
+- A la derecha, dos chips que solo aparecen si aplican: «Vence esta semana: Examen Parcial 2» (con «y n más» si hay varias) y «15 vencidas» («1 vencida» en singular). Al final, el botón «Ver período».
+- Sin título grande: cada pantalla usa su propio título de página («Libro de calificaciones», «Panel del curso», «Mapa del curso»…). La letra grande queda solo en «Mis cursos» y en el inicio de sesión.
+- Casos sin período:
+  - Curso nunca sincronizado: «Sin sincronizar», sin chips ni «Ver período».
+  - Sincronizado pero el período no llegó: «Período no disponible».
+  - Sin fecha de inicio en Moodle: «Semana no disponible»; el panel muestra los bloques sin línea de tiempo.
+  - Período terminado: «Período terminado» en lugar de la unidad.
+
+### Panel «Período»
+
+- «Ver período» y los dos chips abren un panel flotante anclado a la barra (Radix Popover), no una pantalla. Se cierra con Esc, con clic afuera y con el botón ×.
+- Contiene la línea de tiempo, los tres bloques y la leyenda:
+  - «VENCIDAS»: cuántas actividades vencieron y cuántas entregas faltan, con los nombres.
+  - «VENCE ESTA SEMANA»: actividad y cuántos entregaron, con barra.
+  - «SIGUIENTE»: actividad, semana y temas que evalúa.
+  - Un bloque vacío lo dice («Nada vence esta semana», «No quedan evaluaciones»).
+- En pantallas de 720 px o menos sale como panel inferior a todo el ancho.
+
+### Línea de tiempo ligera
+
+- Barra continua por semanas con los parciales y las unidades como segmentos arriba (la unidad actual en 700) y el relleno hasta hoy.
+- Marcadores solo para evaluaciones con fecha: círculo para tarea, taller o APE; rombo para examen. Color por estado: vencida y todos entregaron (`--tinta`), vencida con entregas que faltan (`--arena`), vence esta semana (`--ia` con anillo que late), próxima (hueca con borde `--grafico`).
+- Marcador «Hoy» con la semana actual.
+- Sin etiquetas fijas bajo los marcadores. Cada marcador es un botón enfocable con tooltip (Radix Tooltip) y nombre accesible iguales: «Tarea 3 · vence 29/09 · 11 de 12 entregaron», o «· próxima» si todavía no vence.
+- «Panel del curso» es la única pantalla que la muestra sin abrir nada, en una versión compacta de 80 px como máximo bajo su título, sin los nombres de parcial.
+
+### Movimiento de la barra
+
+- La barra y el panel entran y salen con `motion` (`LazyMotion`; las funciones de animación se cargan aparte, después de la primera pintura).
+- Se conservan el punto que respira, el relleno que se traza y el anillo de la actividad de esta semana. Con `prefers-reduced-motion` todo queda quieto (`MotionConfig reducedMotion="user"` y la regla de CSS).
 
 No se muestra «Sincronizado con Moodle · COMPLETADA» ni «Las notas son las mismas del aula virtual» en la cabecera.
 

@@ -5,7 +5,7 @@ React 18 + Vite, React Router, Axios, Recharts, Vitest + Testing Library. La int
 ## Diseño
 
 - `docs/sprint-3/diseno.md` manda, con el prototipo `docs/sprint-3/prototipo/EduMonitor_Sprint3.dc.html` como referencia (sus datos son ficticios; no se copian). Lo que no cambia sigue en `docs/sprint-2/diseno.md` (diseño D). Todo color, tamaño de letra, espacio, radio y tiempo sale de `src/styles/tokens.css`; las clases de las pantallas están en `src/styles/app.css`.
-- Componentes base de Santiago en `src/components/ui/` (Button, Input, Card, Table, StatusBadge, Alert). Estructura en `src/components/Marco.jsx`, estados en `Estado.jsx`, páginas de 401 y 403 en `PaginaError.jsx`, cabecera del curso con la línea de tiempo del período en `CabeceraCurso.jsx`.
+- Componentes base de Santiago en `src/components/ui/` (Button, Input, Card, Table, StatusBadge, Alert). Estructura en `src/components/Marco.jsx`, estados en `Estado.jsx`, páginas de 401 y 403 en `PaginaError.jsx`, barra de contexto del curso, panel «Período» y línea de tiempo (`LineaTiempo`, también en el Panel) en `CabeceraCurso.jsx`.
 - Textos en lenguaje docente en `src/components/lenguaje.js`: en pantalla no van términos estadísticos (z, desviación, tendencia), códigos de regla (R1, R2, R4) ni nombres de funciones del agente.
 - Movimiento una sola vez y en menos de 3 s, quieto con `prefers-reduced-motion` (`src/components/movimiento.js`).
 - Gráficos con Recharts, colores tomados de los tokens.

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
+import { LineaTiempo } from '../../components/CabeceraCurso'
 import { Bar, BarChart, Cell, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from 'recharts'
 import Estado from '../../components/Estado'
 import FichaLateral from '../../components/FichaLateral'
@@ -166,7 +167,7 @@ export default function Panel() {
   const { id } = useParams()
   const tramo = useTramo()
   const navigate = useNavigate()
-  const { version = 0 } = useOutletContext() ?? {}
+  const { version = 0, periodo = null } = useOutletContext() ?? {}
   const clave = `${id}|${tramo}|${version}`
   const [cargado, setCargado] = useState({ clave: null, datos: null, alertas: null, error: null })
   const [libro, setLibro] = useState({ clave: null, datos: null })
@@ -236,6 +237,7 @@ export default function Panel() {
   return (
     <>
       <div className="panel-acciones">
+        <h2 className="panel-titulo">Panel del curso</h2>
         <button
           type="button"
           className="boton boton--secundario"
@@ -244,6 +246,11 @@ export default function Panel() {
           Informe del curso
         </button>
       </div>
+      {periodo?.semana && (
+        <section className="panel-periodo" aria-label="Período del curso">
+          <LineaTiempo periodo={periodo} compacta />
+        </section>
+      )}
       <section className="panel-cifras-s3" aria-label="Cifras del curso">
         <div className="panel-cifra entra">
           <span className="cifra-titulo">Promedio del curso</span>

@@ -46,3 +46,15 @@ export function tonoDeEstado(estado) {
       return 'neutro'
   }
 }
+
+const formatoDiaMes = new Intl.DateTimeFormat('es-EC', { day: '2-digit', month: '2-digit', timeZone: 'America/Guayaquil' })
+
+/** «29/09»: día y mes de una fecha límite, en hora de Ecuador. Sin fecha devuelve «sin fecha». */
+export function formatearDiaMes(valor) {
+  if (!valor) return 'sin fecha'
+  const fecha = new Date(valor)
+  if (Number.isNaN(fecha.getTime())) return 'sin fecha'
+  // Algunos ICU devuelven «8/10» aunque se pida 2 dígitos: se arma con las partes para que siempre sea «08/10».
+  const partes = Object.fromEntries(formatoDiaMes.formatToParts(fecha).map((p) => [p.type, p.value]))
+  return `${partes.day.padStart(2, '0')}/${partes.month.padStart(2, '0')}`
+}

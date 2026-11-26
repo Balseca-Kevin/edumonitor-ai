@@ -1,10 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import CabeceraCurso from './CabeceraCurso'
+import CabeceraCurso, { LineaTiempo } from './CabeceraCurso'
 
-// Vitest no procesa el CSS: se lee el archivo para comprobar que las animaciones quedan quietas con prefers-reduced-motion.
 const estilos = readFileSync(resolve(process.cwd(), 'src/styles/app.css'), 'utf8').replaceAll('\r\n', '\n')
 
 const curso = {
@@ -42,85 +41,153 @@ const periodo = {
 
 afterEach(cleanup)
 
-describe('TA-22.A5 · Cabecera del curso con la línea de tiempo', () => {
-  it('muestra el código, el período, los estudiantes, el nombre y la semana actual sobre el total', () => {
-    render(<CabeceraCurso curso={curso} periodo={periodo} estudiantes={3} />)
+const abrirPanel = async (nombre = 'Ver período') => {
+  fireEvent.click(screen.getByRole('button', { name: nombre }))
+  return screen.findByRole('dialog', { name: 'Período' })
+}
 
-    expect(screen.getByText(/AGIL-4B · Período 2026-2 · 3 estudiantes/)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 1, name: 'Metodologías Ágiles (lab)' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Semana 6 de 8')).toHaveTextContent('6 / 8')
-    expect(screen.getByText('U2 · Filosofía y enfoques ágiles de la actualidad', { selector: '.cabecera-unidad' })).toBeInTheDocument()
+describe('C6 · Barra de contexto del curso', () => {
+  it('muestra en una línea el código, el nombre, la semana, la unidad y los chips que aplican, sin título grande', () => {
+    render(<CabeceraCurso curso={curso} periodo={periodo} />)
+    const barra = screen.getByLabelText('Curso AGIL-4B')
+
+    expect(barra).toHaveClass('contexto-curso')
+    expect(within(barra).getByText('AGIL-4B')).toHaveClass('mono')
+    expect(within(barra).getByText('Metodologías Ágiles (lab)')).toHaveClass('contexto-nombre')
+    expect(within(barra).getByLabelText('Semana 6 de 8')).toHaveTextContent('Semana 6 de 8')
+    expect(within(barra).getByText('U2 · Filosofía y enfoques ágiles de la actualidad')).toHaveClass('contexto-unidad')
+    expect(within(barra).getByRole('button', { name: 'Vence esta semana: APE 3' })).toBeInTheDocument()
+    expect(within(barra).getByRole('button', { name: '3 vencidas' })).toBeInTheDocument()
+    expect(within(barra).getByRole('button', { name: 'Ver período' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
+    // La línea de tiempo no está en la barra: solo en el panel «Período» y en el Panel del curso.
+    expect(screen.queryByRole('group', { name: /Línea de tiempo/ })).not.toBeInTheDocument()
   })
 
-  it('dibuja las unidades, una semana por número con «HOY n» y un marcador por actividad con fecha, con su estado', () => {
-    render(<CabeceraCurso curso={curso} periodo={periodo} estudiantes={3} />)
+  it('sin evaluaciones esta semana ni vencidas no muestra esos chips', () => {
+    render(<CabeceraCurso curso={curso} periodo={{ ...periodo, venceEstaSemana: [], vencidas: { actividades: 0, entregasQueFaltan: 0, conFaltas: [] } }} />)
+    expect(screen.queryByRole('button', { name: /Vence esta semana/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /vencidas?$/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Ver período' })).toBeInTheDocument()
+  })
+
+  it('con varias evaluaciones esta semana nombra la primera y cuántas más; con una vencida usa el singular', () => {
+    const dos = [...periodo.venceEstaSemana, { id: 107, nombre: 'Tarea 8', fechaLimite: '2026-11-26T23:59:00-05:00', entregaron: 0, matriculados: 3 }]
+    render(<CabeceraCurso curso={curso} periodo={{ ...periodo, venceEstaSemana: dos, vencidas: { ...periodo.vencidas, actividades: 1 } }} />)
+    expect(screen.getByRole('button', { name: 'Vence esta semana: APE 3 y 1 más' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '1 vencida' })).toBeInTheDocument()
+  })
+
+  it('el nombre completo del curso está en un tooltip al enfocarlo', async () => {
+    render(<CabeceraCurso curso={curso} periodo={periodo} />)
+    fireEvent.focus(screen.getByText('Metodologías Ágiles (lab)', { selector: '.contexto-nombre' }))
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Metodologías Ágiles (lab)')
+  })
+
+  it('«Ver período» abre el panel «Período» con la línea de tiempo, los tres bloques y la leyenda; Esc lo cierra', async () => {
+    render(<CabeceraCurso curso={curso} periodo={periodo} />)
+
+    const panel = await abrirPanel()
+    expect(within(panel).getByRole('group', { name: 'Línea de tiempo del período: semana 6 de 8' })).toBeInTheDocument()
+    expect(within(panel).getByRole('region', { name: 'Vencidas' })).toHaveTextContent('3 actividades')
+    expect(within(panel).getByRole('region', { name: 'Vencidas' })).toHaveTextContent('1 entrega falta: Tarea 2 (1)')
+    expect(within(panel).getByRole('region', { name: 'Vence esta semana' })).toHaveTextContent('1 de 3 entregaron')
+    expect(within(panel).getByRole('region', { name: 'Siguiente' })).toHaveTextContent('Temas: Scrum, Kanban')
+    expect(within(panel).getByLabelText('Leyenda de la línea de tiempo')).toBeInTheDocument()
+
+    fireEvent.keyDown(panel, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Período' })).not.toBeInTheDocument())
+  })
+
+  it.each([['Vence esta semana: APE 3'], ['3 vencidas']])('el chip «%s» abre el panel «Período»', async (chip) => {
+    render(<CabeceraCurso curso={curso} periodo={periodo} />)
+    expect(await abrirPanel(chip)).toBeInTheDocument()
+  })
+
+  it('el botón de cerrar también cierra el panel', async () => {
+    render(<CabeceraCurso curso={curso} periodo={periodo} />)
+    const panel = await abrirPanel()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Cerrar el período' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Período' })).not.toBeInTheDocument())
+  })
+
+  it('sin sincronizar dice «Sin sincronizar» y no ofrece el panel', () => {
+    render(<CabeceraCurso curso={{ ...curso, ultimaSincronizacion: null }} periodo={null} />)
+    expect(screen.getByText('Sin sincronizar')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Ver período' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/Semana \d/)).not.toBeInTheDocument()
+  })
+
+  it('sincronizado pero sin período dice «Período no disponible», nunca una semana inventada', () => {
+    render(<CabeceraCurso curso={curso} periodo={null} />)
+    expect(screen.getByText('Período no disponible')).toBeInTheDocument()
+    expect(screen.queryByText(/Semana \d/)).not.toBeInTheDocument()
+  })
+
+  it('con el período terminado lo dice en la barra y en el panel', async () => {
+    const terminado = { ...periodo, estado: 'TERMINADO', semana: { actual: 8, total: 8 }, venceEstaSemana: [], siguiente: null }
+    render(<CabeceraCurso curso={curso} periodo={terminado} />)
+    expect(screen.getByText('Período terminado')).toBeInTheDocument()
+    expect(screen.queryByText(/^U2 ·/)).not.toBeInTheDocument()
+    const panel = await abrirPanel()
+    expect(within(panel).getByText(/el período terminó/)).toBeInTheDocument()
+    expect(within(panel).getByRole('region', { name: 'Siguiente' })).toHaveTextContent('No quedan evaluaciones')
+    expect(within(panel).getByRole('region', { name: 'Vence esta semana' })).toHaveTextContent('Nada vence esta semana')
+  })
+
+  it('sin fecha de inicio dice «Semana no disponible» y el panel queda sin línea de tiempo, con los bloques', async () => {
+    render(<CabeceraCurso curso={curso} periodo={{ ...periodo, semana: null, noDisponibles: ['inicio'] }} />)
+    expect(screen.getByText('Semana no disponible', { selector: '.contexto-semana' })).toBeInTheDocument()
+    const panel = await abrirPanel()
+    expect(within(panel).queryByRole('group')).not.toBeInTheDocument()
+    expect(within(panel).getByRole('region', { name: 'Vencidas' })).toBeInTheDocument()
+  })
+})
+
+describe('C6 · Línea de tiempo ligera', () => {
+  it('un marcador enfocable por evaluación con fecha, con nombre accesible igual al tooltip; la que no tiene fecha no se dibuja', () => {
+    render(<LineaTiempo periodo={periodo} />)
     const linea = screen.getByRole('group', { name: 'Línea de tiempo del período: semana 6 de 8' })
 
+    expect(within(linea).getAllByRole('button')).toHaveLength(5)
+    expect(within(linea).getByRole('button', { name: 'Tarea 1 · vence 08/10 · 3 de 3 entregaron' })).toHaveClass('lt2-marcador--completa')
+    expect(within(linea).getByRole('button', { name: 'Tarea 2 · vence 22/10 · 2 de 3 entregaron' })).toHaveClass('lt2-marcador--faltan')
+    expect(within(linea).getByRole('button', { name: 'Examen Parcial 1 · vence 22/10 · 3 de 3 entregaron' })).toHaveClass('lt2-marcador--rombo')
+    expect(within(linea).getByRole('button', { name: 'APE 3 · vence 25/11 · 1 de 3 entregaron' })).toHaveClass('lt2-marcador--esta-semana')
+    expect(within(linea).getByRole('button', { name: 'Tarea 9 · vence 02/12 · próxima' })).toHaveClass('lt2-marcador--proxima')
+    expect(within(linea).queryByRole('button', { name: /Lectura/ })).not.toBeInTheDocument()
+    expect(within(linea).getByRole('img', { name: 'Hoy, semana 6' })).toBeInTheDocument()
     expect(within(linea).getByText('PARCIAL 1')).toBeInTheDocument()
     expect(within(linea).getByText('PARCIAL 2')).toBeInTheDocument()
-    expect(within(linea).getByText('U2 · Filosofía y enfoques ágiles de la actualidad')).toHaveClass('lt-unidad--actual')
-    expect(within(linea).getByText('U1 · Principios fundamentales de las metodologías ágiles')).toHaveClass('lt-unidad--pasada')
-    expect(within(linea).getByText('HOY 6')).toHaveClass('lt-semana--hoy')
-    expect(linea.querySelectorAll('.lt-semana')).toHaveLength(8)
-
-    // Sin fecha límite no hay marcador: 5 de las 6 actividades.
-    const marcadores = within(linea).getAllByRole('img')
-    expect(marcadores).toHaveLength(5)
-    expect(within(linea).getByRole('img', { name: 'Tarea 1: vencida, todos entregaron' })).toHaveClass('marcador--completa')
-    expect(within(linea).getByRole('img', { name: 'Tarea 2: vencida, faltan 1 entregas' })).toHaveClass('marcador--faltan')
-    expect(within(linea).getByRole('img', { name: 'Examen Parcial 1: vencida, todos entregaron' })).toHaveClass('marcador--rombo')
-    expect(within(linea).getByRole('img', { name: 'APE 3: vence esta semana, 1 de 3 entregaron' })).toHaveClass('marcador--esta-semana')
-    expect(within(linea).getByRole('img', { name: 'Tarea 9: próxima' })).toHaveClass('marcador--proxima')
-    expect(within(linea).getByText('EX P1')).toHaveClass('lt-sigla--completa')
-    expect(within(linea).queryByText('L')).toBeNull()
+    expect(linea.querySelector('.lt2-unidad--actual')).toHaveTextContent('U2 · Filosofía y enfoques ágiles de la actualidad')
+    // Sin etiquetas fijas bajo los marcadores: la sigla no aparece en la línea.
+    expect(within(linea).queryByText('T1')).not.toBeInTheDocument()
   })
 
-  it('los tres bloques dicen las vencidas con lo que falta, lo que vence esta semana y la siguiente con sus temas', () => {
-    render(<CabeceraCurso curso={curso} periodo={periodo} estudiantes={3} />)
-
-    const vencidas = screen.getByRole('region', { name: 'Vencidas' })
-    expect(within(vencidas).getByText('3 actividades')).toBeInTheDocument()
-    expect(within(vencidas).getByText('1 entrega falta: Tarea 2 (1)')).toBeInTheDocument()
-    const estaSemana = screen.getByRole('region', { name: 'Vence esta semana' })
-    expect(within(estaSemana).getByText('APE 3')).toBeInTheDocument()
-    expect(within(estaSemana).getByText(/1 de 3 entregaron · vence 25\/11\/2026/)).toBeInTheDocument()
-    const siguiente = screen.getByRole('region', { name: 'Siguiente' })
-    expect(within(siguiente).getByText('Tarea 9')).toBeInTheDocument()
-    expect(within(siguiente).getByText(/Semana 7 · vence 02\/12\/2026.* · Temas: Scrum, Kanban/)).toBeInTheDocument()
-    expect(screen.getByLabelText('Leyenda de la línea de tiempo')).toHaveTextContent('Examen')
+  it('al enfocar un marcador con el teclado aparece su tooltip', async () => {
+    render(<LineaTiempo periodo={periodo} />)
+    const marcador = screen.getByRole('button', { name: 'Tarea 2 · vence 22/10 · 2 de 3 entregaron' })
+    marcador.focus()
+    expect(marcador).toHaveFocus()
+    fireEvent.focus(marcador)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Tarea 2 · vence 22/10 · 2 de 3 entregaron')
   })
 
-  it('sin nada que venza ni evaluaciones pendientes lo dice con palabras', () => {
-    const terminado = { ...periodo, vencidas: { actividades: 6, entregasQueFaltan: 0, conFaltas: [] }, venceEstaSemana: [], siguiente: null }
-    render(<CabeceraCurso curso={curso} periodo={terminado} estudiantes={3} />)
-
-    expect(screen.getByText('Todos entregaron las vencidas.')).toBeInTheDocument()
-    expect(screen.getByText('Nada vence esta semana')).toBeInTheDocument()
-    expect(screen.getByText('No quedan evaluaciones')).toBeInTheDocument()
+  it('la versión del Panel es compacta: sin parciales a la vista, sin nombres de unidad ni rango de semanas', () => {
+    render(<LineaTiempo periodo={periodo} compacta />)
+    const linea = screen.getByRole('group', { name: 'Línea de tiempo del período: semana 6 de 8' })
+    expect(linea).toHaveClass('lt2--compacta')
+    expect(within(linea).queryByText(/Principios fundamentales/)).not.toBeInTheDocument()
+    expect(within(linea).queryByText('Semana 1')).not.toBeInTheDocument()
+    expect(within(linea).getAllByRole('button')).toHaveLength(5)
   })
 
-  it('sin fecha de inicio no inventa semanas: dice «no disponible» y conserva los bloques', () => {
-    const sinInicio = { ...periodo, semana: null, estado: null, noDisponibles: ['inicio'] }
-    render(<CabeceraCurso curso={curso} periodo={sinInicio} estudiantes={3} />)
-
-    expect(screen.getByText('no disponible')).toBeInTheDocument()
-    expect(screen.queryByRole('group', { name: /Línea de tiempo/ })).toBeNull()
-    expect(screen.getByText(/La fecha de inicio del curso no está disponible/)).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Vencidas' })).toBeInTheDocument()
-  })
-
-  it('sin período (curso sin sincronizar) lo dice y no muestra ninguna semana', () => {
-    render(<CabeceraCurso curso={{ ...curso, ultimaSincronizacion: null }} periodo={null} estudiantes={null} />)
-
-    expect(screen.getByText(/El estado del período aparece cuando el curso se sincroniza/)).toBeInTheDocument()
-    expect(screen.queryByText(/sincronizado/)).toBeNull()
-    expect(screen.queryByText(/estudiantes/)).toBeNull()
-  })
-
-  it('las animaciones de la línea de tiempo existen y prefers-reduced-motion las deja quietas', () => {
-    expect(estilos).toMatch(/\.marcador--esta-semana \{[^}]*animation: anillo-vivo/)
-    expect(estilos).toMatch(/\.lt-relleno \{[^}]*animation: trazar/)
+  it('las animaciones existen, la barra mide 48 px, la línea del Panel 80 px y prefers-reduced-motion las deja quietas', () => {
+    expect(estilos).toMatch(/\.lt2-marcador--esta-semana \{[^}]*animation: anillo-vivo/)
+    expect(estilos).toMatch(/\.lt2-relleno \{[^}]*animation: trazar/)
     expect(estilos).toMatch(/\.vivo-punto \{[^}]*animation: respirar/)
-    expect(estilos).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\n {2}\*, \*::before, \*::after \{ animation-duration: 0ms !important;[^}]*animation-iteration-count: 1 !important/)
+    expect(estilos).toMatch(/\.contexto-curso \{[^}]*height: 48px/)
+    expect(estilos).toMatch(/\.panel-periodo \{[^}]*max-height: 80px/)
+    expect(estilos).toMatch(/@media \(prefers-reduced-motion: reduce\)/)
   })
 })
