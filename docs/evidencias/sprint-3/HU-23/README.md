@@ -17,19 +17,21 @@ Antes, con «U2» elegido, el texto del asistente usaba las alertas de todo el c
 
 Prueba con el modelo local (`qwen2.5:7b`), 12 preguntas sin datos del curso. Todas se respondieron sin herramientas, sin «riesgo» y sin el tramo en el texto.
 
+Las cuatro respuestas débiles de la primera corrida (pasos del plan de refuerzo, «Sí,» en «¿Qué puedes hacer?», «¿Cómo estás?» después de «Gracias» y el saludo «Hola Edu») se corrigieron en la guía de la aplicación, en el prompt base y en `redaccion.pulir`, con pruebas en `agent/tests/test_c7.py`. La tabla muestra la corrida después del cambio; las filas que no se repitieron conservan el resultado anterior.
+
 | Pregunta | Tiempo | Resultado |
 |---|---|---|
-| ¿Ya puedes generar tareas de refuerzo? | 12,8 s | Empieza con «Sí» y da los pasos de «Plan de refuerzo». Débil: dice que se abre el curso «desde la barra lateral» y el plan «en el panel del curso» |
-| ¿Qué puedes hacer? | 17,7 s | Lista lo que hace el asistente. Débil: empieza con «Sí,» sin que la pregunta lo pida |
+| ¿Ya puedes generar tareas de refuerzo? | 10,9 s | Empieza con «Sí» y da los 5 pasos reales: «Mis cursos» y «Abrir curso», «Plan de refuerzo» en la barra lateral, pestaña «Por actividad», «Enviar el plan al asistente», aprobar y descargar PDF o DOCX |
+| ¿Qué puedes hacer? | 13,4 s | Empieza con «Puedo ayudarte…» y lista lo que hace el asistente |
 | ¿Quién eres? | 4,3 s | Correcta |
-| ¿Qué es Scrum? | 8,1 s | Correcta |
+| ¿Qué es Scrum? | 6,5 s | Correcta |
 | Explícame Kanban en dos frases | 3,2 s | Correcta, dos frases |
 | Dame ideas de actividades para repasar Kanban | 21,6 s | 7 ideas usables |
 | ¿Cuál es la capital de Francia? | 0,6 s | Correcta |
-| Hola | 1,2 s | Correcta |
-| Gracias | 1,2 s | Débil: «¡De nada! ¿Cómo estás?» |
+| Hola | 0,9 s | «Hola.» |
+| Gracias | 1,5 s | «De nada.», sin preguntar nada |
 | ¿Cómo descargo el plan en PDF? | 9,8 s | Pasos correctos hasta «Descargar PDF» |
 | Rúbrica de historias de usuario con 3 niveles | 29,2 s | Usable, genérica |
-| ¿Qué diferencia hay entre gestión de configuración y control de versiones? | 14,8 s | Correcta. Débil: empieza con «Hola Edu» |
+| ¿Qué diferencia hay entre gestión de configuración y control de versiones? | 13,6 s | Correcta, sin saludo |
 
 Al guardar cada captura, se cambia el nombre del archivo por un enlace y se agrega el dato observado.

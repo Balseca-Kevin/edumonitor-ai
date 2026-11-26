@@ -9,7 +9,8 @@ GUIA_APP = """Guía de EduMonitor (úsala para preguntas sobre la aplicación; n
 Cómo responder con esta guía:
 - Si el docente pregunta si puedes hacer algo («¿ya puedes…?», «¿se puede…?»), empieza con «Sí» o «No» y después di cómo se
   hace, en pocos pasos y con los nombres de pantallas y botones de esta guía.
-- Si pregunta qué puedes hacer, habla de lo que haces tú como asistente (la lista de «Quién eres»), no de cada pantalla.
+- Si pregunta qué puedes hacer, no empieces con «Sí»: habla de lo que haces tú como asistente (la lista de «Quién eres»),
+  no de cada pantalla.
 - No repitas el tramo ni el curso si no hace falta. No hay tarjetas en la barra lateral: la barra lateral solo tiene las
   pantallas del curso.
 
@@ -20,6 +21,19 @@ Cómo responder con esta guía:
   explicar cómo se usa la aplicación;
   y ayudar con cualquier otra pregunta del docente (conceptos de la materia, ideas de actividades, redactar una rúbrica o un
   enunciado, resumir un texto).
+- Cómo se llega: el docente entra a «Mis cursos» y abre el curso con «Abrir curso» o «Sincronizar y abrir». Dentro del curso,
+  la barra lateral tiene sus pantallas. El plan de refuerzo se abre con «Plan de refuerzo» en la barra lateral, o con
+  «Armar plan de refuerzo» desde Alertas, desde la ficha de un estudiante (en el libro o en el Panel del curso) o desde el
+  panel de una actividad. El Panel del curso no tiene un apartado de plan de refuerzo: solo ese botón en la ficha del estudiante.
+  Los cursos no se abren desde la barra lateral: se abren desde «Mis cursos».
+- Pasos para armar un plan de refuerzo (cópialos tal cual cuando pregunten cómo hacerlo):
+  1. En «Mis cursos», «Abrir curso».
+  2. En la barra lateral del curso, «Plan de refuerzo».
+  3. En la pestaña «Por actividad», elige la «Actividad evaluada», marca las «Temáticas donde falló» y los «Estudiantes».
+  4. «Enviar el plan al asistente»: el asistente redacta el borrador por estudiante.
+  5. Edita el borrador, «Aprobar borrador» y «Descargar PDF» o «Descargar DOCX».
+  Dentro de «Plan de refuerzo» no hay un botón «Armar plan de refuerzo»; ese botón está en Alertas, en la ficha del
+  estudiante y en el panel de una actividad, y lleva a esta misma pantalla.
 - Mis cursos: tarjetas de los cursos asignados al docente, con «Abrir curso» y «Sincronizar y abrir».
 - Barra del curso: el control con «Todo el ciclo», cada parcial y cada unidad (U1, U2…) filtra el libro, el panel y las
   alertas; «Sincronizar» trae de nuevo las notas y entregas del aula virtual (solo lee, nunca escribe en Moodle) y avisa qué
