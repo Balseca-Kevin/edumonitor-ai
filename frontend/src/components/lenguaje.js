@@ -42,10 +42,16 @@ export function textoEvidencia(alerta) {
     formatearNumero(valor, decimales) ?? "no disponible";
 
   switch (alerta.regla) {
-    case "R1":
-      return `Sus últimas notas (${(e.ultimas ?? []).map((n) => numero(n)).join(" · ")}) están ${numero(
+    case "R1": {
+      // C7 · De la más reciente a la más antigua, frente al promedio de las anteriores, como lo dice el asistente.
+      const ultimas = [...(e.ultimas ?? [])].reverse().map((n) => numero(n));
+      const anteriores = (e.anteriores ?? []).filter((n) => typeof n === "number");
+      const anterior = anteriores.length ? numero(anteriores.reduce((s, n) => s + n, 0) / anteriores.length) : "no disponible";
+      const lista = ultimas.length > 1 ? `${ultimas.slice(0, -1).join("; ")} y ${ultimas.at(-1)}` : ultimas.join("");
+      return `Sus últimas ${ultimas.length} notas fueron ${lista}, frente a un promedio anterior de ${anterior}: bajó ${numero(
         Math.abs(e.diferencia ?? 0),
-      )} puntos bajo las anteriores (${(e.anteriores ?? []).map((n) => numero(n)).join(" · ")}); el aviso salta desde ${numero(e.umbral)}`;
+      )} puntos; el aviso salta desde ${numero(e.umbral)}`;
+    }
     case "R2": {
       const actividades = e.actividades ?? [];
       return `${actividades.length} ${actividades.length === 1 ? "actividad vencida" : "actividades vencidas"} sin entregar: ${actividades

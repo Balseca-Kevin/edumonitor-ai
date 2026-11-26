@@ -150,4 +150,51 @@ public class TramoApiTests
 
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
     }
+
+    // --- C7 · El mismo tramo en las herramientas del asistente ---
+
+    [Fact]
+    public async Task La_herramienta_de_calificaciones_usa_el_tramo_y_lo_dice()
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var u2 = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}&tramo=u2");
+        var todo = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/calificaciones?cursoId={curso}");
+
+        Assert.Equal("u2", u2.GetProperty("tramo").GetString());
+        Assert.Equal("todo", todo.GetProperty("tramo").GetString());
+        Assert.Equal(0m, PorNombre(u2)["Ana"].GetProperty("promedioPonderado").GetDecimal()); // solo Examen P1, igual que el panel
+        Assert.Equal(7m, PorNombre(u2)["Luis"].GetProperty("promedioPonderado").GetDecimal());
+    }
+
+    [Fact]
+    public async Task La_herramienta_de_alertas_usa_el_tramo_y_lo_dice()
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+        (await doc01.PutAsJsonAsync($"/api/cursos/{curso}/reglas", new[] { new { codigo = "R2", umbral = 1m, activa = true } })).EnsureSuccessStatusCode();
+
+        var u1 = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/alertas?cursoId={curso}&tramo=u1");
+        var u2 = await doc01.GetFromJsonAsync<JsonElement>($"/api/tools/alertas?cursoId={curso}&tramo=u2");
+
+        Assert.Equal("u1", u1.GetProperty("tramo").GetString());
+        Assert.Contains(u1.GetProperty("alertas").EnumerateArray(), a => a.GetProperty("regla").GetString() == "R2");
+        Assert.DoesNotContain(u2.GetProperty("alertas").EnumerateArray(), a => a.GetProperty("regla").GetString() == "R2");
+    }
+
+    [Theory]
+    [InlineData("calificaciones", "x1")]
+    [InlineData("calificaciones", "u9")]
+    [InlineData("alertas", "x1")]
+    [InlineData("alertas", "u9")]
+    public async Task Las_herramientas_responden_400_con_un_tramo_invalido_o_que_el_curso_no_tiene(string herramienta, string tramo)
+    {
+        var (factory, doc01, curso) = await CursoSincronizadoAsync();
+        await using var _ = factory;
+
+        var respuesta = await doc01.GetAsync($"/api/tools/{herramienta}?cursoId={curso}&tramo={tramo}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+    }
 }

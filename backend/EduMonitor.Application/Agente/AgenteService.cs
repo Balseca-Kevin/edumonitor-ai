@@ -34,7 +34,7 @@ public sealed class AgenteService(
     /// </summary>
     public Task<ResultadoChat> PreguntarAsync(UsuarioActual usuario, PreguntaChatDto pregunta, CancellationToken ct = default, string? modoForzado = null) =>
         PreguntarAsync(usuario, pregunta.CursoId, pregunta.Mensaje, ct, pregunta.Foco?.RefuerzoId, pregunta.ConversacionId,
-            pregunta.Foco?.ActividadId, pregunta.Foco?.EstudianteId, modoForzado);
+            pregunta.Foco?.ActividadId, pregunta.Foco?.EstudianteId, modoForzado, pregunta.Foco?.Tramo);
 
     public const int LargoMaximoMensaje = 500;
 
@@ -50,8 +50,14 @@ public sealed class AgenteService(
     /// </summary>
     public async Task<ResultadoChat> PreguntarAsync(
         UsuarioActual usuario, int cursoId, string? mensaje, CancellationToken ct = default, int? refuerzoId = null,
-        int? conversacionId = null, int? actividadId = null, int? estudianteId = null, string? modoForzado = null)
+        int? conversacionId = null, int? actividadId = null, int? estudianteId = null, string? modoForzado = null, string? tramo = null)
     {
+        // C7 · Tramo elegido en la barra del curso (R.2): las herramientas de calificaciones y alertas calculan con él, como las tarjetas.
+        if (!EduMonitor.Application.Indicadores.Tramo.TryParse(tramo, out var tramoElegido))
+        {
+            return ResultadoChat.Invalido("El tramo solo acepta todo, p1, p2 o u1 a un.");
+        }
+
         var pregunta = mensaje?.Trim() ?? string.Empty;
         if (pregunta.Length == 0 && refuerzoId is not null)
         {
@@ -138,6 +144,11 @@ public sealed class AgenteService(
         }
 
         var lineaPeriodo = await LineaPeriodoAsync(cursoId, ct);
+        var lineaTramo = await LineaTramoAsync(cursoId, tramoElegido, ct);
+        if (lineaTramo is null)
+        {
+            return ResultadoChat.Invalido(tramoElegido.NoExisteDetalle);
+        }
 
         string? focoPlan = null;
         string? focoEstilo = null;
@@ -180,6 +191,7 @@ public sealed class AgenteService(
             contexto.Add(lineaPeriodo);
         }
 
+        contexto.Add(lineaTramo);
         contexto.AddRange(foco);
         if (focoPlan is not null)
         {
@@ -202,7 +214,7 @@ public sealed class AgenteService(
         RespuestaAgente respuesta;
         try
         {
-            respuesta = await agente.ConsultarAsync(new PeticionAgente(mensajeAgente, cursoId, token.Token, historial, modo), ct);
+            respuesta = await agente.ConsultarAsync(new PeticionAgente(mensajeAgente, cursoId, token.Token, historial, modo, tramoElegido.Codigo), ct);
             respuesta = respuesta with { Respuesta = Seudonimizador.Mostrar(respuesta.Respuesta, mapa) };
         }
         catch (AgenteNoDisponibleException e)
@@ -352,6 +364,28 @@ public sealed class AgenteService(
         return $"Período: semana {p.Semana.Actual} de {p.Semana.Total}{unidad}.";
     }
 
+    /// <summary>
+    /// C7 · Línea del contexto con el tramo de la pantalla, para que el texto diga de qué parte del período son las cifras
+    /// («en la unidad 2», «en todo el ciclo»). Null si el curso no tiene ese parcial o esa unidad.
+    /// </summary>
+    private async Task<string?> LineaTramoAsync(int cursoId, EduMonitor.Application.Indicadores.Tramo tramo, CancellationToken ct)
+    {
+        if (tramo.EsTodo)
+        {
+            return "Tramo de la pantalla: todo el ciclo. Las cifras son de todo el ciclo.";
+        }
+
+        if (tramo.Parcial is int p)
+        {
+            var hay = await db.Unidades.AsNoTracking().AnyAsync(u => u.CursoId == cursoId && u.Parcial == p, ct);
+            return hay ? $"Tramo de la pantalla: parcial {p}. Las cifras son solo del parcial {p}; dilo en la respuesta." : null;
+        }
+
+        var numero = tramo.Unidad!.Value;
+        var nombre = await db.Unidades.AsNoTracking().Where(u => u.CursoId == cursoId && u.Numero == numero).Select(u => u.Nombre).FirstOrDefaultAsync(ct);
+        return nombre is null ? null : $"Tramo de la pantalla: unidad {numero} · {nombre}. Las cifras son solo de la unidad {numero}; dilo en la respuesta.";
+    }
+
     private static JsonElement ParametrosDeTraza(string parametros)
     {
         try
@@ -437,7 +471,7 @@ public sealed class AgenteService(
 public sealed record PreguntaChatDto(int CursoId, string? Mensaje, FocoChatDto? Foco = null, int? ConversacionId = null);
 
 /// <summary>Foco de la pantalla: el plan de refuerzo que el asistente redacta (TA-15.A4), o la actividad y el estudiante abiertos (HU-23).</summary>
-public sealed record FocoChatDto(int? RefuerzoId, int? ActividadId = null, int? EstudianteId = null);
+public sealed record FocoChatDto(int? RefuerzoId, int? ActividadId = null, int? EstudianteId = null, string? Tramo = null);
 
 /// <summary>Respuesta de <c>POST /api/agente/chat</c> (docs/contratos-api.md, HU-14).</summary>
 public sealed record RespuestaChatDto(int ConversacionId, string Respuesta, IReadOnlyList<HerramientaUsadaDto> Herramientas, string Modelo, int DuracionMs)

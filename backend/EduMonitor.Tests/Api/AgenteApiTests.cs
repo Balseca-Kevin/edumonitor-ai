@@ -47,7 +47,10 @@ public class AgenteApiTests
         Assert.Equal(curso, herramienta.GetProperty("parametros").GetProperty("cursoId").GetInt32());
 
         var peticion = factory.Agente.Peticiones.Single();
-        Assert.Equal($"Curso: AGIL-4B (cursoId {curso})\n¿Qué estudiantes requieren atención?", peticion.Mensaje);
+        Assert.Equal(
+            $"Curso: AGIL-4B (cursoId {curso})\nTramo de la pantalla: todo el ciclo. Las cifras son de todo el ciclo.\n¿Qué estudiantes requieren atención?",
+            peticion.Mensaje);
+        Assert.Equal("todo", peticion.Tramo);
         Assert.Equal(curso, peticion.CursoId);
         var token = new JsonWebToken(peticion.Token);
         Assert.Equal("AGENTE", token.GetClaim("role").Value);

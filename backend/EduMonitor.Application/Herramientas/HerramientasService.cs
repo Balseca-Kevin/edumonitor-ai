@@ -18,7 +18,14 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
     /// TA-13.2 · Alertas ACTIVAS del curso, ya calculadas por el backend (HU-12), con el mismo objeto de
     /// GET /api/cursos/{id}/alertas. Null si el curso no existe. El agente solo las lee: nunca calcula alertas.
     /// </summary>
-    public async Task<RespuestaAlertasHerramienta?> AlertasAsync(int cursoId, CancellationToken ct = default)
+    public Task<RespuestaAlertasHerramienta?> AlertasAsync(int cursoId, CancellationToken ct = default) =>
+        AlertasAsync(cursoId, Tramo.Todo, ct);
+
+    /// <summary>
+    /// C7 · Las alertas del <paramref name="tramo"/> que la pantalla tiene elegido (R.2), con la evidencia del tramo, para que el texto
+    /// del asistente y las tarjetas digan lo mismo. <see cref="TramoInexistente"/> si el curso no tiene ese parcial o esa unidad.
+    /// </summary>
+    public async Task<RespuestaAlertasHerramienta?> AlertasAsync(int cursoId, Tramo tramo, CancellationToken ct = default)
     {
         var curso = await db.Cursos.AsNoTracking().SingleOrDefaultAsync(c => c.Id == cursoId, ct);
         if (curso is null)
@@ -26,13 +33,21 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
             return null;
         }
 
-        var consulta = await alertas.ObtenerAlertasAsync(cursoId, EstadosAlerta.Activa, ct);
+        var consulta = await alertas.ObtenerAlertasAsync(cursoId, EstadosAlerta.Activa, tramo, ct);
+        if (consulta.Estado == EstadoConsultaAlertas.TramoInvalido)
+        {
+            throw new TramoInexistente(tramo.NoExisteDetalle);
+        }
+
         // Forma corta para el contexto del modelo: sin titulo, estado, generada ni revisada, que son iguales en todas; con el
         // nombre de la regla para que la respuesta diga «Promedio bajo» y no un código.
         var lista = consulta.Alertas
             .Select(a => new AlertaHerramientaDto(a.Id, a.Regla, DefinicionesRegla.PorCodigo(a.Regla)?.Nombre ?? a.Regla, a.Estudiante, EvidenciaCorta(a.Regla, a.Evidencia)))
             .ToList();
-        return new RespuestaAlertasHerramienta(HerramientaAlertas, reloj.GetLocalNow(), new CursoAlertasHerramientaDto(curso.Id, curso.NombreCorto), lista);
+        return new RespuestaAlertasHerramienta(HerramientaAlertas, reloj.GetLocalNow(), new CursoAlertasHerramientaDto(curso.Id, curso.NombreCorto), lista)
+        {
+            Tramo = tramo.Codigo,
+        };
     }
 
     /// <summary>
@@ -54,15 +69,36 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
                     .ToList(),
                 umbral = Campo(evidencia, "umbral"),
             },
-            DefinicionesRegla.CodigoR1 => new
-            {
-                ultimas = Campo(evidencia, "ultimas"),
-                diferencia = Campo(evidencia, "diferencia"),
-                umbral = Campo(evidencia, "umbral"),
-            },
+            DefinicionesRegla.CodigoR1 => EvidenciaR1Corta(evidencia),
             _ => null,
         };
         return corta is null ? evidencia : System.Text.Json.JsonSerializer.SerializeToElement(corta);
+    }
+
+    /// <summary>
+    /// C7 · Descenso reciente en la forma que se dice en palabras: las últimas notas de la más reciente a la más antigua, el promedio
+    /// de las últimas y el de las anteriores. La evidencia guardada sigue en orden cronológico.
+    /// </summary>
+    public static object EvidenciaR1Corta(System.Text.Json.JsonElement evidencia)
+    {
+        static List<decimal> Numeros(System.Text.Json.JsonElement e, string nombre) =>
+            e.ValueKind == System.Text.Json.JsonValueKind.Object && e.TryGetProperty(nombre, out var lista) && lista.ValueKind == System.Text.Json.JsonValueKind.Array
+                ? lista.EnumerateArray().Where(v => v.ValueKind == System.Text.Json.JsonValueKind.Number).Select(v => v.GetDecimal()).ToList()
+                : new List<decimal>();
+        static decimal? Promedio(List<decimal> notas) => notas.Count == 0 ? null : Math.Round(notas.Average(), 2, MidpointRounding.AwayFromZero);
+        static object? Valor(System.Text.Json.JsonElement e, string nombre) =>
+            e.ValueKind == System.Text.Json.JsonValueKind.Object && e.TryGetProperty(nombre, out var v) ? v : null;
+
+        var ultimas = Numeros(evidencia, "ultimas");
+        var anteriores = Numeros(evidencia, "anteriores");
+        return new
+        {
+            ultimasNotas = Enumerable.Reverse(ultimas).ToList(),
+            promedioUltimas = Promedio(ultimas),
+            promedioAnterior = Promedio(anteriores),
+            diferencia = Valor(evidencia, "diferencia"),
+            umbral = Valor(evidencia, "umbral"),
+        };
     }
 
     /// <summary>
@@ -91,11 +127,21 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
 
         var sincronizacion = await indicadores.UltimaSincronizacionConDatosAsync(cursoId, ct);
         var cursoDto = new CursoHerramientaDto(curso.Id, curso.NombreCorto, sincronizacion?.Inicio);
-        var datos = await indicadores.CargarDatosAsync(cursoId, ct);
-        if (datos is null)
+        var tramo = filtro.Tramo ?? Tramo.Todo;
+        var completos = await indicadores.CargarDatosAsync(cursoId, ct);
+        if (completos is null)
         {
-            return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, Array.Empty<object>()));
+            return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, Array.Empty<object>()) { Tramo = tramo.Codigo });
         }
+
+        // C7 · Con el tramo de la pantalla, los promedios y las notas salen solo de las actividades de ese tramo (el mismo cálculo del
+        // panel con ?tramo=), así el texto del asistente y las tarjetas dicen el mismo número.
+        if (!tramo.ExisteEn(completos))
+        {
+            throw new TramoInexistente(tramo.NoExisteDetalle);
+        }
+
+        var datos = tramo.Filtrar(completos);
 
         var calculados = CalculadoraIndicadores.Calcular(datos).Estudiantes.ToDictionary(e => e.Id);
 
@@ -125,7 +171,7 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
             var resumen = ordenados
                 .Select(e => (object)new EstudianteResumenCalificacionesDto(e.Id, e.Nombre, e.Apellido, e.PromedioPonderado, e.Parcial, e.Notas))
                 .ToList();
-            return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, resumen), Coincidencias: estudiantes.Count);
+            return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, resumen) { Tramo = tramo.Codigo }, Coincidencias: estudiantes.Count);
         }
 
         var promedios = calculados.ToDictionary(e => e.Key, e => e.Value.PromedioPonderado);
@@ -151,7 +197,7 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
                     .ToList()))
             .ToList();
 
-        return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, respuesta), Coincidencias: 1);
+        return new ResultadoCalificaciones(new RespuestaCalificacionesHerramienta(HerramientaCalificaciones, reloj.GetLocalNow(), cursoDto, respuesta) { Tramo = tramo.Codigo }, Coincidencias: 1);
     }
 
     /// <summary>
@@ -168,7 +214,10 @@ public sealed class HerramientasService(IEduMonitorDbContext db, IndicadorServic
 }
 
 /// <summary>Filtros del resumen de <c>GET /api/tools/calificaciones</c> (HU-23): <c>promedioMenorA</c> y <c>orden</c>.</summary>
-public sealed record FiltroCalificaciones(decimal? PromedioMenorA = null, OrdenCalificaciones Orden = OrdenCalificaciones.Promedio);
+public sealed record FiltroCalificaciones(decimal? PromedioMenorA = null, OrdenCalificaciones Orden = OrdenCalificaciones.Promedio, Tramo? Tramo = null);
+
+/// <summary>C7 · El curso no tiene el parcial o la unidad del tramo pedido: la herramienta responde 400.</summary>
+public sealed class TramoInexistente(string detalle) : Exception(detalle);
 
 public enum OrdenCalificaciones
 {
@@ -188,12 +237,20 @@ public sealed record RespuestaCalificacionesHerramienta(
     string Herramienta,
     DateTimeOffset Generado,
     CursoHerramientaDto Curso,
-    IReadOnlyList<object> Estudiantes);
+    IReadOnlyList<object> Estudiantes)
+{
+    /// <summary>C7 · Tramo con el que se calcularon los promedios y las notas (<c>todo</c>, <c>p1</c>, <c>u2</c>…).</summary>
+    public string Tramo { get; init; } = "todo";
+}
 
 public sealed record CursoHerramientaDto(int Id, string NombreCorto, DateTimeOffset? UltimaSincronizacion);
 
 /// <summary>Respuesta de <c>GET /api/tools/alertas</c> (herramienta <c>identificar_alertas</c>, docs/contratos-api.md).</summary>
-public sealed record RespuestaAlertasHerramienta(string Herramienta, DateTimeOffset Generado, CursoAlertasHerramientaDto Curso, IReadOnlyList<AlertaHerramientaDto> Alertas);
+public sealed record RespuestaAlertasHerramienta(string Herramienta, DateTimeOffset Generado, CursoAlertasHerramientaDto Curso, IReadOnlyList<AlertaHerramientaDto> Alertas)
+{
+    /// <summary>C7 · Tramo de las alertas (<c>todo</c>, <c>p1</c>, <c>u2</c>…).</summary>
+    public string Tramo { get; init; } = "todo";
+}
 
 /// <summary>Alerta activa para el agente: la de GET /api/cursos/{id}/alertas sin los campos que son iguales en todas.</summary>
 public sealed record AlertaHerramientaDto(int Id, string Regla, string NombreRegla, EstudianteAlertaDto Estudiante, System.Text.Json.JsonElement Evidencia);

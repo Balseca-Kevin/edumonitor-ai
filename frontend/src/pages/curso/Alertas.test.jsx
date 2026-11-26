@@ -194,6 +194,6 @@ describe('R.5 · Alertas en tarjetas', () => {
     renderAlertas()
 
     const tarjeta = await screen.findByRole('article', { name: 'Descenso reciente de Pérez, Ana' })
-    expect(within(tarjeta).getByText(/3,3 puntos bajo las anteriores/)).toBeInTheDocument()
+    expect(within(tarjeta).getByText(/Sus últimas 3 notas fueron 4,0; 4,5 y 5,0, frente a un promedio anterior de 7,8: bajó 3,3 puntos/)).toBeInTheDocument()
   })
 })

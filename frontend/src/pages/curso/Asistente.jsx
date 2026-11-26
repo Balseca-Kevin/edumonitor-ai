@@ -628,7 +628,7 @@ export default function Asistente() {
     setTurnos((t) => [...t, { pregunta, cargando: true }]);
     try {
       // HU-23 · Con una conversación abierta, la pregunta sigue su hilo y el asistente recuerda los últimos 4 turnos.
-      const foco = { estudianteId: enfocado?.id, actividadId: actividadFoco };
+      const foco = { estudianteId: enfocado?.id, actividadId: actividadFoco, tramo };
       const respuesta = await preguntarAlAsistente(id, pregunta, foco, activa);
       setTurnos((t) => [...t.slice(0, -1), { pregunta, respuesta }]);
       const hilo = respuesta.hiloId ?? respuesta.conversacionId;

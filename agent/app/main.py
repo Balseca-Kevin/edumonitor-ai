@@ -7,7 +7,9 @@ from langchain_core.messages import AIMessage, HumanMessage
 
 from app import graph, modelos
 from app.alcance import fuera_de_alcance
+from app.enrutador import DATOS, parece_dato_del_curso, ruta_de
 from app.graph import FalloExterno, MODEL_NAME, OLLAMA_BASE_URL, app_graph, texto_de
+from app.redaccion import pulir, pulir_cifras
 from app.schemas.tools import ChatPeticion, ChatRespuesta
 from app.verificacion import numeros_permitidos
 
@@ -15,7 +17,7 @@ logger = logging.getLogger("agent")
 app = FastAPI(title="EduMonitor AI - Servicio de Agente", version="0.3.0")
 
 
-async def _correr(request: ChatPeticion, modo: str) -> dict:
+async def _correr(request: ChatPeticion, modo: str, ruta: str = DATOS) -> dict:
     historial = []
     for turno in request.historial:
         historial += [HumanMessage(content=turno.pregunta), AIMessage(content=turno.respuesta)]
@@ -24,6 +26,8 @@ async def _correr(request: ChatPeticion, modo: str) -> dict:
         "messages": [*historial, HumanMessage(content=request.mensaje)],
         "token": request.token,
         "cursoId": request.cursoId,
+        "tramo": request.tramo,
+        "ruta": ruta,
         "iterations": 0,
         "trazas": [],
         "error": None,
@@ -33,6 +37,16 @@ async def _correr(request: ChatPeticion, modo: str) -> dict:
         "reintento": False,
         "cifras": [],
     })
+
+
+async def _correr_con_ruta(request: ChatPeticion, modo: str, ruta: str) -> dict:
+    """C7 · Una pregunta general o sobre la aplicación va sin herramientas. Si la respuesta igual trae un código de estudiante o
+    una nota, el modelo los inventó: la pregunta se corre otra vez por datos, con herramientas y verificación de cifras."""
+    resultado = await _correr(request, modo, ruta)
+    if ruta != DATOS and not resultado.get("trazas") and parece_dato_del_curso(texto_de(resultado["messages"][-1])):
+        logger.info("La respuesta de la ruta %s trae datos del curso; se repite por datos", ruta)
+        resultado = await _correr(request, modo, DATOS)
+    return resultado
 
 
 @app.post("/chat", response_model=ChatRespuesta)
@@ -46,6 +60,7 @@ async def chat_endpoint(request: ChatPeticion):
         return ChatRespuesta(respuesta=fija, herramientas=[], modelo="ninguno", proveedor="NINGUNO",
                              duracionMs=int((time.time() - inicio) * 1000))
 
+    ruta = ruta_de(request.mensaje)
     hay_externo = graph.llm_externo is not None
     if request.modo == "externo" and not hay_externo:
         raise HTTPException(status_code=503, detail="El modelo externo no está configurado.")
@@ -56,7 +71,7 @@ async def chat_endpoint(request: ChatPeticion):
         resultado = None
         if usar_externo:
             try:
-                resultado = await _correr(request, "externo")
+                resultado = await _correr_con_ruta(request, "externo", ruta)
                 modelos.interruptor.registrar_exito()
             except FalloExterno as exc:
                 modelos.interruptor.registrar_fallo()
@@ -65,7 +80,7 @@ async def chat_endpoint(request: ChatPeticion):
                     raise HTTPException(status_code=503, detail="El modelo externo no respondió.") from exc
                 respaldo = True
         if resultado is None:
-            resultado = await _correr(request, "local")
+            resultado = await _correr_con_ruta(request, "local", ruta)
     except HTTPException:
         raise
     except Exception:
@@ -74,13 +89,13 @@ async def chat_endpoint(request: ChatPeticion):
 
     externo = resultado is not None and usar_externo and not respaldo
     return ChatRespuesta(
-        respuesta=texto_de(resultado["messages"][-1]),
+        respuesta=pulir(texto_de(resultado["messages"][-1])),
         herramientas=resultado.get("trazas", []),
         modelo=modelos.MODELO_EXTERNO if externo else MODEL_NAME,
         duracionMs=int((time.time() - inicio) * 1000),
         proveedor="EXTERNO" if externo else "LOCAL",
         respaldo=respaldo,
-        cifras=resultado.get("cifras", []),
+        cifras=pulir_cifras(resultado.get("cifras", [])),
     )
 
 

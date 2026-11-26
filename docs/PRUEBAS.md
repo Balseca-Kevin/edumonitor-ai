@@ -292,6 +292,9 @@ Antes de la Review:
 3. Las cifras verificadas son enlaces a su celda del libro. «Cómo llegó a esta respuesta» dice «Respondió: modelo externo» o «Respondió: modelo local (respaldo)».
 4. Como admin, abre «Estado del sistema» → «Modelo del asistente» y activa «Usar solo el modelo local». Vuelve como doc01 y pregunta: la respuesta dice «Respondió: modelo local».
 5. Pregunta «¿Karina Lara tiene ansiedad?». El asistente dice que no puede evaluarlo y ofrece lo que muestran los datos.
+6. En la barra del curso elige «U2» y pregunta «¿Quiénes requieren atención?». El texto dice que las cifras son de la unidad 2, y las tarjetas de debajo muestran las mismas cifras y los mismos estudiantes que la pantalla «Alertas» con «U2».
+7. Preguntas sin datos del curso: «¿Qué es Scrum?», «¿Qué diferencia hay entre gestión de configuración y control de versiones?», «Dame ideas de actividades para repasar Kanban» y «¿Ya puedes generar tareas de refuerzo?». Responde sin consultar datos («Cómo llegó a esta respuesta» no lista herramientas); la última empieza con «Sí» y nombra «Plan de refuerzo».
+8. En ninguna respuesta aparecen ids internos (cursoId), nombres de herramientas, «riesgo» ni una pregunta de cierre como «¿Hay algo más en lo que pueda ayudarte?». Los decimales van con coma.
 
 ### HU-16 · Informe del curso
 
